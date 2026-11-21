@@ -2782,7 +2782,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const root = chain.length > 1 ? find(alMap[chain[0].id]) || (chain[0].id === al ? current : null) : null;
     Object.assign(rel, { status: 'ready', list: list.length > 1 ? list : [], all, extras: extras.filter((e) => e.seriesKey), confirmed: !!confirmedNext, announced,
       next: confirmedNext || (announced ? null : C.probableNext(list, current)),
-      label: (root || current).title.split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0] });
+      label: (root || list.filter((x) => x.type === 'tv' && C.licenceBaseOf(x)).sort((p, q) => (C.licenceBaseOf(p).length - C.licenceBaseOf(q).length) || ((p.date || '9999') < (q.date || '9999') ? -1 : 1))[0] || current).title.split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0] });
     if (state.route.name === 'detail' && state.route.key === key) renderRelated();
   }
 

@@ -185,6 +185,7 @@ describe('Licence : carte Diffusion', () => {
     await openLicence(page);
     assert.deepEqual(await eras(page), ['tv-219', 'tv-216', 'tv-217']);
     assert.equal(await page.locator('#detail-licence [data-series="tv-216"] .lfilm.is-current').getAttribute('data-item-key'), 'movie-140');
+    assert.match(await page.locator('#detail-licence .licence-head h2').textContent(), /^Licence « Licence Test »$/, 'nommée d’après la première série, pas d’après le film');
     assert.match(await page.locator('#detail-licence .lfilm.is-current').textContent(), /Film[\s\S]*tu es ici/);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();

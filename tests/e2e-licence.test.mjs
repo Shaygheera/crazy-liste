@@ -23,7 +23,7 @@ describe('Licence : règles', () => {
   it('liste par date, suite probable = série suivante ; anime : seulement l’animation', () => {
     const cur = { key: 'tv-1', type: 'tv', title: 'Boruto : Naruto Next Generations', date: '2017-04-05', genreIds: [16], originalLanguage: 'ja' };
     const cands = [
-      { key: 'tv-2', type: 'tv', title: 'Boruto : Two Blue Vortex', date: '', genreIds: [16] },
+      { key: 'tv-2', type: 'tv', title: 'Boruto : Two Blue Vortex', date: '', genreIds: [] }, // fiche toute neuve : pas encore de genre
       { key: 'movie-3', type: 'movie', title: 'Boruto : Naruto, le film', date: '2015-08-07', genreIds: [16, 28] },
       { key: 'tv-4', type: 'tv', title: 'Boruto (série live)', date: '2024-01-01', genreIds: [18] },
       { key: 'tv-5', type: 'tv', title: 'Borutopia', date: '2019-01-01', genreIds: [16] },

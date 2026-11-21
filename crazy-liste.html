@@ -1203,12 +1203,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return [item.title, item.originalTitle].some((t) => { const n = normTitle(t); return n === base || n.startsWith(base + ' '); });
   }
   const byDateThenTitle = (a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : String(a.title).localeCompare(String(b.title), 'fr'));
-  /* Titres de la même licence (fiche courante comprise), par date, sans doublon ; anime : seulement l'animation. */
+  /* Titres de la même licence (fiche courante comprise), par date, sans doublon ; anime : seulement l'animation (ou genre pas encore renseigné). */
   function licenceList(current, candidates, base, max) {
     const anime = isAnime(current);
     const seen = new Set([current.key]);
     const others = (Array.isArray(candidates) ? candidates : []).filter((c) => c && (c.type === 'tv' || c.type === 'movie') && !seen.has(c.key) && seen.add(c.key) &&
-      inLicence(base, c) && (!anime || (Array.isArray(c.genreIds) && c.genreIds.includes(16))));
+      inLicence(base, c) && (!anime || !Array.isArray(c.genreIds) || !c.genreIds.length || c.genreIds.includes(16))); // fiche récente sans genre : gardée
     return [current].concat(others).sort(byDateThenTitle).slice(0, max || 10);
   }
   /* Suite probable : la première série de la licence qui commence après celle-ci (ou sans date, donc à venir). */

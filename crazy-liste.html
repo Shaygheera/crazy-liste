@@ -106,7 +106,7 @@ h1, h2, h3, h4 { line-height: 1.2; }
   .view { padding: 16px 16px 28px; }
   .side-panel { padding: 14px 16px 92px; grid-template-columns: minmax(0, 1fr); }
   .bottom-nav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bg-elev); border-top: 1px solid var(--border); padding: 5px 4px calc(5px + env(safe-area-inset-bottom)); }
-  .bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 0; border-radius: 10px; text-decoration: none; color: var(--muted); font-size: .68rem; font-weight: 600; }
+  .bottom-nav a { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 0; border-radius: 10px; text-decoration: none; color: var(--muted); font-size: .64rem; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
   .bottom-nav a[aria-current="page"] { color: var(--accent); }
   .bottom-nav .icon { width: 21px; height: 21px; }
 }
@@ -385,6 +385,38 @@ dialog.dialog.dialog-video { width: min(96vw, 1400px, calc((100dvh - 150px) * 16
 .stat strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
 .stat span { font-size: .7rem; color: var(--muted); font-weight: 650; }
 .stat-seen strong { color: var(--seen); } .stat-progress strong { color: var(--progress); } .stat-fav strong { color: var(--fav); }
+.where { display: grid; gap: 8px; }
+.where-title { margin: 0; font-size: .95rem; }
+.where-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.where-kind { font-size: .78rem; color: var(--muted); font-weight: 650; min-width: 92px; }
+.where-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.provider { display: flex; align-items: center; gap: 6px; padding: 3px 9px 3px 3px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: .8rem; font-weight: 600; }
+.provider img { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; }
+.where .hint a { color: var(--accent); }
+.agenda-group { margin-bottom: 22px; }
+.agenda-group h2 { font-size: 1.05rem; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+.agenda-group h2 .count { font-size: .75rem; color: var(--muted); background: var(--accent-soft); border-radius: 999px; padding: 1px 8px; }
+.agenda-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.agenda-item a { display: grid; grid-template-columns: 128px 46px 1fr; gap: 12px; align-items: center; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); text-decoration: none; color: inherit; }
+.agenda-item a:hover { border-color: var(--accent); }
+.agenda-date { display: grid; gap: 2px; font-size: .82rem; } .agenda-date span { color: var(--accent); font-weight: 650; }
+.agenda-thumb { width: 46px; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; position: relative; }
+.agenda-thumb .poster-fallback { font-size: .5rem; }
+.agenda-text { display: grid; gap: 2px; min-width: 0; font-size: .85rem; } .agenda-text strong { font-size: .95rem; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .agenda-item a { grid-template-columns: 46px 1fr; } .agenda-date { grid-column: 1 / -1; display: flex; gap: 8px; } }
+.insight-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.insight { display: grid; gap: 2px; padding: 14px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
+.insight strong { font-size: 1.6rem; line-height: 1.1; } .insight span { color: var(--muted); font-weight: 600; } .insight small { color: var(--muted); }
+.insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 12px; }
+.insight-grid .panel h2 { margin: 0; font-size: 1rem; }
+.bars { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 7px; }
+.bars li { display: grid; grid-template-columns: minmax(90px, 40%) 1fr 28px; gap: 8px; align-items: center; font-size: .84rem; }
+.bar-track { height: 10px; border-radius: 99px; background: var(--accent-soft); overflow: hidden; } .bar-fill { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.bar-value { text-align: right; font-weight: 650; }
+.month-chart { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; align-items: end; height: 170px; margin-top: 10px; }
+.month { display: grid; grid-template-rows: 18px 1fr 30px; height: 100%; text-align: center; font-size: .7rem; min-width: 0; }
+.month-bar { display: flex; align-items: flex-end; justify-content: center; } .month-bar span { width: 70%; min-height: 2px; background: var(--accent); border-radius: 4px 4px 0 0; }
+.month-label { color: var(--muted); line-height: 1.15; overflow-wrap: anywhere; } .month-value { font-weight: 650; }
 .resume-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .resume-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 5px 6px; border-radius: 10px; text-decoration: none; }
 .resume-row:hover { background: var(--surface-2); }
@@ -448,10 +480,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       <a href="#home" data-nav="home"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg>Accueil</a>
       <a href="#search" data-nav="search"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>Recherche</a>
       <a href="#resume" data-nav="resume"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></svg>Reprendre<span class="count" data-count="progress"></span></a>
+      <a href="#agenda" data-nav="agenda"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>À venir</a>
       <a href="#library" data-nav="library"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Bibliothèque<span class="count" data-count="total"></span></a>
       <a href="#favorites" data-nav="favorites"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></svg>Favoris<span class="count" data-count="favorites"></span></a>
       <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Sagas</a>
       <a href="#watchlist" data-nav="watchlist"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>Watchlist<span class="count" data-count="watchlist"></span></a>
+      <a href="#stats" data-nav="stats"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20v-8M11 20V5M17 20v-5M3 20h18"/></svg>Statistiques</a>
       <a href="#settings" data-nav="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Réglages</a>
     </nav>
     <div class="sidebar-foot">
@@ -477,7 +511,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
 
   <aside class="side-panel" aria-label="Suivi rapide">
     <section class="panel" aria-labelledby="stats-title">
-      <div class="panel-head"><h2 id="stats-title">Mes statistiques</h2><a class="panel-link" href="#library">Bibliothèque</a></div>
+      <div class="panel-head"><h2 id="stats-title">Mes statistiques</h2><a class="panel-link" href="#stats">Détails</a></div>
       <div id="stats-panel" class="stats"></div>
     </section>
     <section class="panel" aria-labelledby="resume-panel-title">
@@ -495,7 +529,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   <a href="#home" data-nav="home"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg>Accueil</a>
   <a href="#search" data-nav="search"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>Recherche</a>
   <a href="#resume" data-nav="resume"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></svg>Reprendre</a>
-  <a href="#library" data-nav="library" data-nav-group="favorites watchlist"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Ma liste</a>
+  <a href="#agenda" data-nav="agenda"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>À venir</a>
+  <a href="#library" data-nav="library" data-nav-group="favorites watchlist stats"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Ma liste</a>
   <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Sagas</a>
   <a href="#settings" data-nav="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Réglages</a>
 </nav>
@@ -575,7 +610,30 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function formatRating(v) { const n = num(v); return n > 0 ? n.toFixed(1).replace('.', ',') : '—'; }
   /* « Returning Series » signifie seulement que TMDB n'a pas marqué la série comme terminée (statut tenu par la communauté,
      parfois en retard) : elle n'est « en cours de diffusion » que si TMDB annonce un prochain épisode. On n'en déduit aucune suite. */
-  function productionLabel(s, nextEpisode) {
+  /* « En cours de diffusion » : un épisode sort dans les AIRING_DAYS prochains jours (diffusion hebdomadaire).
+     Un prochain épisode plus lointain signifie une suite annoncée (nouvelle saison, reprise après une pause). */
+  const AIRING_DAYS = 14;
+  function isAiringSoon(nextEpisode, today) {
+    if (!nextEpisode || !/^\d{4}-\d{2}-\d{2}$/.test(nextEpisode.airDate || '')) return false;
+    const n = daysBetween(today, nextEpisode.airDate);
+    return n >= 0 && n <= AIRING_DAYS;
+  }
+  /* Suite annoncée (pas en cours de diffusion) : prochain épisode lointain, ou saison à venir listée par TMDB (avec ou sans date).
+     info : { status, nextEpisode, seasons } tiré de la fiche. Renvoie { date ('' si inconnue), season } ou null. */
+  const ANNOUNCE_SPLIT_DAYS = 183;
+  const NEEDS_DETAIL_STATUSES = ['soon', 'later']; // la découverte TMDB ne sait pas filtrer les saisons annoncées : vérifié sur chaque fiche // « moins de 6 mois » / « plus de 6 mois »
+  function announcedSeason(info, today) {
+    if (!isObj(info) || ENDED_STATUSES.includes(info.status) || isAiringSoon(info.nextEpisode, today)) return null;
+    const isDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
+    const ne = info.nextEpisode;
+    if (ne && (!isDate(ne.airDate) || ne.airDate >= today)) return { date: isDate(ne.airDate) ? ne.airDate : '', season: ne.season };
+    const sum = (Array.isArray(info.seasons) ? info.seasons : []).find((x) => x.number > 0 && (isDate(x.airDate) ? x.airDate >= today : x.episodeCount === 0));
+    return sum ? { date: isDate(sum.airDate) ? sum.airDate : '', season: sum.number } : null;
+  }
+  function productionLabel(s, nextEpisode, today) {
+    if (nextEpisode && today && !ENDED_STATUSES.includes(s) && !isAiringSoon(nextEpisode, today)) {
+      return nextEpisode.airDate ? 'Suite annoncée · reprise le ' + formatDate(nextEpisode.airDate) : 'Suite annoncée · date non communiquée';
+    }
     if (s === 'Returning Series') return nextEpisode ? 'En cours de diffusion' : 'Pas terminée selon TMDB · aucun épisode annoncé';
     return PRODUCTION_LABELS[s] || str(s, 40);
   }
@@ -607,7 +665,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   function normalizeEpisodeRef(raw) {
     if (!isObj(raw) || !Number.isInteger(raw.season_number) || !Number.isInteger(raw.episode_number)) return null;
-    return { season: raw.season_number, episode: raw.episode_number, name: str(raw.name, 300), airDate: str(raw.air_date, 10) };
+    return { season: raw.season_number, episode: raw.episode_number, name: str(raw.name, 300), airDate: str(raw.air_date, 10), runtime: num(raw.runtime) || null };
   }
   function normalizeDetail(raw, type) {
     if (!isObj(raw)) return null;
@@ -620,6 +678,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     d.recommendations = reco.map((r) => normalizeSummary(r, type)).filter(Boolean).slice(0, 12);
     d.trailer = pickTrailer(raw.videos);
     d.gallery = pickGallery(raw.images);
+    d.providers = pickProviders(raw['watch/providers'], 'FR');
     if (type === 'tv') {
       const seen = new Set();
       d.seasonSummaries = (Array.isArray(raw.seasons) ? raw.seasons : [])
@@ -632,7 +691,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       d.nextEpisode = normalizeEpisodeRef(raw.next_episode_to_air);
       d.lastEpisode = normalizeEpisodeRef(raw.last_episode_to_air);
       d.inProduction = raw.in_production === true;
-      d.runtime = Array.isArray(raw.episode_run_time) && raw.episode_run_time.length ? num(raw.episode_run_time[0]) || null : null;
+      d.runtime = (Array.isArray(raw.episode_run_time) && raw.episode_run_time.length ? num(raw.episode_run_time[0]) : 0) || (d.lastEpisode && d.lastEpisode.runtime) || null;
     } else {
       d.runtime = num(raw.runtime) || null;
       const c = raw.belongs_to_collection;
@@ -653,6 +712,24 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       if (score > bestScore || (score === bestScore && date > best.date)) { best = { key: v.key, name: str(v.name, 200), lang: v.iso_639_1 === 'fr' ? 'fr' : 'other', type: v.type, date }; bestScore = score; }
     }
     return best;
+  }
+  /* Où regarder : offres françaises de TMDB (données JustWatch), par type d'offre, dans l'ordre d'affichage de TMDB. */
+  const PROVIDER_KINDS = [['flatrate', 'Abonnement'], ['free', 'Gratuit'], ['ads', 'Gratuit avec pub'], ['rent', 'Location'], ['buy', 'Achat']];
+  function pickProviders(raw, country) {
+    const res = isObj(raw) && isObj(raw.results) ? raw.results[country] : null;
+    if (!isObj(res)) return null;
+    const link = typeof res.link === 'string' && /^https:\/\/www\.themoviedb\.org\/[\w\-\/?=&%.]+$/.test(res.link) ? res.link : '';
+    const groups = [];
+    for (const [kind, label] of PROVIDER_KINDS) {
+      const seen = new Set();
+      const list = (Array.isArray(res[kind]) ? res[kind] : [])
+        .filter((p) => isObj(p) && isPosInt(p.provider_id) && !seen.has(p.provider_id) && seen.add(p.provider_id))
+        .sort((a, b) => num(a.display_priority) - num(b.display_priority))
+        .slice(0, 12)
+        .map((p) => ({ id: p.provider_id, name: str(p.provider_name, 80) || 'Plateforme', logo: imgPath(p.logo_path) }));
+      if (list.length) groups.push({ kind, label, list });
+    }
+    return groups.length ? { link, groups } : null;
   }
   /* Galerie : grandes images officielles du titre (« backdrops ») et non les images d'épisodes, pour limiter les spoilers.
      Priorité aux images sans texte, puis aux mieux notées ; 10 au maximum, sans doublon. */
@@ -716,6 +793,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       overview: str(s.overview, 600), posterPath: s.posterPath || null, backdropPath: s.backdropPath || null, voteAverage: num(s.voteAverage),
       originalLanguage: s.originalLanguage || '', genreIds: (s.genreIds || []).slice(0, 12) };
     if (prev && prev.productionStatus) m.productionStatus = prev.productionStatus;
+    if (prev && prev.runtime) m.runtime = prev.runtime;
     if (prev && Array.isArray(prev.genres)) m.genres = prev.genres.slice(0, 6);
     if (prev && Array.isArray(prev.seasonSummaries)) m.seasonSummaries = prev.seasonSummaries.map((x) => Object.assign({}, x));
     return m;
@@ -734,6 +812,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const m = metaFromSummary(d, null);
     m.productionStatus = d.productionStatus || '';
     m.genres = (d.genres || []).slice(0, 6);
+    if (d.runtime) m.runtime = d.runtime; else if (prev && prev.runtime) m.runtime = prev.runtime;
     if (d.type === 'tv') m.seasonSummaries = mergeSeasonSummaries(d.seasonSummaries || [], prev && prev.seasonSummaries);
     return m;
   }
@@ -904,6 +983,104 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return { total: all.length, seen: c((e) => e.status === 'seen'), progress: c((e) => e.status === 'progress'), todo: c((e) => e.status === 'todo'),
       favorites: c((e) => e.track.favorite), watchlist: c((e) => e.track.watchlist), movies: c((e) => e.type === 'movie'), shows: c((e) => e.type === 'tv') };
   }
+  /* Date à laquelle un titre est devenu « Vu » (pour les statistiques par mois). Seulement au passage à « Vu » :
+     un titre déjà vu avant cette version garde sa dernière activité comme date approximative. */
+  function stampSeen(track, beforeStatus, afterStatus, now) {
+    if (afterStatus === 'seen' && beforeStatus !== 'seen') return Object.assign(cloneTrack(track), { seenAt: now });
+    if (afterStatus !== 'seen' && track.seenAt) { const t = cloneTrack(track); delete t.seenAt; return t; }
+    return track;
+  }
+  const MONTHS_SHORT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  function monthOf(ts) { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+  function genreNamesOf(meta) {
+    if (!meta) return [];
+    const table = meta.type === 'movie' ? GENRES.movie : GENRES.tv;
+    const ids = Array.isArray(meta.genreIds) ? meta.genreIds : [];
+    const names = ids.map((id) => (table.find(([g]) => g === id) || [])[1]).filter(Boolean);
+    return names.length ? names : Array.isArray(meta.genres) ? meta.genres : [];
+  }
+  function computeInsights(data, today) {
+    const all = personalEntries(data);
+    const r = { moviesSeen: 0, showsDone: 0, showsStarted: 0, episodes: 0, movieMinutes: 0, episodeMinutes: 0, unknownRuntime: 0, approxDates: 0, topGenres: [], months: [] };
+    const genres = new Map(), months = new Map();
+    for (const e of all) {
+      const rt = num(e.meta && e.meta.runtime);
+      if (e.type === 'movie') {
+        if (e.status === 'seen') { r.moviesSeen++; if (rt) r.movieMinutes += rt; else r.unknownRuntime++; }
+      } else {
+        const n = e.state.seenEpisodes || 0;
+        r.episodes += n;
+        if (n) { if (rt) r.episodeMinutes += n * rt; else r.unknownRuntime++; }
+        if (e.status === 'seen') r.showsDone++; else if (e.status === 'progress') r.showsStarted++;
+      }
+      if (e.status === 'seen' || e.status === 'progress') for (const g of new Set(genreNamesOf(e.meta))) genres.set(g, (genres.get(g) || 0) + 1);
+      if (e.status === 'seen') {
+        const at = e.track.seenAt || e.track.lastActivityAt;
+        if (!e.track.seenAt) r.approxDates++;
+        if (at) months.set(monthOf(at), (months.get(monthOf(at)) || 0) + 1);
+      }
+    }
+    r.totalMinutes = r.movieMinutes + r.episodeMinutes;
+    r.topGenres = [...genres].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr')).slice(0, 8).map(([name, count]) => ({ name, count }));
+    let y = Number(today.slice(0, 4)), m = Number(today.slice(5, 7));
+    for (let i = 0; i < 12; i++) {
+      const key = y + '-' + String(m).padStart(2, '0');
+      r.months.unshift({ key, label: MONTHS_SHORT[m - 1] + (m === 1 || i === 11 ? ' ' + y : ''), count: months.get(key) || 0 });
+      if (--m === 0) { m = 12; y--; }
+    }
+    return r;
+  }
+  /* « À venir pour moi » : prochains épisodes des séries de ma liste, sorties des films de ma liste pas encore vus.
+     detailOf(key) : fiche TMDB chargée (ou null). */
+  function relativeDay(date, today) {
+    const n = daysBetween(today, date);
+    if (!Number.isFinite(n) || n < 0) return '';
+    if (n === 0) return 'aujourd’hui';
+    if (n === 1) return 'demain';
+    if (n < 14) return 'dans ' + n + ' jours';
+    if (n < 60) return 'dans ' + Math.round(n / 7) + ' semaines';
+    if (n < 700) return 'dans ' + Math.round(n / 30.44) + ' mois';
+    return 'dans ' + Math.round(n / 365.25) + ' ans';
+  }
+  const AGENDA_GROUPS = [['today', 'Aujourd’hui'], ['week', 'Cette semaine'], ['month', 'Dans le mois'], ['later', 'Plus tard'], ['nodate', 'Date non annoncée']];
+  function agendaGroupOf(date, today) {
+    if (!date) return 'nodate';
+    const n = daysBetween(today, date);
+    return n <= 0 ? 'today' : n <= 7 ? 'week' : n <= 31 ? 'month' : 'later';
+  }
+  function computeAgenda(data, detailOf, today) {
+    const out = [];
+    const isDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
+    for (const e of personalEntries(data)) {
+      const d = detailOf(e.key);
+      const title = (d && d.title) || e.meta.title;
+      const base = { key: e.key, type: e.type, id: e.id, title, meta: d || e.meta };
+      if (e.type === 'movie') {
+        if (e.status === 'seen') continue;
+        const date = (d ? d.date : e.meta.date) || '';
+        const prod = d ? d.productionStatus : e.meta.productionStatus || '';
+        if (isDate(date) ? date < today : (prod === 'Released' || prod === 'Canceled' || !prod)) continue;
+        out.push(Object.assign(base, { date: isDate(date) ? date : '', what: 'Sortie du film' + (isDate(date) ? '' : ' (' + (PRODUCTION_LABELS[prod] || 'annoncé').toLowerCase() + ')') }));
+        continue;
+      }
+      if (!d) continue;
+      const ne = d.nextEpisode;
+      if (ne && (!isDate(ne.airDate) || ne.airDate >= today)) {
+        const premiere = ne.episode === 1;
+        out.push(Object.assign(base, { date: isDate(ne.airDate) ? ne.airDate : '', season: ne.season, episode: ne.episode,
+          what: (premiere ? (ne.season === 1 ? 'Premier épisode' : 'Début de la saison ' + ne.season) : 'Nouvel épisode') + ' · ' + episodeLabel(ne.season, ne.episode) + (ne.name && !/^(épisode|episode)\s*\d+$/i.test(ne.name) ? ' — ' + ne.name : '') }));
+        continue;
+      }
+      if (ENDED_STATUSES.includes(d.productionStatus)) continue;
+      if (isDate(d.date) && d.date > today) { out.push(Object.assign(base, { date: d.date, what: 'Première diffusion' })); continue; }
+      const sum = (d.seasonSummaries || []).find((x) => x.number > 0 && (isDate(x.airDate) ? x.airDate >= today : x.episodeCount === 0));
+      if (sum) out.push(Object.assign(base, { date: isDate(sum.airDate) ? sum.airDate : '', season: sum.number, what: 'Saison ' + sum.number + ' annoncée' }));
+    }
+    return out.sort((a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : a.title.localeCompare(b.title, 'fr')));
+  }
+  function agendaGroups(list, today) {
+    return AGENDA_GROUPS.map(([id, label]) => ({ id, label, items: list.filter((it) => agendaGroupOf(it.date, today) === id) })).filter((g) => g.items.length);
+  }
   function computeLibrary(data, opts) {
     const o = Object.assign({ status: 'all', type: 'all', list: 'all', sort: 'activity' }, opts);
     let rows = personalEntries(data);
@@ -929,7 +1106,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
 
   /* ---------- Navigation par hash ---------- */
-  const SIMPLE_ROUTES = ['home', 'search', 'resume', 'library', 'favorites', 'watchlist', 'settings', 'sagas'];
+  const SIMPLE_ROUTES = ['home', 'search', 'resume', 'library', 'favorites', 'watchlist', 'settings', 'sagas', 'agenda', 'stats'];
   function parseRoute(hash) {
     let h = String(hash || '');
     if (h.startsWith('#')) h = h.slice(1);
@@ -1071,11 +1248,27 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   };
   const ENDED_STATUSES = ['Ended', 'Canceled'];
   const ONGOING_STATUSES = ['Returning Series', 'In Production', 'Planned', 'Pilot'];
-  function genresFor(type) { return type === 'movie' ? GENRES.movie : type === 'tv' ? GENRES.tv : type === 'anime' ? GENRES.tv.filter(([id]) => id !== 16) : []; }
+  /* « Tout » : TMDB numérote différemment les genres des films et des séries. Valeur = genre film ; équivalent série, ou null (films seulement). */
+  const ALL_GENRES = [[28, 'Action', 10759], [12, 'Aventure', 10759], [16, 'Animation', 16], [35, 'Comédie', 35], [80, 'Crime', 80], [99, 'Documentaire', 99],
+    [18, 'Drame', 18], [10751, 'Familial', 10751], [14, 'Fantastique', 10765], [36, 'Histoire', null], [27, 'Horreur', null], [9648, 'Mystère', 9648],
+    [10749, 'Romance', null], [878, 'Science-fiction', 10765], [53, 'Thriller', null], [10752, 'Guerre', 10768], [37, 'Western', 37]];
+  function genresFor(type) {
+    if (type === 'all') return ALL_GENRES.map(([id, l, tv]) => [id, tv ? l : l + ' (films)']);
+    return type === 'movie' ? GENRES.movie : type === 'tv' ? GENRES.tv : type === 'anime' ? GENRES.tv.filter(([id]) => id !== 16) : [];
+  }
+  /* Numéro de genre TMDB à utiliser pour un type de contenu (null : ce genre n'existe pas pour ce type). */
+  function genreIdFor(f, type) {
+    if (!f.genre) return null;
+    const g = Number(f.genre);
+    if (f.type !== 'all' || type === 'movie') return g;
+    const e = ALL_GENRES.find(([id]) => id === g);
+    return e ? e[2] : null;
+  }
+  function addDays(iso, n) { const d = new Date(Date.parse(iso + 'T00:00:00Z') + n * 86400000); return d.toISOString().slice(0, 10); }
   function parseSearchFilters(params) {
     const p = isObj(params) ? params : {};
     const f = { type: SEARCH_TYPES.includes(p.type) ? p.type : 'all', status: 'any', from: '', to: '', genre: '', rating: '', sort: '' };
-    if ((f.type === 'tv' || f.type === 'anime') && (p.status === 'ended' || p.status === 'ongoing')) f.status = p.status;
+    if ((f.type === 'tv' || f.type === 'anime') && ['ended', 'airing', 'soon', 'later', 'ongoing'].includes(p.status)) f.status = p.status;
     const year = (v) => (/^\d{4}$/.test(String(v == null ? '' : v)) && Number(v) >= 1900 && Number(v) <= 2100 ? String(v) : '');
     f.from = year(p.from);
     f.to = year(p.to);
@@ -1104,7 +1297,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return 0;
   }
   function discoverRequests(f, page, today, level, onlyAvailable) {
-    const types = f.type === 'all' ? ['movie', 'tv'] : [f.type === 'movie' ? 'movie' : 'tv'];
+    const types = f.type === 'all' ? (f.genre && genreIdFor(f, 'tv') == null ? ['movie'] : ['movie', 'tv']) : [f.type === 'movie' ? 'movie' : 'tv'];
     return types.map((t) => {
       const movie = t === 'movie';
       const dateKey = movie ? 'primary_release_date' : 'first_air_date';
@@ -1112,7 +1305,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       if (!movie) params.include_null_first_air_dates = 'false';
       const genres = [];
       if (f.type === 'anime') { genres.push(16); params.with_original_language = 'ja'; }
-      if (f.genre) genres.push(Number(f.genre));
+      if (f.genre) genres.push(genreIdFor(f, t));
       if (genres.length) params.with_genres = genres.join(',');
       if (f.from) params[dateKey + '.gte'] = f.from + '-01-01';
       if (f.to) params[dateKey + '.lte'] = f.to + '-12-31' < today || f.sort !== 'newest' ? f.to + '-12-31' : today;
@@ -1122,13 +1315,18 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       else if (onlyAvailable && (!params[dateKey + '.lte'] || params[dateKey + '.lte'] > today)) params[dateKey + '.lte'] = today;
       const minVotes = minVotesFor(f, movie, level); // évite les notes gonflées par une poignée de votes
       if (minVotes) params['vote_count.gte'] = String(minVotes);
-      if (!movie && f.status !== 'any') params.with_status = f.status === 'ended' ? '3|4' : '0|2';
+      if (!movie && f.status === 'ended') params.with_status = '3|4';
+      if (!movie && ['ongoing', 'soon', 'later'].includes(f.status)) params.with_status = '0|1|2';
+      if (!movie && f.status === 'soon') { params['air_date.gte'] = today; params['air_date.lte'] = addDays(today, ANNOUNCE_SPLIT_DAYS); } // affiné ensuite avec la fiche
+      if (!movie && f.status === 'airing') { params['air_date.gte'] = today; params['air_date.lte'] = addDays(today, AIRING_DAYS); } // un épisode diffusé dans les 14 jours
       params.sort_by = f.sort === 'rating' ? 'vote_average.desc' : f.sort === 'newest' ? dateKey + '.desc' : f.sort === 'oldest' ? dateKey + '.asc' : 'popularity.desc';
       return { type: t, path: '/discover/' + t, params };
     });
   }
-  /* Filtre local (recherche par titre). productionStatus : statut TMDB de la série, nécessaire seulement pour le filtre de statut. */
-  function matchesFilters(item, f, productionStatus) {
+  /* Filtre local (recherche par titre). info : statut TMDB de la série (texte) ou { status, nextEpisode }, nécessaire seulement pour le filtre de statut. */
+  function matchesFilters(item, f, info, today) {
+    const productionStatus = isObj(info) ? info.status : info;
+    const airing = isObj(info) && !!today && isAiringSoon(info.nextEpisode, today);
     if (!item) return false;
     if (f.type === 'movie' && item.type !== 'movie') return false;
     if (f.type === 'tv' && item.type !== 'tv') return false;
@@ -1137,10 +1335,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if ((f.from || f.to) && !y) return false;
     if (f.from && y < f.from) return false;
     if (f.to && y > f.to) return false;
-    if (f.genre && !(Array.isArray(item.genreIds) && item.genreIds.includes(Number(f.genre)))) return false;
+    if (f.genre) { const gid = genreIdFor(f, item.type); if (gid == null || !(Array.isArray(item.genreIds) && item.genreIds.includes(gid))) return false; }
     if (f.rating && !(item.voteAverage >= Number(f.rating))) return false;
     if (f.status === 'ended' && !ENDED_STATUSES.includes(productionStatus)) return false;
+    if (f.status === 'airing' && !airing) return false;
     if (f.status === 'ongoing' && !ONGOING_STATUSES.includes(productionStatus)) return false;
+    if (f.status === 'soon' || f.status === 'later') {
+      const a = today ? announcedSeason(info, today) : null;
+      if (!a) return false;
+      const near = !!a.date && daysBetween(today, a.date) <= ANNOUNCE_SPLIT_DAYS;
+      if ((f.status === 'soon') !== near) return false;
+    }
     return true;
   }
   function sortResults(items, sort) {
@@ -1162,7 +1367,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   root.CrazyCore = Object.freeze({
     SAGAS, sagaKey, findSaga, sagaKeys, parseSagaParams, sagaParamsToQuery, sagaSections,
     availabilityOf, digitalReleased, isAvailable,
-    pickTrailer, pickGallery, genresFor, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
+    pickTrailer, pickGallery, pickProviders, isAiringSoon, announcedSeason, ANNOUNCE_SPLIT_DAYS, NEEDS_DETAIL_STATUSES, genresFor, genreIdFor, addDays, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
     normalizeSummary, normalizeDetail, normalizeSeason, isAnime, filterUpcoming,
@@ -1170,7 +1375,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     aggregateCounts, aggregateStatuses, episodeStatus, computeSeasonState, hasActivity, computeShowState, computeItemState, nextUpEpisode,
     emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
     startShow, toggleFlag, dismissLegacy, isPersonal,
-    personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
+    personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1212,6 +1417,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     t.watchlist = raw.watchlist === true;
     t.addedAt = validTime(raw.addedAt);
     t.lastActivityAt = validTime(raw.lastActivityAt);
+    if (validTime(raw.seenAt)) t.seenAt = validTime(raw.seenAt);
     if (pk.type === 'movie') {
       t.trackingStatus = isStatus(raw.trackingStatus) ? raw.trackingStatus : null;
       if (t.trackingStatus) t.inLibrary = true;
@@ -1245,6 +1451,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (raw.placeholder === true) m.placeholder = true;
     if (typeof raw.productionStatus === 'string') m.productionStatus = str(raw.productionStatus, 40);
     if (Array.isArray(raw.genres)) m.genres = raw.genres.filter((g) => typeof g === 'string').map((g) => str(g, 60)).slice(0, 6);
+    if (Number.isInteger(raw.runtime) && raw.runtime > 0 && raw.runtime < 2000) m.runtime = raw.runtime;
     if (pk.type === 'tv' && Array.isArray(raw.seasonSummaries)) {
       const seen = new Set();
       m.seasonSummaries = raw.seasonSummaries
@@ -1609,8 +1816,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     { id: 'top-movies', title: 'Films les mieux notés', path: '/movie/top_rated', type: 'movie' },
     { id: 'upcoming', title: 'Films à venir', path: '/movie/upcoming', params: { region: 'FR' }, type: 'movie', upcoming: true }
   ];
-  const LIST_ROUTES = ['library', 'favorites', 'watchlist', 'resume'];
-  const DETAIL_PARAMS = { append_to_response: 'recommendations,videos,images', include_video_language: 'fr,en,null', include_image_language: 'null,fr,en' };
+  const LIST_ROUTES = ['library', 'favorites', 'watchlist', 'resume', 'agenda', 'stats'];
+  const DETAIL_PARAMS = { append_to_response: 'recommendations,videos,images,watch/providers', include_video_language: 'fr,en,null', include_image_language: 'null,fr,en' };
 
   /* ===== Stockage local protégé ===== */
   const storage = (function () {
@@ -1640,7 +1847,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       seasonLoad: {},             // "clé#n" -> { status, error }
       busy: {}                    // opérations longues en cours
     },
-    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map(), sagas: {}, availability: new Map() }
+    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map(), sagas: {}, availability: new Map(), agenda: { status: 'idle', loaded: 0, total: 0, failed: 0 }, runtimes: { status: 'idle', loaded: 0, total: 0, tried: new Set() } }
   };
   let lastStamp = 0;
   function activityStamp() { const n = Date.now(); lastStamp = n > lastStamp ? n : lastStamp + 1; return lastStamp; }
@@ -2031,8 +2238,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     let next;
     try { next = change(before.track || C.emptyTrack(pk.type, pk.id)); } catch (err) { console.error(err); toast('Action impossible : ' + err.message, 'error'); return false; }
     if (C.isPersonal(next)) {                                     // 1. état
-      state.data.tracking[key] = next;
-      state.data.metadata[key] = buildMeta(key, before.meta);
+      const meta = buildMeta(key, before.meta);
+      const was = before.track ? C.computeItemState(pk.type, before.meta || meta, before.track).status : 'todo';
+      state.data.tracking[key] = C.stampSeen(next, was, C.computeItemState(pk.type, meta, next).status, Date.now());
+      state.data.metadata[key] = meta;
     } else {
       delete state.data.tracking[key];
       delete state.data.metadata[key];
@@ -2118,33 +2327,90 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     s.voteLevel = level;
     const lists = answers.map((json, i) => (Array.isArray(json.results) ? json.results : []).map((x) => C.normalizeSummary(x, reqs[i].type)).filter(Boolean));
-    return { items: C.mergeResults(lists, f.sort), totalPages: Math.min(500, Math.max(0, ...answers.map((j) => C.num(j.total_pages)))) };
+    const totalPages = Math.min(500, Math.max(0, ...answers.map((j) => C.num(j.total_pages))));
+    let items = C.mergeResults(lists, f.sort);
+    if (C.NEEDS_DETAIL_STATUSES.includes(f.status)) {
+      const statuses = await seriesInfo(items, f, signal);
+      const kept = items.filter((i) => C.matchesFilters(i, f, statuses[i.key], state.today));
+      return { items: kept, totalPages, hidden: items.length - kept.length };
+    }
+    return { items, totalPages };
   }
   async function textSearch(q, f, p, signal) {
     const path = f.type === 'movie' ? '/search/movie' : f.type === 'tv' || f.type === 'anime' ? '/search/tv' : '/search/multi';
     const json = await tmdb(path, { query: q, page: p, include_adult: 'false' }, { signal, noCache: true });
     const fallback = f.type === 'movie' ? 'movie' : f.type === 'all' ? null : 'tv';
     const all = (Array.isArray(json.results) ? json.results : []).map((r) => C.normalizeSummary(r, fallback)).filter(Boolean);
-    const statuses = {};
-    if (f.status !== 'any') { // le statut de diffusion n'est que dans la fiche : chargée pour les séries qui passent les autres filtres
-      const loose = Object.assign({}, f, { status: 'any' });
-      const todo = all.filter((i) => i.type === 'tv' && C.matchesFilters(i, loose));
-      let next = 0;
-      const worker = async () => {
-        while (next < todo.length) {
-          const it = todo[next++];
-          let d = state.cache.details.get(it.key);
-          if (!d) {
-            try { d = C.normalizeDetail(await tmdb('/tv/' + it.id, DETAIL_PARAMS, { signal }), 'tv'); } catch (err) { if (err && err.name === 'AbortError') throw err; d = null; }
-            if (d) state.cache.details.set(it.key, d);
-          }
-          if (d) statuses[it.key] = d.productionStatus;
-        }
-      };
-      await Promise.all([worker(), worker(), worker(), worker()]);
-    }
-    const items = all.filter((i) => C.matchesFilters(i, f, statuses[i.key]));
+    const statuses = f.status !== 'any' ? await seriesInfo(all, f, signal) : {};
+    const items = all.filter((i) => C.matchesFilters(i, f, statuses[i.key], state.today));
     return { items, totalPages: C.num(json.total_pages), hidden: all.length - items.length };
+  }
+  /* Le statut de diffusion et les saisons annoncées ne sont que dans la fiche : chargée (4 à la fois, en cache) pour les séries qui passent les autres filtres. */
+  async function seriesInfo(items, f, signal) {
+    const statuses = {};
+    const loose = Object.assign({}, f, { status: 'any' });
+    const todo = items.filter((i) => i.type === 'tv' && C.matchesFilters(i, loose));
+    let next = 0;
+    const worker = async () => {
+      while (next < todo.length) {
+        const it = todo[next++];
+        let d = state.cache.details.get(it.key);
+        if (!d) {
+          try { d = C.normalizeDetail(await tmdb('/tv/' + it.id, DETAIL_PARAMS, { signal }), 'tv'); } catch (err) { if (err && err.name === 'AbortError') throw err; d = null; }
+          if (d) state.cache.details.set(it.key, d);
+        }
+        if (d) statuses[it.key] = { status: d.productionStatus, nextEpisode: d.nextEpisode, seasons: d.seasonSummaries };
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    return statuses;
+  }
+
+  /* Fiche complète chargée hors de la page Fiche (calendrier, durées) : mise en cache, métadonnées enregistrées mises à jour. */
+  async function fetchDetail(key) {
+    const pk = C.parseKey(key);
+    const d = C.normalizeDetail(await tmdb('/' + pk.type + '/' + pk.id, DETAIL_PARAMS), pk.type);
+    if (!d) throw new TmdbError('invalid');
+    state.cache.details.set(key, d);
+    rememberSummary(d);
+    if (C.isPersonal(getTrack(key))) state.data.metadata[key] = buildMeta(key, state.data.metadata[key] || null);
+    return d;
+  }
+  async function runPool(keys, size, onEach) {
+    let next = 0;
+    const worker = async () => { while (next < keys.length) { const k = keys[next++]; let ok = true; try { await fetchDetail(k); } catch (err) { ok = false; } onEach(k, ok); } };
+    await Promise.all(Array.from({ length: Math.min(size, keys.length) }, worker));
+  }
+  /* Calendrier : fiches des séries de ma liste et des films pas encore sortis (6 à la fois). */
+  async function loadAgenda(force) {
+    const st = state.cache.agenda;
+    if (st.status === 'loading' || !currentKey()) return;
+    const today = state.today;
+    const keys = C.personalEntries(state.data)
+      .filter((e) => e.type === 'tv' || (e.status !== 'seen' && (!e.meta.date || e.meta.date >= today)))
+      .map((e) => e.key).filter((k) => force || !state.cache.details.has(k));
+    Object.assign(st, { status: 'loading', loaded: 0, total: keys.length, failed: 0 });
+    if (state.renderedView === 'agenda') renderAgendaBody();
+    await runPool(keys, 6, (k, ok) => { st.loaded++; if (!ok) st.failed++; if (st.loaded % 6 === 0) renderAgendaProgress(); });
+    st.status = 'ready';
+    if (keys.length) persist();
+    if (state.renderedView === 'agenda') renderAgendaBody();
+  }
+  /* Statistiques : durée manquante (anciennes données) récupérée une fois par session, 4 fiches à la fois. */
+  async function fillRuntimes() {
+    const st = state.cache.runtimes;
+    if (st.status === 'loading' || !currentKey()) return;
+    const keys = C.personalEntries(state.data)
+      .filter((e) => !e.meta.runtime && !st.tried.has(e.key) && (e.type === 'movie' ? e.status === 'seen' : e.state.seenEpisodes > 0))
+      .map((e) => e.key);
+    if (!keys.length) return;
+    keys.forEach((k) => st.tried.add(k));
+    Object.assign(st, { status: 'loading', loaded: 0, total: keys.length });
+    if (state.renderedView === 'stats') renderView();
+    await runPool(keys, 4, () => { st.loaded++; const el = document.getElementById('runtime-progress'); if (el) el.textContent = runtimeProgressText(); });
+    st.status = 'ready';
+    persist();
+    if (state.renderedView === 'stats') renderView();
   }
 
   /* Sagas : un résumé TMDB par titre (6 requêtes à la fois, mises en cache). Les échecs sont comptés, pas bloquants. */
@@ -2442,6 +2708,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       commit(key, () => C.emptyTrack(pk.type, pk.id), { undo: '« ' + title + ' » retiré de ta liste (progression, favori et watchlist).' });
     },
     'retry-section'(el) { const sec = HOME_SECTIONS.find((s) => s.id === el.dataset.section); if (sec) loadHomeSection(sec, true); },
+    'agenda-refresh'() { loadAgenda(true); },
     'retry-detail'() { if (state.route.name === 'detail') loadDetail(state.route, true); },
     'retry-search'() { startSearch(state.ui.search.q, state.ui.search.filters, 1); },
     'search-more'() { const s = state.ui.search; startSearch(s.q, s.filters, s.page + 1); },
@@ -2801,7 +3068,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const year = (name, label, value, ph) => '<label class="filter filter-year"><span>' + label + '</span><input class="input" type="number" inputmode="numeric" min="1900" max="2100" step="1" placeholder="' + ph + '" value="' + value + '" data-change="search-filter" data-filter="' + name + '"></label>';
     const series = f.type === 'tv' || f.type === 'anime';
     const genres = C.genresFor(f.type);
-    return (series ? select('status', 'Statut', [['any', 'Tous'], ['ended', 'Terminés'], ['ongoing', 'Pas terminés']], f.status) : '') +
+    return (series ? select('status', 'Statut', [['any', 'Tous'], ['ended', 'Terminés'], ['airing', 'En cours de diffusion'], ['soon', 'Saison annoncée < 6 mois'], ['later', 'Saison annoncée > 6 mois ou sans date'], ['ongoing', 'Pas terminés (tous)']], f.status) : '') +
       year('from', 'Depuis l’année', f.from, '1990') + year('to', 'Jusqu’à l’année', f.to, String(new Date().getFullYear())) +
       (genres.length ? select('genre', 'Genre', [['', 'Tous']].concat(genres.map(([id, l]) => [String(id), l])), f.genre) : '') +
       select('rating', 'Note TMDB', [['', 'Toutes'], ['6', '6 et plus'], ['7', '7 et plus'], ['8', '8 et plus']], f.rating) +
@@ -2813,7 +3080,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const parts = [];
     const typeLabel = { movie: 'Films', tv: 'Séries', anime: 'Anime' }[f.type];
     if (typeLabel) parts.push(typeLabel);
-    if (f.status !== 'any') parts.push(f.status === 'ended' ? 'terminés' : 'pas terminés');
+    if (f.status !== 'any') parts.push({ ended: 'terminés', airing: 'en cours de diffusion', soon: 'saison annoncée dans moins de 6 mois', later: 'saison annoncée dans plus de 6 mois ou sans date', ongoing: 'pas terminés' }[f.status]);
     if (f.from && f.to) parts.push(f.from === f.to ? 'sortis en ' + f.from : 'sortis de ' + f.from + ' à ' + f.to);
     else if (f.from) parts.push('sortis depuis ' + f.from);
     else if (f.to) parts.push('sortis jusqu’en ' + f.to);
@@ -2827,6 +3094,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     ['Séries terminées, 8 et plus', { type: 'tv', status: 'ended', rating: '8', sort: 'rating' }],
     ['Films les mieux notés depuis 2020', { type: 'movie', from: '2020', sort: 'rating' }],
     ['Anime récents', { type: 'anime', sort: 'newest' }],
+    ['Anime en cours de diffusion', { type: 'anime', status: 'airing' }],
+    ['Séries à rattraper avant leur prochaine saison', { type: 'tv', status: 'later', sort: 'rating' }],
     ['Science-fiction (séries)', { type: 'tv', genre: '10765' }],
     ['Films d’horreur populaires', { type: 'movie', genre: '27' }]
   ];
@@ -2846,7 +3115,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const loadingMore = s.status === 'loading-more';
     const more = s.page < s.totalPages ? '<div class="row" style="justify-content:center;margin-top:16px"><button type="button" class="btn" data-action="search-more"' + (loadingMore ? ' disabled' : '') + '>' +
       (loadingMore ? 'Chargement…' : s.mode === 'text' && s.hidden ? 'Chercher plus loin' : 'Plus de résultats') + '</button></div>' : '';
-    const hiddenNote = s.mode === 'text' && s.hidden ? ' · ' + s.hidden + ' autre(s) titre(s) écarté(s) par tes filtres' : '';
+    const hiddenNote = s.hidden ? ' · ' + s.hidden + ' autre(s) titre(s) écarté(s) par tes filtres' + (s.mode === 'discover' ? ' (vérifiés sur leur fiche)' : '') : '';
     const sortNote = s.mode === 'text' && f.sort && f.sort !== 'popular' ? ' · tri appliqué aux résultats chargés' : '';
     const votes = s.mode === 'discover' && (f.sort === 'rating' || f.rating) ? C.minVotesFor(f, f.type === 'movie', s.voteLevel) : 0;
     const voteNote = votes ? (s.voteLevel ? ' · peu de votes sur cette période : titres notés par au moins ' + votes + ' personnes' : ' · titres notés par au moins ' + votes + ' personnes') : '';
@@ -2877,8 +3146,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const rows = C.computeLibrary(state.data, { list, status, type: prefs.libraryType, sort: prefs.librarySort });
     const total = C.computeLibrary(state.data, { list }).length;
     const count = (st) => (st === 'all' ? base.length : base.filter((e) => e.status === st).length);
-    const tabs = '<nav class="tabs" aria-label="Mes listes">' + [['library', 'Bibliothèque'], ['favorites', 'Favoris'], ['watchlist', 'Watchlist']].map(([r, l]) =>
-      '<a href="#' + r + '"' + (r === name ? ' aria-current="page"' : '') + '>' + l + '</a>').join('') + '</nav>';
+    const tabs = listTabsHtml(name);
     const filters = [['all', 'Tous'], ['seen', 'Vu'], ['progress', 'En cours'], ['todo', 'À voir']].map(([v, l]) =>
       '<button type="button" class="chip chip-btn" data-action="lib-status" data-status="' + v + '" aria-pressed="' + (status === v) + '">' + l + ' (' + count(v) + ')</button>').join('');
     const select = (id, change, label, current, options) => '<label class="visually-hidden" for="' + id + '">' + label + '</label><select id="' + id + '" class="select" data-change="' + change + '">' +
@@ -2897,6 +3165,76 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       select('lib-type', 'lib-type', 'Type de contenu', prefs.libraryType, [['all', 'Tous types'], ['movie', 'Films'], ['tv', 'Séries / anime']]) +
       select('lib-sort', 'lib-sort', 'Tri', prefs.librarySort, [['activity', 'Activité récente'], ['added', 'Ajout récent'], ['title', 'Titre (A → Z)'], ['rating', 'Note TMDB']]) +
       '</div>' + body;
+  }
+
+  /* ----- À venir pour moi ----- */
+  function agendaHtml() {
+    const head = '<div class="page-head"><div><h1>À venir</h1><p>Les prochains épisodes des séries et anime de ta liste, et les sorties des films que tu n’as pas encore vus.</p></div>' +
+      '<button type="button" class="btn btn-sm" data-action="agenda-refresh">↻ Actualiser</button></div>';
+    if (!currentKey()) return head + emptyHtml('Clé TMDB manquante.', 'Ajoute ta clé TMDB dans Réglages pour voir les prochaines sorties.', { href: '#settings', label: 'Ouvrir les Réglages' });
+    return head + '<div id="agenda-body">' + agendaBodyHtml() + '</div>';
+  }
+  function agendaProgressText() { const st = state.cache.agenda; return 'Mise à jour depuis TMDB… ' + st.loaded + ' / ' + st.total; }
+  function renderAgendaProgress() { const el = document.getElementById('agenda-progress'); if (el) el.textContent = agendaProgressText(); }
+  function renderAgendaBody() { const el = document.getElementById('agenda-body'); if (el) { el.innerHTML = agendaBodyHtml(); checkAvailability(); } }
+  function agendaBodyHtml() {
+    const st = state.cache.agenda;
+    const list = C.computeAgenda(state.data, (k) => state.cache.details.get(k) || null, state.today);
+    const loading = st.status === 'loading' ? '<p class="hint" role="status" id="agenda-progress">' + agendaProgressText() + '</p>' : '';
+    const failed = st.status === 'ready' && st.failed ? '<div class="error-box" role="alert"><p>' + st.failed + ' titre(s) n’ont pas pu être vérifiés auprès de TMDB.</p><button type="button" class="btn btn-sm" data-action="agenda-refresh">Réessayer</button></div>' : '';
+    if (!list.length) {
+      if (st.status !== 'ready') return loading + '<div class="season-loading" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>';
+      return failed + emptyHtml('Rien d’annoncé pour l’instant.', 'Ajoute des séries ou des films à venir à ta watchlist pour retrouver ici leurs prochaines sorties.', { href: '#search', label: 'Rechercher' });
+    }
+    return loading + failed + C.agendaGroups(list, state.today).map((g) =>
+      '<section class="agenda-group" data-group="' + g.id + '"><h2>' + esc(g.label) + ' <span class="count">' + g.items.length + '</span></h2><ol class="agenda-list">' +
+      g.items.map(agendaItemHtml).join('') + '</ol></section>').join('');
+  }
+  function agendaItemHtml(it) {
+    return '<li class="agenda-item" data-item-key="' + it.key + '"><a href="#detail/' + it.type + '/' + it.id + '">' +
+      '<span class="agenda-date">' + (it.date ? '<strong>' + esc(C.formatDate(it.date)) + '</strong><span>' + esc(C.relativeDay(it.date, state.today)) + '</span>' : '<strong>Date à venir</strong>') + '</span>' +
+      '<span class="agenda-thumb poster">' + posterHtml(it.meta, 'w154') + '</span>' +
+      '<span class="agenda-text"><strong>' + esc(it.title) + '</strong><span>' + esc(it.what) + '</span><span class="muted">' + (C.isAnime(it.meta) ? 'Anime' : TYPE_LABELS[it.type]) + '</span></span></a></li>';
+  }
+
+  /* ----- Statistiques détaillées ----- */
+  function formatDuration(min) {
+    if (!min) return '0 h';
+    const h = Math.round(min / 60);
+    return h < 1 ? min + ' min' : h.toLocaleString('fr-FR') + ' h';
+  }
+  function runtimeProgressText() { const st = state.cache.runtimes; return 'Récupération des durées depuis TMDB… ' + st.loaded + ' / ' + st.total; }
+  function listTabsHtml(name) {
+    return '<nav class="tabs" aria-label="Mes listes">' + [['library', 'Bibliothèque'], ['favorites', 'Favoris'], ['watchlist', 'Watchlist'], ['stats', 'Statistiques']].map(([r, l]) =>
+      '<a href="#' + r + '"' + (r === name ? ' aria-current="page"' : '') + '>' + l + '</a>').join('') + '</nav>';
+  }
+  function statsHtml() {
+    const s = C.computeStats(state.data);
+    const i = C.computeInsights(state.data, state.today);
+    const head = listTabsHtml('stats') + '<div class="page-head"><div><h1>Statistiques</h1><p>Ce que tu as regardé, d’après ton suivi dans Crazy Liste.</p></div></div>';
+    if (!s.total) return head + emptyHtml('Pas encore de statistiques.', 'Marque des films ou des épisodes comme vus pour les voir apparaître ici.', { href: '#home', label: 'Explorer l’accueil' });
+    const days = i.totalMinutes / 1440;
+    const tiles = [
+      ['time', formatDuration(i.totalMinutes), 'devant l’écran', days >= 1 ? 'soit ' + (days < 10 ? days.toFixed(1).replace('.', ',') : Math.round(days)) + ' jours' : ''],
+      ['movies', String(i.moviesSeen), 'film' + (i.moviesSeen > 1 ? 's' : '') + ' vu' + (i.moviesSeen > 1 ? 's' : ''), formatDuration(i.movieMinutes)],
+      ['episodes', i.episodes.toLocaleString('fr-FR'), 'épisode' + (i.episodes > 1 ? 's' : '') + ' vu' + (i.episodes > 1 ? 's' : ''), formatDuration(i.episodeMinutes)],
+      ['shows', String(i.showsDone), 'série' + (i.showsDone > 1 ? 's' : '') + ' terminée' + (i.showsDone > 1 ? 's' : ''), i.showsStarted + ' en cours']
+    ];
+    const rt = state.cache.runtimes;
+    const note = rt.status === 'loading' ? '<p class="hint" role="status" id="runtime-progress">' + runtimeProgressText() + '</p>'
+      : i.unknownRuntime ? '<p class="hint">Durée inconnue sur TMDB pour ' + i.unknownRuntime + ' titre(s) : non comptés dans le temps total.</p>' : '';
+    const maxG = Math.max(1, ...i.topGenres.map((g) => g.count));
+    const genres = i.topGenres.length ? '<ol class="bars">' + i.topGenres.map((g) => '<li><span class="bar-label">' + esc(g.name) + '</span><span class="bar-track"><span class="bar-fill" style="width:' +
+      Math.round((g.count / maxG) * 100) + '%"></span></span><span class="bar-value">' + g.count + '</span></li>').join('') + '</ol>' : '<p class="muted">Pas encore assez de titres vus.</p>';
+    const maxM = Math.max(1, ...i.months.map((m) => m.count));
+    const months = '<div class="month-chart" role="img" aria-label="Titres terminés par mois sur 12 mois : ' + esc(i.months.map((m) => m.label + ' ' + m.count).join(', ')) + '">' +
+      i.months.map((m) => '<div class="month" data-month="' + m.key + '"><span class="month-value">' + (m.count || '') + '</span><span class="month-bar"><span style="height:' +
+        Math.round((m.count / maxM) * 100) + '%"></span></span><span class="month-label">' + esc(m.label) + '</span></div>').join('') + '</div>';
+    return head + '<div class="insight-tiles">' + tiles.map(([id, v, l, sub]) => '<div class="insight" data-insight="' + id + '"><strong>' + esc(v) + '</strong><span>' + esc(l) + '</span>' +
+      (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>').join('') + '</div>' + note +
+      '<div class="insight-grid"><section class="panel"><h2>Genres préférés</h2><p class="hint">Parmi les titres vus ou en cours.</p>' + genres + '</section>' +
+      '<section class="panel"><h2>Titres terminés par mois</h2><p class="hint">Films vus et séries terminées sur les 12 derniers mois.' +
+      (i.approxDates ? ' Pour les titres terminés avant cette fonctionnalité, la date utilisée est celle de ta dernière activité.' : '') + '</p>' + months + '</section></div>';
   }
 
   /* ----- Reprendre (page + panneau : même liste calculée) ----- */
@@ -3085,7 +3423,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (d && d.genres.length) facts.push(['Genres', d.genres.join(', ')]);
     if (d && d.runtime) facts.push([isTv ? 'Durée d’un épisode' : 'Durée', formatRuntime(d.runtime)]);
     if (isTv && d) facts.push(['Saisons', String(d.seasonSummaries.filter((s) => s.number > 0).length)], ['Épisodes', d.numberOfEpisodes ? String(d.numberOfEpisodes) : '—']);
-    if (prod) facts.push(['Statut TMDB', C.productionLabel(prod, d ? d.nextEpisode : null)]);
+    if (prod) facts.push(['Statut TMDB', C.productionLabel(prod, d ? d.nextEpisode : null, state.today)]);
     const notice = d ? '' : ui.status === 'error'
       ? '<div class="error-box" role="alert" style="margin-bottom:14px"><p>Affichage hors ligne à partir de tes données enregistrées. ' + esc(ui.error.message) + '</p><button type="button" class="btn btn-sm" data-action="retry-detail">Réessayer</button></div>'
       : '<p class="hint" role="status">Mise à jour depuis TMDB…</p>';
@@ -3104,12 +3442,25 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p>' +
         (d && d.trailer ? '<div class="detail-cta"><button type="button" class="btn btn-primary" data-action="trailer-open" data-key="' + key + '"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Bande-annonce' + (d.trailer.lang === 'fr' ? '' : ' (VO)') + '</button></div>' : '') +
         '<dl class="facts">' + facts.map(([k, v]) => '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>').join('') + '</dl>' +
+        providersHtml(d) +
         '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div>' +
       '</div></div></section>' +
       (d && d.gallery.length ? '<section class="gallery-section" aria-labelledby="gallery-title"><div class="gallery-head"><h2 id="gallery-title">Images</h2><span class="hint">Visuels officiels du titre, sans images d’épisodes pour éviter les spoilers.</span></div>' +
         '<div class="gallery">' + d.gallery.map((p, i) => '<button type="button" class="gallery-item" data-action="gallery-open" data-key="' + key + '" data-index="' + i + '" aria-label="Agrandir l’image ' + (i + 1) + ' sur ' + d.gallery.length + '">' +
           '<img src="' + esc(img(p, 'w780')) + '" alt="" loading="lazy" decoding="async"></button>').join('') + '</div></section>' : '') +
       (isTv ? '<section id="seasons-section" aria-labelledby="seasons-title">' + seasonsHtml(key) + '</section>' : '') + '</article>';
+  }
+  function providersHtml(d) {
+    if (!d) return '';
+    const p = d.providers;
+    const head = '<h2 class="where-title">Où regarder en France</h2>';
+    if (!p) return '<section class="where" aria-label="Où regarder en France">' + head + '<p class="hint">' +
+      (d.date && d.date > state.today ? 'Pas encore sorti : aucune offre pour l’instant.' : 'Aucune offre de streaming, de location ou d’achat connue en France pour l’instant.') + '</p></section>';
+    return '<section class="where" aria-label="Où regarder en France">' + head + p.groups.map((g) =>
+      '<div class="where-group" data-kind="' + g.kind + '"><span class="where-kind">' + g.label + '</span><ul class="where-list">' + g.list.map((x) =>
+        '<li class="provider" title="' + esc(x.name) + '">' + (x.logo ? '<img src="' + esc(img(x.logo, 'w92')) + '" alt="" loading="lazy" decoding="async">' : '') + '<span>' + esc(x.name) + '</span></li>').join('') +
+      '</ul></div>').join('') +
+      '<p class="hint">Offres en France selon JustWatch, via TMDB' + (p.link ? ' · <a href="' + esc(p.link) + '" target="_blank" rel="noopener noreferrer">liens vers les plateformes</a>' : '') + '.</p></section>';
   }
   function trackBoxHtml(key) {
     const pk = C.parseKey(key);
@@ -3233,7 +3584,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       const ne = d.nextEpisode;
       parts.push(box('Prochain épisode annoncé', ne
         ? '<p><strong>' + C.episodeLabel(ne.season, ne.episode) + '</strong>' + (ne.name ? ' — ' + esc(ne.name) : '') + '</p><p class="muted">' + (ne.airDate ? 'Diffusion prévue le ' + C.formatDate(ne.airDate) : 'Date de diffusion non communiquée') + '</p>'
-        : '<p>Aucun prochain épisode annoncé par TMDB.</p><p class="muted">Statut TMDB : ' + esc(C.productionLabel(d.productionStatus, d.nextEpisode) || 'inconnu') + '</p>'));
+        : '<p>Aucun prochain épisode annoncé par TMDB.</p><p class="muted">Statut TMDB : ' + esc(C.productionLabel(d.productionStatus, d.nextEpisode, state.today) || 'inconnu') + '</p>'));
       const le = d.lastEpisode;
       if (le) parts.push(box('Dernier épisode diffusé', '<p>' + C.episodeLabel(le.season, le.episode) + (le.name ? ' — ' + esc(le.name) : '') + '</p>' + (le.airDate ? '<p class="muted">' + C.formatDate(le.airDate) + '</p>' : '')));
       const t = getTrack(r.key);
@@ -3365,6 +3716,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     pendingTop = false;
     if (route.name === 'home' && currentKey()) HOME_SECTIONS.forEach((sec) => loadHomeSection(sec, false));
     else if (route.name === 'detail') loadDetail(route, false);
+    else if (route.name === 'agenda') loadAgenda(false);
+    else if (route.name === 'stats') fillRuntimes();
     else if (route.name === 'saga' && C.findSaga(route.sagaId) && currentKey()) loadSaga(C.findSaga(route.sagaId), C.parseSagaParams(route.params).extra);
   }
   function renderView() {
@@ -3378,6 +3731,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       case 'library': case 'favorites': case 'watchlist': html = listPageHtml(r.name); title = LIST_TITLES[r.name][0]; break;
       case 'settings': html = settingsHtml(); title = 'Réglages'; break;
       case 'sagas': html = sagasHtml(); title = 'Sagas'; break;
+      case 'agenda': html = agendaHtml(); title = 'À venir'; break;
+      case 'stats': html = statsHtml(); title = 'Statistiques'; break;
       case 'saga': { const sg = C.findSaga(r.sagaId); html = sagaHtml(); title = sg ? sg.name : 'Saga introuvable'; break; }
       case 'invalid': html = notFoundHtml('Lien de fiche invalide', 'Le type ou l’identifiant de ce lien n’est pas reconnu (attendu : #detail/movie/123 ou #detail/tv/123).'); title = 'Lien invalide'; break;
       default: html = notFoundHtml('Page introuvable', 'Cette adresse ne correspond à aucune page de Crazy Liste.'); title = 'Page introuvable';

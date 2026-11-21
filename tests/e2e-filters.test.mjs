@@ -63,7 +63,7 @@ describe('Découverte dans la page Recherche', () => {
     await page.locator('[data-action="search-type"][data-type="anime"]').click();
     await page.waitForFunction(() => location.hash === '#search?type=anime');
     await page.waitForSelector('#search-results .card');
-    assert.deepEqual(await titles(page), ['Anime Bêta', 'Anime Oméga', 'Anime Sigma'], 'uniquement les anime japonais (pas le dessin animé américain)');
+    assert.deepEqual(await titles(page), ['Anime Bêta', 'Anime Oméga', 'Anime Sigma', 'Anime Bientôt', 'Anime Patience', 'Anime Mystère'], 'uniquement les anime japonais (pas le dessin animé américain)');
     await page.selectOption('select[data-filter="status"]', 'ended');
     await page.waitForFunction(() => location.hash === '#search?type=anime&status=ended');
     await settle(page);
@@ -140,7 +140,7 @@ describe('Découverte dans la page Recherche', () => {
   it('mieux notés sur une période récente : le seuil de votes s’assouplit au lieu de ne rien montrer', T, async () => {
     const { page, errors, context, mock } = await openApp(browser, { hash: '#search?type=anime&from=2015&sort=rating' });
     await page.waitForSelector('#search-results .card');
-    assert.deepEqual(await titles(page), ['Anime Oméga', 'Anime Bêta'], 'anime sortis depuis 2015, triés par note');
+    assert.deepEqual(await titles(page), ['Anime Oméga', 'Anime Patience', 'Anime Bientôt', 'Anime Bêta', 'Anime Mystère'], 'anime sortis depuis 2015, triés par note');
     const thresholds = mock.state.requests.filter((r) => r.startsWith('/discover/tv')).map((r) => new URLSearchParams(r.split('?')[1]).get('vote_count.gte'));
     assert.deepEqual(thresholds, ['300', '100', '30'], 'moins de 10 titres : seuils assouplis jusqu’au plus souple');
     assert.match(await page.locator('#search-results').textContent(), /Peu de votes sur cette période : titres notés par au moins 30 personnes/);

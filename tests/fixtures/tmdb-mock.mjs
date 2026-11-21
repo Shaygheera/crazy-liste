@@ -41,10 +41,23 @@ for (const id of range(205, 209)) SHOWS[id] = { base: show(id, 'Série Rapide ' 
 SHOWS[210] = { base: show(210, 'Anime Oméga', { original_language: 'ja', genre_ids: [16, 10765], origin_country: ['JP'], first_air_date: '2015-04-05', vote_average: 8.7, vote_count: 900 }), status: 'Returning Series', seasons: [[1, range(1, 12)]] };
 SHOWS[211] = { base: show(211, 'Anime Sigma', { original_language: 'ja', genre_ids: [16, 18], origin_country: ['JP'], first_air_date: '2008-10-02', vote_average: 8.9, vote_count: 1500 }), status: 'Ended', seasons: [[1, range(1, 24)]] };
 SHOWS[212] = { base: show(212, 'Dessin animé Kappa', { original_language: 'en', genre_ids: [16, 35], first_air_date: '2012-01-01', vote_average: 8.2 }), status: 'Ended', seasons: [[1, range(1, 10)]] };
+// Diffusion relative au jour du test : 210 en cours (épisode dans 3 jours), 213 saison annoncée dans 60 jours, 214 dans 300 jours, 215 saison annoncée sans date.
+SHOWS[210].next = { season_number: 1, episode_number: 12, name: 'Épisode 12', air_date: daysAgo(-3) };
+SHOWS[213] = { base: show(213, 'Anime Bientôt', { original_language: 'ja', genre_ids: [16, 10759], origin_country: ['JP'], first_air_date: '2020-01-10', vote_average: 8.1 }), status: 'Returning Series', seasons: [[1, range(1, 12)], [2, range(1, 12)]],
+  next: { season_number: 3, episode_number: 1, name: 'Épisode 1', air_date: daysAgo(-60) } };
+SHOWS[214] = { base: show(214, 'Anime Patience', { original_language: 'ja', genre_ids: [16, 18], origin_country: ['JP'], first_air_date: '2018-04-01', vote_average: 8.4 }), status: 'Returning Series', seasons: [[1, range(1, 24)]],
+  next: { season_number: 2, episode_number: 1, name: 'Épisode 1', air_date: daysAgo(-300) } };
+SHOWS[215] = { base: show(215, 'Anime Mystère', { original_language: 'ja', genre_ids: [16, 9648], origin_country: ['JP'], first_air_date: '2017-04-01', vote_average: 7.6 }), status: 'Returning Series', seasons: [[1, range(1, 10)], [2, []]], undatedSeason: 2 };
+// Offres en France (watch/providers) : film 101 en abonnement et en location.
+export const PROVIDERS = {
+  'movie-101': { FR: { link: 'https://www.themoviedb.org/movie/101/watch?locale=FR',
+    flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }, { provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }],
+    rent: [{ provider_id: 2, provider_name: 'Apple TV', logo_path: '/apple.jpg', display_priority: 3 }], buy: [] }, US: { flatrate: [{ provider_id: 9, provider_name: 'Prime Video US', logo_path: '/p.jpg', display_priority: 1 }] } }
+};
 const STATUS_CODES = { 'Returning Series': '0', Planned: '1', 'In Production': '2', Ended: '3', Canceled: '4', Pilot: '5' };
 // Applique les paramètres de /discover comme TMDB (sous-ensemble utilisé par l'application).
 function discover(kind, q) {
-  const items = kind === 'tv' ? Object.values(SHOWS).map((s) => ({ ...s.base, _status: s.status })) : Object.values(MOVIES).map((m) => ({ ...m }));
+  const items = kind === 'tv' ? Object.values(SHOWS).map((s) => ({ ...s.base, _status: s.status, _next: s.next ? s.next.air_date : '' })) : Object.values(MOVIES).map((m) => ({ ...m }));
   const dateKey = kind === 'tv' ? 'first_air_date' : 'release_date';
   const qDate = kind === 'tv' ? 'first_air_date' : 'primary_release_date';
   let out = items.filter((it) => {
@@ -54,6 +67,8 @@ function discover(kind, q) {
     if (q.get('with_status') && !q.get('with_status').split('|').includes(STATUS_CODES[it._status])) return false;
     if (q.get(qDate + '.gte') && it[dateKey] < q.get(qDate + '.gte')) return false;
     if (q.get(qDate + '.lte') && it[dateKey] > q.get(qDate + '.lte')) return false;
+    if (q.get('air_date.gte') && !(it._next && it._next >= q.get('air_date.gte'))) return false;
+    if (q.get('air_date.lte') && !(it._next && it._next <= q.get('air_date.lte'))) return false;
     if (q.get('vote_average.gte') && it.vote_average < Number(q.get('vote_average.gte'))) return false;
     if (q.get('vote_count.gte') && it.vote_count < Number(q.get('vote_count.gte'))) return false;
     return true;
@@ -62,7 +77,7 @@ function discover(kind, q) {
   if (sort === 'vote_average.desc') out.sort((a, b) => b.vote_average - a.vote_average);
   else if (sort.endsWith('date.desc')) out.sort((a, b) => b[dateKey].localeCompare(a[dateKey]));
   else if (sort.endsWith('date.asc')) out.sort((a, b) => a[dateKey].localeCompare(b[dateKey]));
-  return page(out.map(({ _status, ...rest }) => rest));
+  return page(out.map(({ _status, _next, ...rest }) => rest));
 }
 
 const PERSON = { id: 9001, media_type: 'person', name: 'Personne Test Alpha', known_for_department: 'Acting' };
@@ -72,7 +87,7 @@ const page = (results, total = 1) => ({ page: 1, results, total_pages: total, to
 
 function showDetail(id) {
   const s = SHOWS[id];
-  const seasons = s.seasons.map(([n, eps]) => ({ season_number: n, name: n === 0 ? 'Épisodes spéciaux' : 'Saison ' + n, air_date: n === 1 ? '2019-07-25' : n === 0 ? '2020-01-01' : '202' + n + '-01-10',
+  const seasons = s.seasons.map(([n, eps]) => ({ season_number: n, name: n === 0 ? 'Épisodes spéciaux' : 'Saison ' + n, air_date: s.undatedSeason === n ? null : n === 1 ? '2019-07-25' : n === 0 ? '2020-01-01' : '202' + n + '-01-10',
     episode_count: eps ? eps.length : (s.counts && s.counts[n]) || 0, id: id * 100 + n, poster_path: null }));
   return { ...s.base, status: s.status, in_production: s.status === 'Returning Series', seasons, number_of_seasons: seasons.filter((x) => x.season_number > 0).length,
     number_of_episodes: seasons.filter((x) => x.season_number > 0).reduce((n, x) => n + x.episode_count, 0), episode_run_time: [42], genres: [{ id: 18, name: 'Drame' }],
@@ -97,6 +112,7 @@ const SEARCH = {
   anime: { multi: [asShow(202), asShow(210), asShow(211), asShow(212), asMovie(104)], movie: [MOVIES[104]], tv: [SHOWS[202].base, SHOWS[210].base, SHOWS[211].base, SHOWS[212].base] },
   lent: { multi: [asMovie(102)], movie: [MOVIES[102]], tv: [], delay: 1500 },
   rapide: { multi: [asMovie(103)], movie: [MOVIES[103]], tv: [] },
+  saison: { multi: [asShow(210), asShow(213), asShow(214), asShow(215), asShow(211)], movie: [], tv: [210, 213, 214, 215, 211].map((id) => SHOWS[id].base) },
   sortie: { multi: [asMovie(130), asMovie(131), asMovie(122), asMovie(101), asShow(201)], movie: [MOVIES[130], MOVIES[131], MOVIES[122], MOVIES[101]], tv: [SHOWS[201].base] }
 };
 // Vidéos TMDB : film 101 avec VF et VO (la bande-annonce VF doit être choisie), série 201 en VO seulement, autres contenus sans vidéo.
@@ -167,6 +183,7 @@ export function createMock(options = {}) {
       const append = url.searchParams.get('append_to_response') || '';
       const out = { ...body };
       if (append.includes('videos')) out.videos = { results: VIDEOS[key] || [] };
+      if (append.includes('watch/providers')) out['watch/providers'] = { id: body.id, results: PROVIDERS[key] || {} };
       if (append.includes('images')) out.images = IMAGES[key] || { backdrops: [], posters: [], logos: [] };
       return out;
     };

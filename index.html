@@ -461,10 +461,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return 'bad';
   }
   function formatRating(v) { const n = num(v); return n > 0 ? n.toFixed(1).replace('.', ',') : '—'; }
-  /* « Returning Series » signifie seulement que la série n'est pas terminée : elle n'est « en cours de diffusion »
-     que si TMDB annonce un prochain épisode ; sinon, on attend une nouvelle saison (renouvelée ou non). */
+  /* « Returning Series » signifie seulement que TMDB n'a pas marqué la série comme terminée (statut tenu par la communauté,
+     parfois en retard) : elle n'est « en cours de diffusion » que si TMDB annonce un prochain épisode. On n'en déduit aucune suite. */
   function productionLabel(s, nextEpisode) {
-    if (s === 'Returning Series') return nextEpisode ? 'En cours de diffusion' : 'Pas terminée : prochaine saison attendue';
+    if (s === 'Returning Series') return nextEpisode ? 'En cours de diffusion' : 'Pas terminée selon TMDB · aucun épisode annoncé';
     return PRODUCTION_LABELS[s] || str(s, 40);
   }
   function episodeLabel(season, episode) { return 'S' + season + (episode == null ? '' : ' · É' + episode); }

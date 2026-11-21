@@ -1,0 +1,2700 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="dark light">
+<title>Crazy Liste</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235ad1e6'/%3E%3Ctext x='32' y='44' font-family='Arial' font-size='34' font-weight='900' text-anchor='middle' fill='%2304161b'%3ECL%3C/text%3E%3C/svg%3E">
+<script>
+  /* Thème appliqué avant l'affichage pour éviter un flash. */
+  (function () {
+    var theme = 'dark';
+    try { var raw = localStorage.getItem('crazy-liste-v1'); var p = raw && JSON.parse(raw).preferences; if (p && p.theme === 'light') theme = 'light'; } catch (e) { /* sauvegarde illisible : l'application le signalera */ }
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0e14; --bg-elev: #0f131b; --surface: #151a24; --surface-2: #1c2230; --surface-3: #262d3e;
+  --border: rgba(255,255,255,.08); --border-strong: rgba(255,255,255,.16);
+  --text: #eef2f8; --text-2: #b9c1cf; --muted: #8a94a7;
+  --accent: #5ad1e6; --accent-ink: #04161b; --accent-soft: rgba(90,209,230,.14);
+  --fav: #ff6b9a; --fav-soft: rgba(255,107,154,.15);
+  --watch: #b197fc; --watch-soft: rgba(177,151,252,.15);
+  --seen: #3ccf7a; --seen-soft: rgba(60,207,122,.14); --seen-ink: #03210e;
+  --progress: #f5b83d; --progress-soft: rgba(245,184,61,.14); --progress-ink: #2b1a00;
+  --todo: #93a6cc; --todo-soft: rgba(147,166,204,.12); --todo-ink: #0b1426;
+  --danger: #ff6b6b; --danger-soft: rgba(255,107,107,.13);
+  --r-top: #22c46d; --r-good: #82c341; --r-mid: #e8c33a; --r-low: #f08a2e; --r-bad: #e5534b; --r-none: #59627a;
+  --shadow: 0 12px 32px rgba(0,0,0,.38);
+  --radius-sm: 9px; --radius: 13px; --radius-lg: 18px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f5f9; --bg-elev: #eceff5; --surface: #ffffff; --surface-2: #eef1f6; --surface-3: #e2e7ef;
+  --border: rgba(16,24,40,.09); --border-strong: rgba(16,24,40,.18);
+  --text: #141b2b; --text-2: #3b4559; --muted: #5d6880;
+  --accent: #0b8fa6; --accent-ink: #ffffff; --accent-soft: rgba(11,143,166,.11);
+  --fav: #d6336c; --fav-soft: rgba(214,51,108,.1);
+  --watch: #6f4fd8; --watch-soft: rgba(111,79,216,.1);
+  --seen: #1f9d55; --seen-soft: rgba(31,157,85,.11); --seen-ink: #ffffff;
+  --progress: #c97a00; --progress-soft: rgba(201,122,0,.11); --progress-ink: #ffffff;
+  --todo: #4f6390; --todo-soft: rgba(79,99,144,.1); --todo-ink: #ffffff;
+  --danger: #d63939; --danger-soft: rgba(214,57,57,.1);
+  --shadow: 0 10px 28px rgba(20,30,50,.12);
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--font); overflow-x: hidden; }
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+button, input, select { font: inherit; color: inherit; }
+h1, h2, h3, h4 { line-height: 1.2; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.icon { width: 18px; height: 18px; flex: none; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip-link { position: absolute; left: 12px; top: -60px; z-index: 100; background: var(--accent); color: var(--accent-ink); padding: 8px 12px; border-radius: 8px; }
+.skip-link:focus { top: 12px; }
+
+/* ---------- Mise en page ---------- */
+.app { display: grid; grid-template-columns: 228px minmax(0, 1fr) 330px; grid-template-areas: "nav main side"; min-height: 100vh; }
+.sidebar { grid-area: nav; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding: 18px 14px; border-right: 1px solid var(--border); background: var(--bg-elev); }
+.main-col { grid-area: main; min-width: 0; display: flex; flex-direction: column; }
+.side-panel { grid-area: side; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 16px 14px; border-left: 1px solid var(--border); background: var(--bg-elev); }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; padding: 4px 6px; }
+.brand-logo { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), var(--watch)); color: #061015; font-weight: 900; font-size: .95rem; letter-spacing: -.02em; flex: none; }
+.brand-name { display: block; font-weight: 800; font-size: 1.12rem; letter-spacing: -.01em; }
+.brand-sub { display: block; font-size: .76rem; color: var(--muted); }
+.nav { display: grid; gap: 2px; }
+.nav a { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 10px; text-decoration: none; color: var(--text-2); font-weight: 600; font-size: .92rem; }
+.nav a:hover { background: var(--surface); color: var(--text); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.nav .count { margin-left: auto; min-width: 22px; padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: .72rem; font-weight: 700; text-align: center; line-height: 20px; }
+.nav .count:empty { display: none; }
+.sidebar-foot { margin-top: auto; display: grid; gap: 8px; }
+.sync-chip { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; font-size: .8rem; font-weight: 600; color: var(--text-2); text-decoration: none; background: var(--surface); }
+.sync-chip[hidden] { display: none; }
+.sync-chip:hover { color: var(--text); }
+.sync-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--muted); }
+.sync-ok .sync-dot { background: var(--seen); } .sync-warn .sync-dot { background: var(--progress); } .sync-err .sync-dot { background: var(--danger); }
+.sync-line { display: flex; align-items: center; gap: 9px; font-weight: 600; }
+.topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 12px 22px; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.topbar .brand { display: none; }
+.topbar .topbar-theme { display: none; }
+@media (max-width: 899px) { .topbar .topbar-theme { display: inline-flex; } .searchbar .btn { padding: 4px 8px; } }
+.searchbar { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; max-width: 720px; padding: 4px 4px 4px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border-strong); }
+.searchbar:focus-within { border-color: var(--accent); }
+.searchbar input { flex: 1 1 auto; min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; padding: 7px 0; font-size: .95rem; }
+.topbar > .brand, .topbar > .btn { flex: none; }
+.searchbar input::-webkit-search-cancel-button { cursor: pointer; }
+.view { padding: 20px 22px 40px; min-width: 0; outline: none; flex: 1; }
+.bottom-nav { display: none; }
+@media (max-width: 1279px) {
+  .app { grid-template-columns: 212px minmax(0, 1fr); grid-template-areas: "nav main" "nav side"; }
+  .side-panel { position: static; height: auto; border-left: 0; border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; padding: 16px 22px 28px; }
+}
+@media (max-width: 899px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "side"; }
+  .sidebar { display: none; }
+  .topbar { padding: 10px 14px; gap: 10px; }
+  .topbar .brand { display: flex; padding: 0; }
+  .topbar .brand-text { display: none; }
+  .view { padding: 16px 16px 28px; }
+  .side-panel { padding: 14px 16px 92px; grid-template-columns: minmax(0, 1fr); }
+  .bottom-nav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bg-elev); border-top: 1px solid var(--border); padding: 5px 4px calc(5px + env(safe-area-inset-bottom)); }
+  .bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 0; border-radius: 10px; text-decoration: none; color: var(--muted); font-size: .68rem; font-weight: 600; }
+  .bottom-nav a[aria-current="page"] { color: var(--accent); }
+  .bottom-nav .icon { width: 21px; height: 21px; }
+}
+
+/* ---------- Éléments communs ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font-size: .85rem; font-weight: 650; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background-color .12s, border-color .12s, color .12s; }
+.btn:hover { background: var(--surface-3); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+.btn-ghost { background: transparent; }
+.btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: transparent; }
+.btn-sm { min-height: 30px; padding: 4px 10px; font-size: .79rem; border-radius: 9px; }
+.btn-icon { width: 34px; padding: 0; }
+.btn-fav[aria-pressed="true"] { background: var(--fav-soft); border-color: var(--fav); color: var(--fav); }
+.btn-watch[aria-pressed="true"] { background: var(--watch-soft); border-color: var(--watch); color: var(--watch); }
+.btn.is-busy { opacity: .7; cursor: progress; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); font-size: .76rem; font-weight: 600; white-space: nowrap; }
+.chip-btn { cursor: pointer; padding: 6px 12px; font-size: .82rem; }
+.chip-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.status { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: .75rem; font-weight: 750; border: 1px solid transparent; white-space: nowrap; }
+.status::before { font-size: .8em; line-height: 1; }
+.status-todo { color: var(--todo); background: var(--todo-soft); border-color: color-mix(in srgb, var(--todo) 40%, transparent); }
+.status-todo::before { content: "○"; }
+.status-progress { color: var(--progress); background: var(--progress-soft); border-color: color-mix(in srgb, var(--progress) 45%, transparent); }
+.status-progress::before { content: "◐"; }
+.status-seen { color: var(--seen); background: var(--seen-soft); border-color: color-mix(in srgb, var(--seen) 45%, transparent); }
+.status-seen::before { content: "✓"; }
+.rating { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 24px; padding: 0 7px; border-radius: 7px; font-size: .78rem; font-weight: 800; color: #fff; background: var(--r-none); box-shadow: 0 1px 3px rgba(0,0,0,.35); font-variant-numeric: tabular-nums; }
+.rating-top { background: var(--r-top); } .rating-good { background: var(--r-good); color: #0f1a05; } .rating-mid { background: var(--r-mid); color: #221a00; }
+.rating-low { background: var(--r-low); color: #261200; } .rating-bad { background: var(--r-bad); }
+.seg { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.seg button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 32px; padding: 4px 10px; border: 0; background: transparent; color: var(--text-2); font-size: .79rem; font-weight: 650; cursor: pointer; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--border-strong); }
+.seg button:hover { background: var(--surface-3); color: var(--text); }
+.seg button[aria-pressed="true"] { font-weight: 800; }
+.seg button[aria-pressed="true"]::before { content: "✓"; font-weight: 900; }
+.seg button[aria-pressed="true"][data-status="todo"] { background: var(--todo-soft); color: var(--text); box-shadow: inset 0 0 0 2px var(--todo); }
+.seg button[aria-pressed="true"][data-status="progress"] { background: var(--progress); color: var(--progress-ink); }
+.seg button[aria-pressed="true"][data-status="seen"] { background: var(--seen); color: var(--seen-ink); }
+.seg-lg button { min-height: 38px; padding: 6px 14px; font-size: .86rem; }
+.empty { padding: 22px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--border-strong); border-radius: var(--radius); font-size: .9rem; }
+.empty strong { display: block; color: var(--text); margin-bottom: 4px; font-size: .98rem; }
+.empty .btn { margin-top: 10px; }
+.error-box { padding: 14px 16px; border-radius: var(--radius); background: var(--danger-soft); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); color: var(--text); font-size: .88rem; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.error-box p { margin: 0; flex: 1 1 220px; }
+.banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 22px 0; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--surface); font-size: .86rem; }
+.banner p { margin: 0; flex: 1 1 260px; }
+.banner-warn { border-color: color-mix(in srgb, var(--progress) 50%, transparent); background: var(--progress-soft); }
+.banner-error { border-color: color-mix(in srgb, var(--danger) 50%, transparent); background: var(--danger-soft); }
+.banner-info { border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-soft); }
+@media (max-width: 899px) { .banner { margin: 10px 16px 0; } }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.page-head h1 { margin: 0; font-size: 1.55rem; letter-spacing: -.015em; }
+.page-head p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+.toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.toolbar .spacer { flex: 1; }
+.select { min-height: 32px; padding: 4px 10px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--surface-2); font-size: .82rem; }
+.tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; }
+.tabs a { padding: 6px 12px; border-radius: 9px; text-decoration: none; font-weight: 650; font-size: .86rem; color: var(--text-2); }
+.tabs a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.skeleton { background: linear-gradient(90deg, var(--surface) 0%, var(--surface-3) 50%, var(--surface) 100%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; border-radius: var(--radius); }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.progress-bar { height: 5px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.progress-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--seen); }
+
+/* ---------- Cartes ---------- */
+.section { margin-bottom: 26px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.section-head h2 { margin: 0; font-size: 1.12rem; letter-spacing: -.01em; }
+.rail-nav { display: flex; gap: 6px; }
+.rail { display: grid; grid-auto-flow: column; grid-auto-columns: 166px; gap: 14px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 2px 2px 10px; scrollbar-width: thin; }
+.rail > * { scroll-snap-align: start; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 14px; }
+@media (max-width: 899px) { .rail { grid-auto-columns: 142px; gap: 10px; } .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; } .rail-nav { display: none; } }
+.card { position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease; }
+.card:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: var(--shadow); }
+.card-link { color: inherit; text-decoration: none; }
+.card-link::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.card-link:focus-visible { outline: none; }
+.card:has(.card-link:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.poster { position: relative; aspect-ratio: 2 / 3; background: var(--surface-2); overflow: hidden; }
+.poster img { position: relative; width: 100%; height: 100%; object-fit: cover; }
+.poster-fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 10px; text-align: center; color: var(--muted); font-size: .8rem; font-weight: 650; background: linear-gradient(160deg, var(--surface-2), var(--surface-3)); }
+.poster .rating { position: absolute; top: 7px; left: 7px; }
+.poster .type-tag { position: absolute; top: 7px; right: 7px; padding: 2px 7px; border-radius: 6px; font-size: .68rem; font-weight: 800; background: rgba(8,10,16,.78); color: #fff; }
+.card-body { display: flex; flex-direction: column; gap: 5px; padding: 9px 10px 10px; flex: 1; }
+.card-title { margin: 0; font-size: .9rem; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--muted); font-size: .76rem; }
+.card-overview { margin: 0; color: var(--text-2); font-size: .76rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-actions { position: relative; z-index: 2; display: grid; gap: 6px; margin-top: auto; padding-top: 4px; }
+.card-actions .btn { width: 100%; padding: 4px 6px; }
+.card-skeleton { aspect-ratio: 2 / 3.9; }
+
+/* ---------- Fiche ---------- */
+.detail-hero { position: relative; overflow: hidden; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--border); margin-bottom: 18px; }
+.detail-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .22; }
+.detail-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--surface) 15%, color-mix(in srgb, var(--surface) 70%, transparent) 60%, color-mix(in srgb, var(--surface) 45%, transparent)); }
+.detail-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 184px minmax(0, 1fr); gap: 22px; padding: 20px; }
+.detail-poster { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); align-self: start; }
+.detail-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.detail-info h1 { margin: 0; font-size: clamp(1.4rem, 2.6vw, 2.1rem); letter-spacing: -.02em; overflow-wrap: anywhere; }
+.detail-original { margin: -6px 0 0; color: var(--muted); font-size: .85rem; }
+.detail-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.detail-overview { margin: 0; color: var(--text-2); max-width: 75ch; }
+.detail-tagline { margin: 0; color: var(--muted); font-style: italic; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; font-size: .84rem; }
+.facts div { display: flex; gap: 6px; } .facts dt { color: var(--muted); } .facts dd { margin: 0; font-weight: 650; }
+.track-box { display: grid; gap: 10px; padding: 12px; border-radius: var(--radius); background: color-mix(in srgb, var(--bg) 55%, transparent); border: 1px solid var(--border); }
+.track-row { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.track-label { font-size: .8rem; color: var(--muted); font-weight: 650; }
+.track-summary { font-size: .86rem; color: var(--text-2); }
+.legacy-note { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--progress-soft); font-size: .84rem; }
+.legacy-note p { margin: 0; flex: 1 1 240px; }
+@media (max-width: 640px) {
+  .detail-grid { grid-template-columns: 104px minmax(0, 1fr); gap: 14px; padding: 14px; }
+  .detail-overview, .detail-tagline, .facts, .track-box { grid-column: 1 / -1; }
+  .detail-info { display: contents; }
+  .detail-head { grid-column: 2; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+}
+.seasons-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 6px 0 12px; }
+.seasons-head h2 { margin: 0; font-size: 1.2rem; }
+.seasons-head p { margin: 0; color: var(--muted); font-size: .84rem; }
+.season-list { display: grid; gap: 12px; }
+.season { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
+.season[data-status="seen"] { border-color: color-mix(in srgb, var(--seen) 40%, transparent); }
+.season[data-status="progress"] { border-color: color-mix(in srgb, var(--progress) 40%, transparent); }
+.season-head { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; padding: 12px 14px; }
+.season-title { margin: 0; flex: 1 1 380px; min-width: 0; font-size: inherit; font-weight: inherit; }
+.season-toggle { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; width: 100%; min-height: 34px; padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+.season-name { display: inline-flex; align-items: center; gap: 8px; font-size: 1.05rem; font-weight: 800; white-space: nowrap; }
+.season-toggle .chev { transition: transform .15s; color: var(--muted); }
+.season-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.season-meta { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; color: var(--muted); font-size: .85rem; font-weight: 500; }
+.season-custom { font-style: italic; }
+.season-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.season-tools .seg-label { font-size: .75rem; color: var(--muted); font-weight: 650; }
+.season .progress-bar { margin: 0 14px 12px; }
+.season-body { padding: 0 14px 14px; }
+.episodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 8px; }
+@media (max-width: 420px) { .episodes { grid-template-columns: minmax(0, 1fr); } }
+.ep { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 6px 10px; align-items: center; padding: 9px 10px 9px 8px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); border-left: 4px solid var(--todo); }
+.ep[data-status="progress"] { border-left-color: var(--progress); background: linear-gradient(90deg, var(--progress-soft), transparent 70%), var(--surface-2); }
+.ep[data-status="seen"] { border-left-color: var(--seen); background: linear-gradient(90deg, var(--seen-soft), transparent 70%), var(--surface-2); }
+.ep-num { display: grid; justify-items: center; gap: 2px; font-weight: 850; font-size: .95rem; font-variant-numeric: tabular-nums; }
+.ep-main { min-width: 0; display: grid; gap: 3px; }
+.ep-title { margin: 0; font-weight: 650; font-size: .87rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--muted); font-size: .74rem; }
+.ep-meta .rating { height: 19px; min-width: 32px; font-size: .7rem; border-radius: 6px; }
+.ep-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ep-controls .seg { flex: 1 1 auto; }
+.ep-next { font-size: .68rem; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+.season-loading { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 8px; }
+.season-loading .skeleton { height: 86px; }
+.specials-note { font-size: .8rem; color: var(--muted); margin: -4px 14px 10px; }
+
+/* ---------- Panneau latéral ---------- */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px; min-width: 0; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.panel h2 { margin: 0; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.panel-link { font-size: .78rem; color: var(--accent); text-decoration: none; font-weight: 650; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.stat { display: grid; gap: 1px; padding: 8px 4px; border-radius: 10px; background: var(--surface-2); text-align: center; text-decoration: none; }
+.stat strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.stat span { font-size: .7rem; color: var(--muted); font-weight: 650; }
+.stat-seen strong { color: var(--seen); } .stat-progress strong { color: var(--progress); } .stat-fav strong { color: var(--fav); }
+.resume-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.resume-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 5px 6px; border-radius: 10px; text-decoration: none; }
+.resume-row:hover { background: var(--surface-2); }
+.resume-thumb { position: relative; width: 34px; height: 51px; border-radius: 6px; overflow: hidden; background: var(--surface-3); }
+.resume-thumb img { position: relative; width: 100%; height: 100%; object-fit: cover; }
+.resume-thumb .poster-fallback { font-size: .6rem; padding: 2px; }
+.resume-text { min-width: 0; display: grid; gap: 2px; }
+.resume-title { font-weight: 650; font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.resume-sub { color: var(--muted); font-size: .74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.resume-row .progress-bar { height: 3px; } .resume-row .progress-bar > span { background: var(--progress); }
+.resume-rank { font-size: .72rem; color: var(--muted); font-weight: 750; font-variant-numeric: tabular-nums; }
+.resume-page .resume-row { grid-template-columns: 52px minmax(0, 1fr) auto; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); }
+.resume-page .resume-thumb { width: 52px; height: 78px; }
+.resume-page .resume-title { font-size: .98rem; }
+.resume-page .resume-sub { font-size: .8rem; }
+.related { display: grid; gap: 12px; font-size: .86rem; }
+.related h3 { margin: 0 0 6px; font-size: .84rem; }
+.related-box { padding: 10px; border-radius: 10px; background: var(--surface-2); display: grid; gap: 4px; }
+.related-box p { margin: 0; color: var(--text-2); }
+.related-box .muted { color: var(--muted); font-size: .78rem; }
+.related-link { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: center; text-decoration: none; padding: 4px; border-radius: 8px; }
+.related-link:hover { background: var(--surface-3); }
+.related-note { font-size: .74rem; color: var(--muted); margin: 0 0 4px; }
+.related-list { display: grid; gap: 2px; }
+
+/* ---------- Réglages, dialogues, toasts ---------- */
+.settings { display: grid; gap: 14px; max-width: 760px; }
+.settings .panel { padding: 16px; }
+.settings h2 { font-size: 1rem; text-transform: none; letter-spacing: 0; color: var(--text); margin-bottom: 6px; }
+.settings p { margin: 6px 0; color: var(--text-2); font-size: .88rem; }
+.field { display: grid; gap: 6px; margin: 10px 0; }
+.field label { font-weight: 650; font-size: .86rem; }
+.input { width: 100%; min-height: 38px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-2); font-family: ui-monospace, Consolas, monospace; font-size: .85rem; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.hint { font-size: .8rem; color: var(--muted); }
+.ok-text { color: var(--seen); font-weight: 650; } .err-text { color: var(--danger); font-weight: 650; }
+dialog.dialog { width: min(92vw, 480px); padding: 0; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
+.dialog-body { padding: 18px; display: grid; gap: 10px; }
+.dialog-body h2 { margin: 0; font-size: 1.1rem; }
+.dialog-body p { margin: 0; color: var(--text-2); font-size: .9rem; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; padding: 0 18px 18px; }
+.toasts { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 60; display: grid; gap: 8px; width: min(92vw, 440px); pointer-events: none; }
+@media (max-width: 899px) { .toasts { bottom: 78px; } }
+.toast { pointer-events: auto; display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; border-radius: 12px; background: var(--surface-3); border: 1px solid var(--border-strong); box-shadow: var(--shadow); font-size: .87rem; animation: toast-in .18s ease-out; }
+.toast p { margin: 0; flex: 1; }
+.toast-error { border-color: var(--danger); } .toast-success { border-color: var(--seen); }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#view-root">Aller au contenu</a>
+<div class="app">
+  <aside class="sidebar" aria-label="Menu">
+    <a class="brand" href="#home">
+      <span class="brand-logo" aria-hidden="true">CL</span>
+      <span class="brand-text"><span class="brand-name">Crazy Liste</span><span class="brand-sub">Films · Séries · Anime</span></span>
+    </a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="#home" data-nav="home"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg>Accueil</a>
+      <a href="#search" data-nav="search"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>Recherche</a>
+      <a href="#resume" data-nav="resume"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></svg>Reprendre<span class="count" data-count="progress"></span></a>
+      <a href="#library" data-nav="library"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Bibliothèque<span class="count" data-count="total"></span></a>
+      <a href="#favorites" data-nav="favorites"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></svg>Favoris<span class="count" data-count="favorites"></span></a>
+      <a href="#watchlist" data-nav="watchlist"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>Watchlist<span class="count" data-count="watchlist"></span></a>
+      <a href="#settings" data-nav="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Réglages</a>
+    </nav>
+    <div class="sidebar-foot">
+      <a class="sync-chip" href="#settings" data-sync-chip hidden><span class="sync-dot" aria-hidden="true"></span><span data-sync-text></span></a>
+      <button type="button" class="btn btn-ghost" data-action="toggle-theme"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></svg><span data-theme-label>Passer au thème clair</span></button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Crazy Liste, accueil"><span class="brand-logo" aria-hidden="true">CL</span><span class="brand-text"><span class="brand-name">Crazy Liste</span></span></a>
+      <form class="searchbar" id="search-form" role="search" autocomplete="off">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+        <label class="visually-hidden" for="search-input">Rechercher un film, une série ou un anime</label>
+        <input id="search-input" type="search" name="q" placeholder="Rechercher un film, une série, un anime…" title="Raccourci clavier : touche /" enterkeyhint="search" spellcheck="false" maxlength="120">
+        <button class="btn btn-primary btn-sm" type="submit">Rechercher</button>
+      </form>
+      <button type="button" class="btn btn-icon btn-ghost topbar-theme" data-action="toggle-theme" aria-label="Changer de thème"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></svg></button>
+    </header>
+    <div id="banners"></div>
+    <main id="view-root" class="view" tabindex="-1"></main>
+  </div>
+
+  <aside class="side-panel" aria-label="Suivi rapide">
+    <section class="panel" aria-labelledby="stats-title">
+      <div class="panel-head"><h2 id="stats-title">Mes statistiques</h2><a class="panel-link" href="#library">Bibliothèque</a></div>
+      <div id="stats-panel" class="stats"></div>
+    </section>
+    <section class="panel" aria-labelledby="resume-panel-title">
+      <div class="panel-head"><h2 id="resume-panel-title">Reprendre</h2><a class="panel-link" href="#resume">Tout voir</a></div>
+      <ol id="resume-panel-list" class="resume-list"></ol>
+    </section>
+    <section class="panel" aria-labelledby="related-title">
+      <div class="panel-head"><h2 id="related-title">Prochain contenu lié</h2></div>
+      <div id="related-panel" class="related"></div>
+    </section>
+  </aside>
+</div>
+
+<nav class="bottom-nav" aria-label="Navigation mobile">
+  <a href="#home" data-nav="home"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg>Accueil</a>
+  <a href="#search" data-nav="search"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>Recherche</a>
+  <a href="#resume" data-nav="resume"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></svg>Reprendre</a>
+  <a href="#library" data-nav="library" data-nav-group="favorites watchlist"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Ma liste</a>
+  <a href="#settings" data-nav="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Réglages</a>
+</nav>
+
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<dialog id="app-dialog" class="dialog" aria-labelledby="dialog-title">
+  <div class="dialog-body"><h2 id="dialog-title"></h2><div id="dialog-content"></div></div>
+  <div class="dialog-actions" id="dialog-actions"></div>
+</dialog>
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+<script id="crazy-core">
+/* Crazy Liste — logique métier pure : aucun accès au DOM, au réseau ni au stockage.
+   Ce bloc est exécuté tel quel par tests/core.test.mjs (Node). */
+(function (root) {
+  'use strict';
+
+  const SCHEMA_VERSION = 1;
+  const STATUSES = Object.freeze(['todo', 'progress', 'seen']);
+  const STATUS_LABELS = Object.freeze({ todo: 'À voir', progress: 'En cours', seen: 'Vu' });
+  const TYPE_LABELS = Object.freeze({ movie: 'Film', tv: 'Série / anime' });
+  const PRODUCTION_LABELS = Object.freeze({
+    'Returning Series': 'En cours de diffusion', 'Ended': 'Terminée', 'Canceled': 'Annulée',
+    'In Production': 'En production', 'Planned': 'Prévue', 'Pilot': 'Pilote', 'Released': 'Sorti',
+    'Post Production': 'Post-production', 'Rumored': 'Annoncé', 'Upcoming': 'À venir'
+  });
+  const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  const MAX_TIME = 4102444800000; // 2100-01-01
+
+  const isStatus = (s) => STATUSES.includes(s);
+  const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const num = (v, d = 0) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
+  const isPosInt = (v) => Number.isInteger(v) && v > 0;
+  const isIntKey = (k) => /^\d{1,6}$/.test(String(k));
+  const str = (v, max = 2000) => (typeof v === 'string' ? v : v == null ? '' : String(v)).slice(0, max);
+  const validTime = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 && n < MAX_TIME ? Math.trunc(n) : 0; };
+
+  /* ---------- Clés, échappement, formats ---------- */
+  function itemKey(type, id) { return type + '-' + id; }
+  function parseKey(key) {
+    const m = /^(movie|tv)-(\d{1,10})$/.exec(String(key));
+    if (!m) return null;
+    const id = Number(m[2]);
+    return id > 0 ? { type: m[1], id, key: itemKey(m[1], id) } : null;
+  }
+  function escapeHtml(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function yearOf(date) { return /^\d{4}/.test(date || '') ? String(date).slice(0, 4) : ''; }
+  function imgPath(p) { return typeof p === 'string' && /^\/[\w.-]{1,200}$/.test(p) ? p : null; }
+  function formatDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return '';
+    const mo = Number(m[2]), d = Number(m[3]);
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return '';
+    return (d === 1 ? '1er' : String(d)) + ' ' + MONTHS[mo - 1] + ' ' + m[1];
+  }
+  function ratingTier(v) {
+    const n = num(v);
+    if (n <= 0) return 'none';
+    if (n >= 8) return 'top';
+    if (n >= 7) return 'good';
+    if (n >= 6) return 'mid';
+    if (n >= 5) return 'low';
+    return 'bad';
+  }
+  function formatRating(v) { const n = num(v); return n > 0 ? n.toFixed(1).replace('.', ',') : '—'; }
+  function productionLabel(s) { return PRODUCTION_LABELS[s] || str(s, 40); }
+  function episodeLabel(season, episode) { return 'S' + season + (episode == null ? '' : ' · É' + episode); }
+
+  /* ---------- Normalisation des réponses TMDB ---------- */
+  function normalizeSummary(raw, fallbackType) {
+    if (!isObj(raw)) return null;
+    const type = raw.media_type === 'movie' || raw.media_type === 'tv' ? raw.media_type : (raw.media_type ? null : fallbackType);
+    if (type !== 'movie' && type !== 'tv') return null; // exclut les personnes
+    const id = Number(raw.id);
+    if (!isPosInt(id)) return null;
+    const date = str(type === 'movie' ? raw.release_date : raw.first_air_date, 10);
+    const genreIds = Array.isArray(raw.genre_ids) ? raw.genre_ids.filter(Number.isInteger)
+      : Array.isArray(raw.genres) ? raw.genres.map((g) => g && g.id).filter(Number.isInteger) : [];
+    return {
+      key: itemKey(type, id), type, id,
+      title: str(raw.title || raw.name || raw.original_title || raw.original_name, 300) || 'Sans titre',
+      originalTitle: str(raw.original_title || raw.original_name, 300),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '', year: yearOf(date),
+      overview: str(raw.overview, 3000),
+      posterPath: imgPath(raw.poster_path), backdropPath: imgPath(raw.backdrop_path),
+      voteAverage: Math.round(num(raw.vote_average) * 10) / 10, voteCount: num(raw.vote_count),
+      originalLanguage: str(raw.original_language, 8), genreIds: genreIds.slice(0, 12)
+    };
+  }
+  function isAnime(item) {
+    return !!item && item.type === 'tv' && item.originalLanguage === 'ja' && Array.isArray(item.genreIds) && item.genreIds.includes(16);
+  }
+  function normalizeEpisodeRef(raw) {
+    if (!isObj(raw) || !Number.isInteger(raw.season_number) || !Number.isInteger(raw.episode_number)) return null;
+    return { season: raw.season_number, episode: raw.episode_number, name: str(raw.name, 300), airDate: str(raw.air_date, 10) };
+  }
+  function normalizeDetail(raw, type) {
+    if (!isObj(raw)) return null;
+    const d = normalizeSummary(Object.assign({}, raw, { media_type: type }), type);
+    if (!d) return null;
+    d.genres = Array.isArray(raw.genres) ? raw.genres.map((g) => g && str(g.name, 60)).filter(Boolean) : [];
+    d.productionStatus = str(raw.status, 40);
+    d.tagline = str(raw.tagline, 300);
+    const reco = isObj(raw.recommendations) && Array.isArray(raw.recommendations.results) ? raw.recommendations.results : [];
+    d.recommendations = reco.map((r) => normalizeSummary(r, type)).filter(Boolean).slice(0, 12);
+    if (type === 'tv') {
+      const seen = new Set();
+      d.seasonSummaries = (Array.isArray(raw.seasons) ? raw.seasons : [])
+        .filter((s) => isObj(s) && Number.isInteger(s.season_number) && s.season_number >= 0)
+        .map((s) => ({ number: s.season_number, name: str(s.name, 120), airDate: str(s.air_date, 10), episodeCount: Math.max(0, Math.trunc(num(s.episode_count))) }))
+        .filter((s) => !seen.has(s.number) && seen.add(s.number))
+        .sort((a, b) => a.number - b.number);
+      d.numberOfEpisodes = num(raw.number_of_episodes);
+      d.numberOfSeasons = num(raw.number_of_seasons);
+      d.nextEpisode = normalizeEpisodeRef(raw.next_episode_to_air);
+      d.lastEpisode = normalizeEpisodeRef(raw.last_episode_to_air);
+      d.inProduction = raw.in_production === true;
+      d.runtime = Array.isArray(raw.episode_run_time) && raw.episode_run_time.length ? num(raw.episode_run_time[0]) || null : null;
+    } else {
+      d.runtime = num(raw.runtime) || null;
+      const c = raw.belongs_to_collection;
+      d.collection = isObj(c) && isPosInt(c.id) ? { id: c.id, name: str(c.name, 200) } : null;
+    }
+    return d;
+  }
+  function normalizeSeason(raw) {
+    if (!isObj(raw) || !Number.isInteger(raw.season_number)) return null;
+    const seen = new Set();
+    const episodes = (Array.isArray(raw.episodes) ? raw.episodes : [])
+      .filter((e) => isObj(e) && Number.isInteger(e.episode_number) && e.episode_number >= 0)
+      .map((e) => ({ number: e.episode_number, name: str(e.name, 300), airDate: str(e.air_date, 10), runtime: num(e.runtime) || null,
+        voteAverage: Math.round(num(e.vote_average) * 10) / 10, overview: str(e.overview, 1500), stillPath: imgPath(e.still_path) }))
+      .filter((e) => !seen.has(e.number) && seen.add(e.number))
+      .sort((a, b) => a.number - b.number);
+    return { number: raw.season_number, name: str(raw.name, 120), airDate: str(raw.air_date, 10), episodes };
+  }
+  function filterUpcoming(items, today) {
+    const future = items.filter((i) => i.date && i.date >= today);
+    return future.length ? future : items;
+  }
+
+  /* ---------- Métadonnées conservées pour les contenus personnels ---------- */
+  function placeholderMeta(key) {
+    const pk = parseKey(key);
+    return pk ? { key: pk.key, type: pk.type, id: pk.id, title: 'Contenu TMDB n°' + pk.id, year: '', date: '', overview: '', posterPath: null,
+      backdropPath: null, voteAverage: 0, originalLanguage: '', genreIds: [], placeholder: true } : null;
+  }
+  function metaFromSummary(s, prev) {
+    const m = { key: s.key, type: s.type, id: s.id, title: s.title, originalTitle: s.originalTitle || '', year: s.year || '', date: s.date || '',
+      overview: str(s.overview, 600), posterPath: s.posterPath || null, backdropPath: s.backdropPath || null, voteAverage: num(s.voteAverage),
+      originalLanguage: s.originalLanguage || '', genreIds: (s.genreIds || []).slice(0, 12) };
+    if (prev && prev.productionStatus) m.productionStatus = prev.productionStatus;
+    if (prev && Array.isArray(prev.genres)) m.genres = prev.genres.slice(0, 6);
+    if (prev && Array.isArray(prev.seasonSummaries)) m.seasonSummaries = prev.seasonSummaries.map((x) => Object.assign({}, x));
+    return m;
+  }
+  function mergeSeasonSummaries(fresh, old) {
+    const byNum = new Map((Array.isArray(old) ? old : []).map((s) => [s.number, s]));
+    return fresh.map((s) => {
+      const o = byNum.get(s.number);
+      const out = { number: s.number, name: s.name, airDate: s.airDate, episodeCount: s.episodeCount };
+      // la liste exacte n'est conservée que si TMDB annonce toujours le même nombre d'épisodes
+      if (o && Array.isArray(o.episodeNumbers) && o.episodeNumbers.length === s.episodeCount) out.episodeNumbers = o.episodeNumbers.slice();
+      return out;
+    });
+  }
+  function metaFromDetail(d, prev) {
+    const m = metaFromSummary(d, null);
+    m.productionStatus = d.productionStatus || '';
+    m.genres = (d.genres || []).slice(0, 6);
+    if (d.type === 'tv') m.seasonSummaries = mergeSeasonSummaries(d.seasonSummaries || [], prev && prev.seasonSummaries);
+    return m;
+  }
+  function withSeasonEpisodes(meta, season) {
+    if (!meta || !Array.isArray(meta.seasonSummaries) || !season) return meta;
+    const numbers = season.episodes.map((e) => e.number);
+    let found = false;
+    const list = meta.seasonSummaries.map((s) => {
+      if (s.number !== season.number) return s;
+      found = true;
+      return Object.assign({}, s, { episodeCount: numbers.length, episodeNumbers: numbers });
+    });
+    return found ? Object.assign({}, meta, { seasonSummaries: list }) : meta;
+  }
+
+  /* ---------- Agrégation épisodes → saison → série ---------- */
+  function aggregateCounts(total, seen, progress) {
+    if (total <= 0) return seen + progress > 0 ? 'progress' : 'todo'; // saison annoncée sans épisode : jamais « Vu »
+    if (seen >= total) return 'seen';
+    if (seen === 0 && progress === 0) return 'todo';
+    return 'progress';
+  }
+  function aggregateStatuses(list) {
+    let seen = 0, progress = 0;
+    for (const s of list) { if (s === 'seen') seen++; else if (s === 'progress') progress++; }
+    return aggregateCounts(list.length, seen, progress);
+  }
+  function episodeStatus(track, season, episode) {
+    const s = track && isObj(track.seasons) ? track.seasons[season] : null;
+    const v = s && isObj(s.episodes) ? s.episodes[episode] : undefined;
+    return isStatus(v) ? v : 'todo'; // non renseigné = À voir
+  }
+  function computeSeasonState(summary, seasonTrack) {
+    const eps = seasonTrack && isObj(seasonTrack.episodes) ? seasonTrack.episodes : {};
+    let total, seen = 0, progress = 0, exact;
+    if (Array.isArray(summary.episodeNumbers)) {
+      exact = true; total = summary.episodeNumbers.length;
+      for (const n of summary.episodeNumbers) { const v = eps[n]; if (v === 'seen') seen++; else if (v === 'progress') progress++; }
+    } else {
+      // liste exacte inconnue : on compte les épisodes renseignés face au nombre annoncé par TMDB
+      exact = false; total = Math.max(0, Math.trunc(num(summary.episodeCount)));
+      for (const v of Object.values(eps)) { if (v === 'seen') seen++; else if (v === 'progress') progress++; }
+    }
+    const status = aggregateCounts(total, seen, progress);
+    const seenShown = Math.min(seen, total);
+    return { number: summary.number, name: summary.name || '', airDate: summary.airDate || '', total, exact, status,
+      seen: seenShown, progress: Math.min(progress, Math.max(0, total - seenShown)) };
+  }
+  function hasActivity(track) {
+    if (!track || !isObj(track.seasons)) return false;
+    for (const [sn, s] of Object.entries(track.seasons)) {
+      if (Number(sn) <= 0 || !s || !isObj(s.episodes)) continue; // la saison 0 (spéciaux) est exclue
+      for (const v of Object.values(s.episodes)) if (v === 'seen' || v === 'progress') return true;
+    }
+    return false;
+  }
+  function computeShowState(meta, track) {
+    const seasonsTrack = track && isObj(track.seasons) ? track.seasons : {};
+    const summaries = meta && Array.isArray(meta.seasonSummaries) ? meta.seasonSummaries : null;
+    const regular = summaries ? summaries.filter((s) => s.number > 0) : [];
+    const seasons = regular.map((s) => computeSeasonState(s, seasonsTrack[s.number]));
+    const sp = summaries ? summaries.find((s) => s.number === 0) : null;
+    const specials = sp ? computeSeasonState(sp, seasonsTrack[0]) : null;
+    const known = regular.length > 0;
+    const complete = known && seasons.every((s) => s.status === 'seen');
+    const activity = hasActivity(track);
+    const intent = !!track && track.intent === 'progress';
+    const status = complete ? 'seen' : (activity || intent) ? 'progress' : 'todo';
+    let seenEpisodes = 0, totalEpisodes = null;
+    if (known) {
+      totalEpisodes = 0;
+      for (const s of seasons) { seenEpisodes += s.seen; totalEpisodes += s.total; }
+    } else {
+      for (const [sn, s] of Object.entries(seasonsTrack)) if (Number(sn) > 0 && s && isObj(s.episodes)) seenEpisodes += Object.values(s.episodes).filter((v) => v === 'seen').length;
+    }
+    return { status, known, complete, seasons, specials, seenEpisodes, totalEpisodes, intentOnly: intent && !activity && !complete };
+  }
+  function computeItemState(type, meta, track) {
+    if (type === 'movie') return { status: track && isStatus(track.trackingStatus) ? track.trackingStatus : 'todo' };
+    return computeShowState(meta, track);
+  }
+  function nextUpEpisode(meta, track) {
+    const st = computeShowState(meta, track);
+    if (!st.known || st.complete) return null;
+    for (const s of st.seasons) {
+      if (s.status === 'seen') continue;
+      const summary = meta.seasonSummaries.find((x) => x.number === s.number);
+      if (s.total === 0) return { season: s.number, episode: null, announced: true };
+      if (Array.isArray(summary.episodeNumbers)) {
+        const e = summary.episodeNumbers.find((n) => episodeStatus(track, s.number, n) !== 'seen');
+        return { season: s.number, episode: e == null ? null : e, announced: false };
+      }
+      return { season: s.number, episode: null, announced: false };
+    }
+    return null;
+  }
+
+  /* ---------- Suivi personnel : transitions pures ---------- */
+  function emptyTrack(type, id) {
+    return { type, id, inLibrary: false, favorite: false, watchlist: false, trackingStatus: null, intent: null, seasons: {}, addedAt: 0, lastActivityAt: 0 };
+  }
+  function cloneTrack(t) {
+    const c = Object.assign({}, t);
+    c.seasons = {};
+    if (t && isObj(t.seasons)) for (const [sn, s] of Object.entries(t.seasons)) c.seasons[sn] = { episodes: Object.assign({}, s && s.episodes) };
+    if (t && isObj(t.legacy)) c.legacy = Object.assign({}, t.legacy);
+    return c;
+  }
+  function writeEpisode(t, season, episode, status) {
+    const sk = String(season), ek = String(episode);
+    if (status === 'todo') {
+      if (t.seasons[sk]) { delete t.seasons[sk].episodes[ek]; if (!Object.keys(t.seasons[sk].episodes).length) delete t.seasons[sk]; }
+    } else {
+      (t.seasons[sk] = t.seasons[sk] || { episodes: {} }).episodes[ek] = status;
+    }
+  }
+  function assertArgs(status, ...ints) {
+    if (!isStatus(status)) throw new Error('Statut invalide : ' + status);
+    for (const n of ints) if (!Number.isInteger(n) || n < 0) throw new Error('Numéro invalide : ' + n);
+  }
+  function touch(t, now) { t.inLibrary = true; t.lastActivityAt = now; if (!t.addedAt) t.addedAt = now; return t; }
+  function setMovieStatus(track, status, now) { assertArgs(status); const t = cloneTrack(track); t.trackingStatus = status; return touch(t, now); }
+  function setEpisodeStatus(track, season, episode, status, now) {
+    assertArgs(status, season, episode);
+    const t = cloneTrack(track); writeEpisode(t, season, episode, status); t.intent = null; return touch(t, now);
+  }
+  function setSeasonStatus(track, season, episodeNumbers, status, now) {
+    assertArgs(status, season, ...episodeNumbers);
+    const t = cloneTrack(track); for (const n of episodeNumbers) writeEpisode(t, season, n, status); t.intent = null; return touch(t, now);
+  }
+  function setEpisodesUpTo(track, season, episodeNumbers, upTo, now) {
+    assertArgs('seen', season, upTo, ...episodeNumbers);
+    const t = cloneTrack(track); for (const n of episodeNumbers) if (n <= upTo) writeEpisode(t, season, n, 'seen'); t.intent = null; return touch(t, now);
+  }
+  function markShowSeen(track, seasonMap, now) {
+    const t = cloneTrack(track);
+    for (const [sn, nums] of Object.entries(seasonMap)) { assertArgs('seen', Number(sn), ...nums); for (const n of nums) writeEpisode(t, Number(sn), n, 'seen'); }
+    t.intent = null; delete t.legacy; return touch(t, now);
+  }
+  function resetShow(track, now) { const t = cloneTrack(track); t.seasons = {}; t.intent = null; delete t.legacy; return touch(t, now); }
+  function startShow(track, now) { const t = cloneTrack(track); t.intent = 'progress'; return touch(t, now); }
+  function toggleFlag(track, flag, now) { const t = cloneTrack(track); t[flag] = !t[flag]; if (t[flag] && !t.addedAt) t.addedAt = now || 0; return t; }
+  function dismissLegacy(track) { const t = cloneTrack(track); delete t.legacy; return t; }
+  function isPersonal(t) { return !!t && (t.inLibrary === true || t.favorite === true || t.watchlist === true); }
+
+  /* ---------- Sélecteurs : bibliothèque, statistiques, Reprendre ---------- */
+  function personalEntries(data) {
+    const out = [];
+    const tracking = data && isObj(data.tracking) ? data.tracking : {};
+    const metadata = data && isObj(data.metadata) ? data.metadata : {};
+    for (const [key, track] of Object.entries(tracking)) {
+      const pk = parseKey(key);
+      if (!pk || !isPersonal(track)) continue;
+      const meta = metadata[key] || placeholderMeta(key);
+      const state = computeItemState(pk.type, meta, track);
+      out.push({ key, type: pk.type, id: pk.id, track, meta, state, status: state.status });
+    }
+    return out;
+  }
+  const byKey = (a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+  function byActivityDesc(a, b) { return (b.track.lastActivityAt || 0) - (a.track.lastActivityAt || 0) || byKey(a, b); }
+  function computeResume(data, limit = 5) {
+    return personalEntries(data).filter((e) => e.status === 'progress').sort(byActivityDesc).slice(0, limit);
+  }
+  function computeStats(data) {
+    const all = personalEntries(data);
+    const c = (f) => all.filter(f).length;
+    return { total: all.length, seen: c((e) => e.status === 'seen'), progress: c((e) => e.status === 'progress'), todo: c((e) => e.status === 'todo'),
+      favorites: c((e) => e.track.favorite), watchlist: c((e) => e.track.watchlist), movies: c((e) => e.type === 'movie'), shows: c((e) => e.type === 'tv') };
+  }
+  function computeLibrary(data, opts) {
+    const o = Object.assign({ status: 'all', type: 'all', list: 'all', sort: 'activity' }, opts);
+    let rows = personalEntries(data);
+    if (o.list === 'favorites') rows = rows.filter((e) => e.track.favorite);
+    if (o.list === 'watchlist') rows = rows.filter((e) => e.track.watchlist);
+    if (isStatus(o.status)) rows = rows.filter((e) => e.status === o.status);
+    if (o.type === 'movie' || o.type === 'tv') rows = rows.filter((e) => e.type === o.type);
+    const title = (e) => (e.meta && e.meta.title) || '';
+    const sorters = {
+      activity: (a, b) => (Math.max(b.track.lastActivityAt, b.track.addedAt) - Math.max(a.track.lastActivityAt, a.track.addedAt)) || byKey(a, b),
+      added: (a, b) => (b.track.addedAt - a.track.addedAt) || byKey(a, b),
+      title: (a, b) => title(a).localeCompare(title(b), 'fr', { sensitivity: 'base' }) || byKey(a, b),
+      rating: (a, b) => (num(b.meta && b.meta.voteAverage) - num(a.meta && a.meta.voteAverage)) || byKey(a, b)
+    };
+    return rows.sort(sorters[o.sort] || sorters.activity);
+  }
+  function collectionNeighbors(parts, currentId, today) {
+    const list = (Array.isArray(parts) ? parts : []).map((p) => normalizeSummary(p, 'movie')).filter(Boolean)
+      .sort((a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : a.id - b.id));
+    const index = list.findIndex((p) => p.id === currentId);
+    const next = index >= 0 ? list[index + 1] || null : null;
+    return { list, index, previous: index > 0 ? list[index - 1] : null, next, nextIsUpcoming: !!next && (!next.date || next.date > today) };
+  }
+
+  /* ---------- Navigation par hash ---------- */
+  const SIMPLE_ROUTES = ['home', 'search', 'resume', 'library', 'favorites', 'watchlist', 'settings'];
+  function parseRoute(hash) {
+    let h = String(hash || '');
+    if (h.startsWith('#')) h = h.slice(1);
+    if (h.startsWith('/')) h = h.slice(1);
+    const qi = h.indexOf('?');
+    const path = qi >= 0 ? h.slice(0, qi) : h;
+    const params = {};
+    if (qi >= 0) new URLSearchParams(h.slice(qi + 1)).forEach((v, k) => { params[k] = v; });
+    const parts = path.split('/').filter(Boolean);
+    if (!parts.length) return { name: 'home', params };
+    if (parts[0] === 'detail') {
+      if (parts.length === 3 && (parts[1] === 'movie' || parts[1] === 'tv') && /^\d{1,10}$/.test(parts[2]) && Number(parts[2]) > 0) {
+        const id = Number(parts[2]);
+        return { name: 'detail', type: parts[1], id, key: itemKey(parts[1], id), params };
+      }
+      return { name: 'invalid', params, path };
+    }
+    if (parts.length === 1 && SIMPLE_ROUTES.includes(parts[0])) return { name: parts[0], params };
+    return { name: 'notfound', params, path };
+  }
+  function buildHash(name, params) {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params || {})) if (v != null && v !== '') q.set(k, v);
+    const qs = q.toString();
+    return '#' + name + (qs ? '?' + qs : '');
+  }
+  function detailHash(type, id) { return '#detail/' + type + '/' + id; }
+
+  root.CrazyCore = Object.freeze({
+    SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
+    itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
+    normalizeSummary, normalizeDetail, normalizeSeason, isAnime, filterUpcoming,
+    placeholderMeta, metaFromSummary, metaFromDetail, mergeSeasonSummaries, withSeasonEpisodes,
+    aggregateCounts, aggregateStatuses, episodeStatus, computeSeasonState, hasActivity, computeShowState, computeItemState, nextUpEpisode,
+    emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
+    startShow, toggleFlag, dismissLegacy, isPersonal,
+    personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
+    parseRoute, buildHash, detailHash
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script id="crazy-data">
+/* Crazy Liste — sauvegarde : validation, migration des anciens formats, import/export, fusion.
+   Pur lui aussi (le stockage réel est géré par l'application). Testé par tests/core.test.mjs. */
+(function (root) {
+  'use strict';
+  const C = root.CrazyCore;
+  const { isObj, num, str, validTime, isIntKey, parseKey, isStatus } = C;
+
+  const STORAGE_KEY = 'crazy-liste-v1';
+  const LEGACY_KEYS = ['cinelog-data', 'cinelog-ultra-data', 'cinevault-watch'];
+  const THEMES = ['dark', 'light'];
+
+  function defaultPreferences() {
+    return { theme: 'dark', apiKey: '', libraryStatus: 'all', libraryType: 'all', librarySort: 'activity' };
+  }
+  function sanitizePreferences(raw) {
+    const p = defaultPreferences();
+    if (!isObj(raw)) return p;
+    if (THEMES.includes(raw.theme)) p.theme = raw.theme;
+    if (typeof raw.apiKey === 'string' && /^[\w.\-]{0,600}$/.test(raw.apiKey.trim())) p.apiKey = raw.apiKey.trim();
+    if (['all', 'todo', 'progress', 'seen'].includes(raw.libraryStatus)) p.libraryStatus = raw.libraryStatus;
+    if (['all', 'movie', 'tv'].includes(raw.libraryType)) p.libraryType = raw.libraryType;
+    if (['activity', 'added', 'title', 'rating'].includes(raw.librarySort)) p.librarySort = raw.librarySort;
+    return p;
+  }
+  function emptyData() { return { schemaVersion: C.SCHEMA_VERSION, tracking: {}, metadata: {}, preferences: defaultPreferences() }; }
+
+  function sanitizeTrack(key, raw) {
+    const pk = parseKey(key);
+    if (!pk || !isObj(raw)) return null;
+    const t = C.emptyTrack(pk.type, pk.id);
+    t.inLibrary = raw.inLibrary === true;
+    t.favorite = raw.favorite === true;
+    t.watchlist = raw.watchlist === true;
+    t.addedAt = validTime(raw.addedAt);
+    t.lastActivityAt = validTime(raw.lastActivityAt);
+    if (pk.type === 'movie') {
+      t.trackingStatus = isStatus(raw.trackingStatus) ? raw.trackingStatus : null;
+      if (t.trackingStatus) t.inLibrary = true;
+    } else {
+      t.intent = raw.intent === 'progress' ? 'progress' : null;
+      if (isObj(raw.seasons)) {
+        for (const [sn, s] of Object.entries(raw.seasons)) {
+          if (!isIntKey(sn) || !isObj(s) || !isObj(s.episodes)) continue;
+          for (const [en, v] of Object.entries(s.episodes)) if (isIntKey(en) && (v === 'seen' || v === 'progress')) C.writeEpisode(t, Number(sn), Number(en), v);
+        }
+      }
+      if (isObj(raw.legacy) && raw.legacy.status === 'seen') t.legacy = { status: 'seen' };
+    }
+    return t;
+  }
+  function sanitizeMeta(key, raw) {
+    const pk = parseKey(key);
+    if (!pk || !isObj(raw)) return null;
+    const m = {
+      key: pk.key, type: pk.type, id: pk.id,
+      title: str(raw.title, 300) || 'Contenu TMDB n°' + pk.id,
+      originalTitle: str(raw.originalTitle, 300),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(raw.date || '') ? raw.date : '',
+      overview: str(raw.overview, 600),
+      posterPath: C.imgPath(raw.posterPath), backdropPath: C.imgPath(raw.backdropPath),
+      voteAverage: Math.max(0, Math.min(10, num(raw.voteAverage))),
+      originalLanguage: str(raw.originalLanguage, 8),
+      genreIds: Array.isArray(raw.genreIds) ? raw.genreIds.filter(Number.isInteger).slice(0, 12) : []
+    };
+    m.year = /^\d{4}$/.test(String(raw.year || '')) ? String(raw.year) : C.yearOf(m.date);
+    if (raw.placeholder === true) m.placeholder = true;
+    if (typeof raw.productionStatus === 'string') m.productionStatus = str(raw.productionStatus, 40);
+    if (Array.isArray(raw.genres)) m.genres = raw.genres.filter((g) => typeof g === 'string').map((g) => str(g, 60)).slice(0, 6);
+    if (pk.type === 'tv' && Array.isArray(raw.seasonSummaries)) {
+      const seen = new Set();
+      m.seasonSummaries = raw.seasonSummaries
+        .filter((s) => isObj(s) && Number.isInteger(s.number) && s.number >= 0 && !seen.has(s.number) && seen.add(s.number))
+        .map((s) => {
+          const o = { number: s.number, name: str(s.name, 120), airDate: str(s.airDate, 10), episodeCount: Math.max(0, Math.trunc(num(s.episodeCount))) };
+          if (Array.isArray(s.episodeNumbers) && s.episodeNumbers.every((n) => Number.isInteger(n) && n >= 0)) {
+            o.episodeNumbers = [...new Set(s.episodeNumbers)].sort((a, b) => a - b);
+            o.episodeCount = o.episodeNumbers.length;
+          }
+          return o;
+        })
+        .sort((a, b) => a.number - b.number);
+    }
+    return m;
+  }
+  /* Valide un objet de sauvegarde complet. Ne garde que les contenus personnels. */
+  function sanitizeData(raw) {
+    const data = emptyData();
+    let invalid = 0;
+    if (!isObj(raw)) return { data, invalid };
+    data.preferences = sanitizePreferences(raw.preferences);
+    const tracking = isObj(raw.tracking) ? raw.tracking : {};
+    const metadata = isObj(raw.metadata) ? raw.metadata : {};
+    for (const [key, t] of Object.entries(tracking)) {
+      const clean = sanitizeTrack(key, t);
+      if (!clean) { invalid++; continue; }
+      if (!C.isPersonal(clean)) continue;
+      const k = C.itemKey(clean.type, clean.id);
+      data.tracking[k] = clean;
+      data.metadata[k] = sanitizeMeta(k, metadata[key]) || C.placeholderMeta(k);
+    }
+    return { data, invalid };
+  }
+
+  /* ---------- Migration des anciennes versions ---------- */
+  function keyList(a) { return (Array.isArray(a) ? a : []).map((k) => parseKey(k)).filter(Boolean).map((p) => p.key); }
+
+  /* Format « cinelog-data » / « cinelog-ultra-data » : { items, favorites, watchlist, history }.
+     - Seuls les statuts explicites des épisodes sont repris ; le statut d'une saison n'est jamais propagé.
+     - Les contenus simplement consultés (statut « todo » ajouté au rendu) sont ignorés. */
+  function migrateLegacyCinelog(raw) {
+    const tracking = {}, metadata = {};
+    const report = { items: 0, kept: 0, ignored: 0, episodes: 0, ambiguousSeasons: 0, legacySeen: 0 };
+    if (!isObj(raw)) return { tracking, metadata, report };
+    const favs = new Set(keyList(raw.favorites)), watch = new Set(keyList(raw.watchlist));
+    const items = isObj(raw.items) ? raw.items : {};
+    const known = new Set();
+    for (const [rawKey, it] of Object.entries(items)) {
+      report.items++;
+      const pk = parseKey(rawKey) || (isObj(it) ? parseKey(C.itemKey(it.media_type, it.id)) : null);
+      if (!pk || !isObj(it)) { report.ignored++; continue; }
+      const k = pk.key;
+      known.add(k);
+      const t = C.emptyTrack(pk.type, pk.id);
+      t.favorite = favs.has(k);
+      t.watchlist = watch.has(k);
+      const old = isStatus(it.status) ? it.status : 'todo';
+      if (pk.type === 'movie') {
+        if (old !== 'todo') { t.trackingStatus = old; t.inLibrary = true; }
+      } else {
+        let eps = 0;
+        if (isObj(it.seasons)) {
+          for (const [sn, so] of Object.entries(it.seasons)) {
+            if (!isIntKey(sn) || !isObj(so)) continue;
+            let n = 0;
+            if (isObj(so.episodes)) {
+              for (const [en, es] of Object.entries(so.episodes)) {
+                if (isIntKey(en) && (es === 'seen' || es === 'progress')) { C.writeEpisode(t, Number(sn), Number(en), es); n++; }
+              }
+            }
+            if (!n && (so.status === 'seen' || so.status === 'progress')) report.ambiguousSeasons++;
+            eps += n;
+          }
+        }
+        report.episodes += eps;
+        if (eps) t.inLibrary = true;
+        if (old === 'seen') { t.legacy = { status: 'seen' }; t.inLibrary = true; report.legacySeen++; if (!eps) t.intent = 'progress'; }
+        else if (old === 'progress' && !eps) { t.intent = 'progress'; t.inLibrary = true; }
+      }
+      if (!C.isPersonal(t)) { report.ignored++; continue; }
+      const ts = validTime(it.updatedAt);
+      t.addedAt = ts;
+      t.lastActivityAt = t.inLibrary ? ts : 0;
+      tracking[k] = t;
+      metadata[k] = sanitizeMeta(k, { title: it.title, year: it.year, posterPath: it.poster_path, voteAverage: it.vote_average, overview: it.overview });
+      report.kept++;
+    }
+    for (const k of new Set([...favs, ...watch])) {
+      if (known.has(k)) continue;
+      const pk = parseKey(k);
+      const t = C.emptyTrack(pk.type, pk.id);
+      t.favorite = favs.has(k);
+      t.watchlist = watch.has(k);
+      tracking[k] = t;
+      metadata[k] = C.placeholderMeta(k);
+      report.kept++;
+    }
+    return { tracking, metadata, report };
+  }
+  /* Format « cinevault-watch » : { "tv-1-season-1-ep-2": "seen" | "partial" | "unseen", "movie-5": "seen" }. */
+  function migrateCinevault(raw) {
+    const tracking = {}, metadata = {};
+    const report = { items: 0, kept: 0, ignored: 0, episodes: 0, ambiguousSeasons: 0, legacySeen: 0 };
+    if (!isObj(raw)) return { tracking, metadata, report };
+    const map = { seen: 'seen', partial: 'progress', progress: 'progress' };
+    const get = (pk) => tracking[pk.key] || (tracking[pk.key] = C.emptyTrack(pk.type, pk.id));
+    for (const [k, v] of Object.entries(raw)) {
+      report.items++;
+      const st = map[v];
+      const ep = /^tv-(\d{1,10})-season-(\d{1,6})-ep-(\d{1,6})$/.exec(k);
+      const pk = ep ? parseKey('tv-' + ep[1]) : parseKey(k);
+      if (!pk) { report.ignored++; continue; }
+      if (!st) continue;
+      const t = get(pk);
+      t.inLibrary = true;
+      if (ep) { C.writeEpisode(t, Number(ep[2]), Number(ep[3]), st); report.episodes++; }
+      else if (pk.type === 'movie') t.trackingStatus = st;
+      else { t.intent = 'progress'; if (st === 'seen') { t.legacy = { status: 'seen' }; report.legacySeen++; } }
+    }
+    for (const [k, t] of Object.entries(tracking)) {
+      if (C.hasActivity(t)) t.intent = null;
+      metadata[k] = C.placeholderMeta(k);
+      report.kept++;
+    }
+    return { tracking, metadata, report };
+  }
+  function migrateLegacySources(sources) {
+    let data = emptyData();
+    const reports = [];
+    for (const { key, raw } of sources) {
+      const res = key === 'cinevault-watch' ? migrateCinevault(raw) : migrateLegacyCinelog(raw);
+      reports.push(Object.assign({ source: key }, res.report));
+      data = mergeData(data, { tracking: res.tracking, metadata: res.metadata }).data;
+    }
+    return { data, reports };
+  }
+
+  /* ---------- Fusion / remplacement ---------- */
+  function mergeData(current, incoming) {
+    const out = { schemaVersion: C.SCHEMA_VERSION, tracking: {}, metadata: {}, preferences: sanitizePreferences(current.preferences) };
+    for (const [k, t] of Object.entries(current.tracking || {})) { out.tracking[k] = C.cloneTrack(t); out.metadata[k] = (current.metadata || {})[k] || C.placeholderMeta(k); }
+    let added = 0, updated = 0;
+    for (const [k, inc] of Object.entries(incoming.tracking || {})) {
+      const incMeta = (incoming.metadata || {})[k];
+      const cur = out.tracking[k];
+      if (!cur) {
+        out.tracking[k] = C.cloneTrack(inc);
+        out.metadata[k] = incMeta || C.placeholderMeta(k);
+        added++;
+        continue;
+      }
+      const newer = (inc.lastActivityAt || 0) > (cur.lastActivityAt || 0);
+      const merged = C.cloneTrack(newer ? inc : cur); // la progression la plus récente l'emporte
+      merged.favorite = cur.favorite || inc.favorite;
+      merged.watchlist = cur.watchlist || inc.watchlist;
+      merged.inLibrary = cur.inLibrary || inc.inLibrary;
+      const added0 = [cur.addedAt, inc.addedAt].filter((x) => x > 0);
+      merged.addedAt = added0.length ? Math.min(...added0) : 0;
+      merged.lastActivityAt = Math.max(cur.lastActivityAt || 0, inc.lastActivityAt || 0);
+      if (JSON.stringify(merged) !== JSON.stringify(cur)) updated++;
+      out.tracking[k] = merged;
+      const curMeta = out.metadata[k];
+      if ((!curMeta || curMeta.placeholder) && incMeta && !incMeta.placeholder) out.metadata[k] = incMeta;
+    }
+    return { data: out, report: { added, updated } };
+  }
+  function replaceData(current, incoming) {
+    const out = { schemaVersion: C.SCHEMA_VERSION, tracking: {}, metadata: {}, preferences: sanitizePreferences(current.preferences) };
+    for (const [k, t] of Object.entries(incoming.tracking || {})) { out.tracking[k] = C.cloneTrack(t); out.metadata[k] = (incoming.metadata || {})[k] || C.placeholderMeta(k); }
+    return { data: out, report: { added: Object.keys(out.tracking).length, updated: 0 } };
+  }
+
+  /* ---------- Import ---------- */
+  function summarize(data) {
+    const t = Object.values(data.tracking);
+    let episodes = 0;
+    for (const x of t) for (const s of Object.values(x.seasons || {})) episodes += Object.keys(s.episodes || {}).length;
+    return { items: t.length, favorites: t.filter((x) => x.favorite).length, watchlist: t.filter((x) => x.watchlist).length, episodes };
+  }
+  function parseImportText(text) {
+    if (typeof text !== 'string' || !text.trim()) return { ok: false, error: 'Le fichier est vide.' };
+    if (text.length > 15e6) return { ok: false, error: 'Le fichier est trop volumineux (15 Mo maximum).' };
+    let json;
+    try { json = JSON.parse(text); } catch (e) { return { ok: false, error: "Le fichier n'est pas un JSON valide (" + e.message + ')' }; }
+    return parseImportObject(json);
+  }
+  function parseImportObject(json) {
+    if (!isObj(json)) return { ok: false, error: 'Format non reconnu : le fichier doit contenir un objet JSON.' };
+    if (json.app === 'crazy-liste' || isObj(json.tracking)) {
+      const v = json.schemaVersion;
+      if (Number.isInteger(v) && v > C.SCHEMA_VERSION) return { ok: false, error: 'Cette sauvegarde vient d’une version plus récente de Crazy Liste (schéma ' + v + ').' };
+      if (json.kind === 'lists') {
+        if (!Array.isArray(json.items)) return { ok: false, error: 'Export favoris/watchlist incomplet : la liste « items » est absente.' };
+        const data = emptyData();
+        let invalid = 0;
+        for (const it of json.items) {
+          const pk = isObj(it) ? parseKey(it.key || C.itemKey(it.type, it.id)) : null;
+          if (!pk || !(it.favorite === true || it.watchlist === true)) { invalid++; continue; }
+          const t = C.emptyTrack(pk.type, pk.id);
+          t.favorite = it.favorite === true;
+          t.watchlist = it.watchlist === true;
+          t.addedAt = validTime(it.addedAt);
+          data.tracking[pk.key] = t;
+          data.metadata[pk.key] = sanitizeMeta(pk.key, it) || C.placeholderMeta(pk.key);
+        }
+        if (!Object.keys(data.tracking).length) return { ok: false, error: 'Aucun favori ni contenu de watchlist valide dans ce fichier.' };
+        return { ok: true, kind: 'lists', data, invalid, summary: summarize(data) };
+      }
+      if (!isObj(json.tracking)) return { ok: false, error: 'Sauvegarde Crazy Liste incomplète : la section « tracking » est absente.' };
+      const { data, invalid } = sanitizeData(json);
+      return { ok: true, kind: 'full', data, invalid, summary: summarize(data) };
+    }
+    if (isObj(json.items)) {
+      const res = migrateLegacyCinelog(json);
+      if (!res.report.kept) return { ok: false, error: 'Ancienne sauvegarde reconnue, mais elle ne contient aucun suivi, favori ni watchlist à reprendre.' };
+      const data = emptyData();
+      data.tracking = res.tracking;
+      data.metadata = res.metadata;
+      return { ok: true, kind: 'legacy', data, invalid: 0, report: res.report, summary: summarize(data) };
+    }
+    if (Object.keys(json).length && Object.keys(json).every((k) => /^(movie|tv)-\d+(-season-\d+-ep-\d+)?$/.test(k))) {
+      const res = migrateCinevault(json);
+      const data = emptyData();
+      data.tracking = res.tracking;
+      data.metadata = res.metadata;
+      return { ok: true, kind: 'legacy', data, invalid: 0, report: res.report, summary: summarize(data) };
+    }
+    return { ok: false, error: 'Format non reconnu : ce fichier ne ressemble pas à une sauvegarde Crazy Liste.' };
+  }
+
+  /* ---------- Export ---------- */
+  function buildFullExport(data, nowIso) {
+    const prefs = Object.assign({}, data.preferences);
+    delete prefs.apiKey; // la clé n'est pas exportée
+    return { app: 'crazy-liste', kind: 'full', schemaVersion: C.SCHEMA_VERSION, exportedAt: nowIso, tracking: data.tracking, metadata: data.metadata, preferences: prefs };
+  }
+  function buildListsExport(data, nowIso) {
+    const items = [];
+    for (const [k, t] of Object.entries(data.tracking)) {
+      if (!t.favorite && !t.watchlist) continue;
+      const m = data.metadata[k] || C.placeholderMeta(k);
+      items.push({ key: k, type: t.type, id: t.id, favorite: !!t.favorite, watchlist: !!t.watchlist, addedAt: t.addedAt || 0,
+        title: m.title, year: m.year, date: m.date, posterPath: m.posterPath, voteAverage: m.voteAverage });
+    }
+    return { app: 'crazy-liste', kind: 'lists', schemaVersion: C.SCHEMA_VERSION, exportedAt: nowIso, items };
+  }
+
+  /* ---------- Synchronisation entre appareils (logique pure, sans réseau) ----------
+     Chaque contenu est un document distant { v, at, track, meta } ; « at » date la dernière modification du suivi.
+     Pour chaque contenu, la modification la plus récente l'emporte. Une suppression est un document dont track vaut null.
+     L'absence d'un document distant n'est jamais interprétée comme une suppression. */
+  const SYNC_KEY = 'crazy-liste-sync';
+  function canonicalJson(v) {
+    if (Array.isArray(v)) return '[' + v.map(canonicalJson).join(',') + ']';
+    if (isObj(v)) return '{' + Object.keys(v).sort().filter((k) => v[k] !== undefined).map((k) => JSON.stringify(k) + ':' + canonicalJson(v[k])).join(',') + '}';
+    return v === undefined ? 'null' : JSON.stringify(v);
+  }
+  function fingerprint(track) {
+    const s = canonicalJson(track || null);
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return h.toString(36) + '.' + s.length;
+  }
+  function emptySyncState(uid) { return { uid: typeof uid === 'string' && uid ? uid : null, known: {}, dirty: {}, keyAt: 0 }; }
+  function sanitizeSyncState(raw) {
+    const s = emptySyncState(isObj(raw) ? raw.uid : null);
+    if (!s.uid) return s;
+    for (const field of ['known', 'dirty']) {
+      if (!isObj(raw[field])) continue;
+      for (const [k, v] of Object.entries(raw[field])) if (parseKey(k) && isObj(v) && typeof v.h === 'string' && validTime(v.at)) s[field][k] = { h: v.h, at: v.at };
+    }
+    s.keyAt = validTime(raw.keyAt);
+    return s;
+  }
+  /* Repère les contenus qui diffèrent de la dernière version convenue avec le serveur.
+     initial : première connexion de ce compte sur cet appareil → la date d'activité locale sert de date de modification. */
+  function markLocalChanges(sync, tracking, now, initial) {
+    const keys = new Set([...Object.keys(tracking), ...Object.keys(sync.known), ...Object.keys(sync.dirty)]);
+    const changed = [];
+    for (const k of keys) {
+      const t = tracking[k] || null;
+      const h = fingerprint(t);
+      const knownH = sync.known[k] ? sync.known[k].h : fingerprint(null);
+      if (h === knownH) { delete sync.dirty[k]; continue; }
+      if (sync.dirty[k] && sync.dirty[k].h === h) continue;
+      const at = initial && t ? Math.max(1, t.lastActivityAt || 0, t.addedAt || 0) : now;
+      sync.dirty[k] = { h, at };
+      changed.push(k);
+    }
+    return changed;
+  }
+  /* Décide quoi faire d'une version distante : 'same' (identique), 'apply' (plus récente) ou 'push' (la version locale gagne). */
+  function reconcileRemote(sync, key, remote, localTrack) {
+    const rh = fingerprint(remote.track);
+    if (rh === fingerprint(localTrack)) { sync.known[key] = { h: rh, at: remote.at }; delete sync.dirty[key]; return 'same'; }
+    const d = sync.dirty[key];
+    if (d && d.at > remote.at) return 'push';
+    if (!d && sync.known[key] && remote.at < sync.known[key].at) return 'push';
+    sync.known[key] = { h: rh, at: remote.at };
+    delete sync.dirty[key];
+    return 'apply';
+  }
+  function confirmPush(sync, key, h, at) {
+    sync.known[key] = { h, at };
+    if (sync.dirty[key] && sync.dirty[key].h === h) delete sync.dirty[key];
+  }
+  function buildRemoteDoc(track, meta, at) {
+    return { v: 1, at, track: track ? JSON.stringify(track) : null, meta: track && meta ? JSON.stringify(meta) : null };
+  }
+  /* Valide un document distant : il passe par les mêmes contrôles qu'un import. null si inutilisable. */
+  function parseRemoteDoc(key, raw) {
+    const pk = parseKey(key);
+    if (!pk || pk.key !== key || !isObj(raw) || !validTime(raw.at)) return null;
+    let track = null, meta = null;
+    if (raw.track != null) {
+      if (typeof raw.track !== 'string') return null;
+      try { track = sanitizeTrack(key, JSON.parse(raw.track)); } catch (e) { return null; }
+      if (!track) return null;
+      if (!C.isPersonal(track)) track = null;
+    }
+    if (track && typeof raw.meta === 'string') { try { meta = sanitizeMeta(key, JSON.parse(raw.meta)); } catch (e) { meta = null; } }
+    return { track, meta, at: raw.at };
+  }
+
+  root.CrazyData = Object.freeze({
+    STORAGE_KEY, LEGACY_KEYS, defaultPreferences, sanitizePreferences, emptyData, sanitizeTrack, sanitizeMeta, sanitizeData,
+    migrateLegacyCinelog, migrateCinevault, migrateLegacySources, mergeData, replaceData,
+    parseImportText, parseImportObject, buildFullExport, buildListsExport, summarize,
+    SYNC_KEY, canonicalJson, fingerprint, emptySyncState, sanitizeSyncState, markLocalChanges, reconcileRemote, confirmPush, buildRemoteDoc, parseRemoteDoc
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script id="crazy-app">
+/* Crazy Liste — application : état, stockage, TMDB, actions, navigation et rendu.
+   Cycle d'une action : 1) nouvel état (transition pure)  2) agrégats recalculés  3) interface mise à jour  4) sauvegarde. */
+(function () {
+  'use strict';
+  const C = window.CrazyCore;
+  const D = window.CrazyData;
+  const esc = C.escapeHtml;
+
+  /* ===== Configuration TMDB =====
+     Clé v3 reprise de la version précédente de l'application, vérifiée auprès de TMDB le 20/11/2026.
+     Comme toute clé placée dans une page web, elle est lisible par quiconque ouvre ce fichier : elle n'est pas secrète.
+     Une clé personnelle peut la remplacer dans Réglages. */
+  const DEFAULT_TMDB_KEY = ''; // version publique : aucune clé intégrée
+  /* ===== Synchronisation entre appareils (optionnelle) =====
+     Configuration web d'un projet Firebase : ces valeurs identifient le projet, elles ne sont pas secrètes.
+     La protection des données repose sur les règles Firestore (lecture et écriture réservées au compte propriétaire).
+     null : synchronisation désactivée (la liste reste dans ce navigateur). */
+  const FIREBASE_CONFIG = {"apiKey":"AIzaSyDN07Vq4OoD2q7ALWm0_BLPbcXLC0K_U9A","authDomain":"crazy-liste-7c940.firebaseapp.com","projectId":"crazy-liste-7c940","storageBucket":"crazy-liste-7c940.firebasestorage.app","messagingSenderId":"712529946885","appId":"1:712529946885:web:1ec484551e2ed5a6bdef6c"};
+  const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  const TMDB_API = 'https://api.themoviedb.org/3';
+  const TMDB_IMG = 'https://image.tmdb.org/t/p/';
+  const LANGUAGE = 'fr-FR';
+  const CACHE_TTL = 30 * 60 * 1000;
+  const HOME_SECTIONS = [
+    { id: 'trending', title: 'Tendances de la semaine', path: '/trending/all/week', type: null },
+    { id: 'popular-movies', title: 'Films populaires', path: '/movie/popular', type: 'movie' },
+    { id: 'popular-tv', title: 'Séries / anime populaires', path: '/tv/popular', type: 'tv' },
+    { id: 'anime', title: 'Anime populaires', path: '/discover/tv', params: { with_genres: '16', with_original_language: 'ja', sort_by: 'popularity.desc' }, type: 'tv' },
+    { id: 'top-movies', title: 'Films les mieux notés', path: '/movie/top_rated', type: 'movie' },
+    { id: 'upcoming', title: 'Films à venir', path: '/movie/upcoming', params: { region: 'FR' }, type: 'movie', upcoming: true }
+  ];
+  const LIST_ROUTES = ['library', 'favorites', 'watchlist', 'resume'];
+
+  /* ===== Stockage local protégé ===== */
+  const storage = (function () {
+    let ls = null, available = false;
+    try { ls = window.localStorage; ls.setItem('__crazy_probe__', '1'); ls.removeItem('__crazy_probe__'); available = true; } catch (e) { available = false; }
+    return {
+      available,
+      get(key) { if (!available) return null; try { return ls.getItem(key); } catch (e) { return null; } },
+      set(key, value) {
+        if (!available) return { ok: false, error: 'unavailable' };
+        try { ls.setItem(key, value); return { ok: true }; } catch (e) { return { ok: false, error: e && e.name === 'QuotaExceededError' ? 'quota' : 'error' }; }
+      }
+    };
+  })();
+
+  /* ===== État ===== */
+  const state = {
+    data: D.emptyData(),          // seule source de vérité persistée : tracking + metadata + preferences
+    persistBlocked: false,
+    banners: [],
+    route: { name: 'home', params: {} },
+    ui: {
+      home: {},                   // id de section -> { status, items, error }
+      search: { q: '', type: 'all', page: 0, totalPages: 0, results: [], status: 'idle', error: null },
+      detail: { key: null, status: 'idle', error: null },
+      expanded: {},               // clé -> Set des saisons ouvertes
+      seasonLoad: {},             // "clé#n" -> { status, error }
+      busy: {}                    // opérations longues en cours
+    },
+    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map() }
+  };
+  let lastStamp = 0;
+  function activityStamp() { const n = Date.now(); lastStamp = n > lastStamp ? n : lastStamp + 1; return lastStamp; }
+  function todayIso() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function byId(id) {
+    const el = document.getElementById(id);
+    if (!el) throw new Error('Élément #' + id + ' absent : incohérence entre la route et le rendu.');
+    return el;
+  }
+
+  /* ===== Bandeaux persistants ===== */
+  function addBanner(id, tone, text, actions) {
+    state.banners = state.banners.filter((b) => b.id !== id).concat({ id, tone, text, actions: actions || [] });
+    renderBanners();
+  }
+  function removeBanner(id) {
+    if (!state.banners.some((b) => b.id === id)) return;
+    state.banners = state.banners.filter((b) => b.id !== id);
+    renderBanners();
+  }
+  function renderBanners() {
+    byId('banners').innerHTML = state.banners.map((b) => '<div class="banner banner-' + b.tone + '" role="' + (b.tone === 'error' ? 'alert' : 'status') + '"><p>' + esc(b.text) + '</p>' +
+      b.actions.map((a) => a.href ? '<a class="btn btn-sm" href="' + esc(a.href) + '">' + esc(a.label) + '</a>'
+        : '<button type="button" class="btn btn-sm" data-action="' + esc(a.action) + '" data-banner="' + esc(b.id) + '">' + esc(a.label) + '</button>').join('') +
+      '<button type="button" class="btn btn-sm btn-ghost" data-action="dismiss-banner" data-banner="' + esc(b.id) + '" aria-label="Masquer ce message">✕</button></div>').join('');
+  }
+
+  /* ===== Chargement, migration, sauvegarde ===== */
+  function loadData() {
+    if (!storage.available) {
+      addBanner('storage', 'warn', 'Stockage local indisponible (navigation privée ou réglage du navigateur) : tes changements ne seront pas conservés après fermeture. Exporte une sauvegarde depuis Réglages.');
+      return D.emptyData();
+    }
+    const raw = storage.get(D.STORAGE_KEY);
+    if (raw == null) return migrateFromLegacy();
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (e) { parsed = undefined; }
+    if (!C.isObj(parsed)) return handleCorrupt(raw);
+    if (Number.isInteger(parsed.schemaVersion) && parsed.schemaVersion > C.SCHEMA_VERSION) {
+      state.persistBlocked = true;
+      addBanner('future', 'error', 'Cette sauvegarde vient d’une version plus récente de Crazy Liste : elle est affichée sans être modifiée.');
+    }
+    const res = D.sanitizeData(parsed);
+    if (res.invalid) addBanner('invalid', 'warn', res.invalid + ' entrée(s) illisible(s) de la sauvegarde ont été ignorées (le reste est intact).');
+    return res.data;
+  }
+  function handleCorrupt(raw) {
+    const backupKey = D.STORAGE_KEY + '-illisible-' + new Date().toISOString().replace(/[:.]/g, '-');
+    if (storage.set(backupKey, raw).ok) {
+      addBanner('corrupt', 'error', 'La sauvegarde était illisible. Une copie intacte est conservée dans le navigateur sous la clé « ' + backupKey + ' ». Tu peux restaurer un export JSON depuis Réglages.', [{ label: 'Réglages', href: '#settings' }]);
+    } else {
+      state.persistBlocked = true;
+      addBanner('corrupt', 'error', 'La sauvegarde est illisible et aucune copie n’a pu être faite : rien ne sera enregistré pour ne pas l’écraser.', [{ label: 'Repartir de zéro', action: 'unblock-storage' }]);
+    }
+    return D.emptyData();
+  }
+  function migrateFromLegacy() {
+    const sources = [];
+    for (const key of D.LEGACY_KEYS) {
+      const text = storage.get(key);
+      if (text == null) continue;
+      try { const raw = JSON.parse(text); if (C.isObj(raw)) sources.push({ key, raw, text }); } catch (e) { /* ancienne sauvegarde illisible : laissée intacte */ }
+    }
+    if (!sources.length) return D.emptyData();
+    const { data, reports } = D.migrateLegacySources(sources);
+    const kept = Object.keys(data.tracking).length;
+    if (!kept) return D.emptyData();
+    const backup = JSON.stringify({ createdAt: new Date().toISOString(), sources: Object.fromEntries(sources.map((s) => [s.key, s.text])) });
+    const saved = storage.set('crazy-liste-backup-legacy', backup).ok && storage.set(D.STORAGE_KEY, JSON.stringify(data)).ok;
+    const ignored = reports.reduce((n, r) => n + r.ignored, 0);
+    addBanner('migrated', 'info', 'Ancienne sauvegarde reprise : ' + kept + ' contenu(s) suivi(s), favori(s) ou en watchlist' +
+      (ignored ? ' (' + ignored + ' simple(s) consultation(s) non reprise(s))' : '') + '. Les anciennes données restent intactes' +
+      (saved ? ', avec une copie de secours.' : ' ; la nouvelle sauvegarde n’a pas pu être écrite.'));
+    return data;
+  }
+  function persist() {
+    if (state.persistBlocked) return false;
+    const res = storage.set(D.STORAGE_KEY, JSON.stringify(state.data));
+    noteLocalChanges();
+    if (res.ok) { removeBanner('persist'); return true; }
+    if (res.error !== 'unavailable') {
+      addBanner('persist', 'error', res.error === 'quota'
+        ? 'Sauvegarde impossible : le stockage du navigateur est plein. Exporte ta sauvegarde depuis Réglages.'
+        : 'Sauvegarde impossible pour le moment : tes derniers changements ne sont pas enregistrés.');
+    }
+    return false;
+  }
+
+  /* ===== Synchronisation Firebase =====
+     Toujours facultative : sans connexion, l'application fonctionne exactement comme avant.
+     Les données locales restent la source affichée ; le serveur ne fait que transporter les modifications. */
+  const sync = {
+    status: FIREBASE_CONFIG ? 'loading' : 'off', // off | file | loading | signedout | signing | syncing | pending | ok | error
+    error: '', user: null,
+    state: D.emptySyncState(null),
+    fb: null, unsubs: [], timer: 0, pushing: false, pendingTimer: 0
+  };
+  function loadSyncState() {
+    const raw = storage.get(D.SYNC_KEY);
+    if (raw == null) return D.emptySyncState(null);
+    try { return D.sanitizeSyncState(JSON.parse(raw)); } catch (e) { return D.emptySyncState(null); }
+  }
+  function saveSyncState() { storage.set(D.SYNC_KEY, JSON.stringify(sync.state)); }
+  function setSyncStatus(status, error) {
+    sync.status = status;
+    sync.error = error || '';
+    renderSyncChip();
+    if (state.renderedView === 'home' && !currentKey()) byId('view-root').innerHTML = welcomeHtml();
+    if (state.renderedView === 'settings') byId('sync-panel').innerHTML = syncPanelInner();
+  }
+  const SYNC_ERRORS = {
+    'auth/unauthorized-domain': 'Cette adresse n’est pas autorisée dans Firebase (Authentication › Paramètres › Domaines autorisés).',
+    'auth/network-request-failed': 'Connexion impossible : vérifie ta connexion Internet.',
+    'auth/operation-not-allowed': 'La connexion Google n’est pas activée dans Firebase (Authentication › Méthode de connexion).',
+    'permission-denied': 'Accès refusé par les règles Firestore : ce compte n’est pas autorisé à synchroniser cette liste.',
+    'unavailable': 'Serveur de synchronisation injoignable : les changements partiront au retour de la connexion.'
+  };
+  function syncErrorText(err) { return SYNC_ERRORS[err && err.code] || 'Synchronisation impossible' + (err && err.code ? ' (' + err.code + ')' : '') + '.'; }
+
+  async function initSync() {
+    sync.state = loadSyncState();
+    if (!FIREBASE_CONFIG) { setSyncStatus('off'); return; }
+    if (!/^https?:$/.test(location.protocol)) { setSyncStatus('file'); return; }
+    setSyncStatus('loading');
+    try {
+      const [app, auth, fs] = await Promise.all(['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js'].map((f) => import(FIREBASE_SDK + f)));
+      const fbApp = app.initializeApp(FIREBASE_CONFIG);
+      sync.fb = { auth, fs, a: auth.getAuth(fbApp), db: fs.getFirestore(fbApp) };
+    } catch (err) {
+      console.warn('Synchronisation indisponible :', err);
+      setSyncStatus('error', 'Module de synchronisation injoignable (connexion Internet ?). Ta liste reste sur cet appareil.');
+      return;
+    }
+    sync.fb.auth.onAuthStateChanged(sync.fb.a, onSyncUser, onSyncError);
+  }
+  function stopListeners() { sync.unsubs.forEach((u) => u()); sync.unsubs = []; }
+  function onSyncUser(user) {
+    stopListeners();
+    if (!user) {
+      sync.user = null;
+      setSyncStatus('signedout');
+      return;
+    }
+    sync.user = { uid: user.uid, email: user.email || '', name: user.displayName || '' };
+    if (sync.state.uid !== user.uid) {
+      sync.state = D.emptySyncState(user.uid);
+      D.markLocalChanges(sync.state, state.data.tracking, Date.now(), true);
+      saveSyncState();
+    }
+    setSyncStatus('syncing');
+    const { fs, db } = sync.fb;
+    sync.unsubs.push(fs.onSnapshot(fs.collection(db, 'users', user.uid, 'items'), onRemoteItems, onSyncError));
+    sync.unsubs.push(fs.onSnapshot(fs.doc(db, 'users', user.uid, 'settings', 'app'), onRemoteSettings, onSyncError));
+  }
+  function onSyncError(err) { console.warn('Synchronisation :', err); setSyncStatus('error', syncErrorText(err)); }
+
+  /* Réception : chaque document distant est validé puis comparé à la version locale. */
+  function onRemoteItems(snap) {
+    const changed = [];
+    for (const docSnap of snap.docs) {
+      const key = docSnap.id;
+      const remote = D.parseRemoteDoc(key, docSnap.data());
+      if (!remote) continue;
+      const local = getTrack(key);
+      const decision = D.reconcileRemote(sync.state, key, remote, local);
+      if (decision === 'apply') {
+        if (remote.track) {
+          state.data.tracking[key] = remote.track;
+          state.data.metadata[key] = remote.meta || state.data.metadata[key] || C.placeholderMeta(key);
+          if (remote.track.lastActivityAt > lastStamp) lastStamp = remote.track.lastActivityAt;
+        } else {
+          delete state.data.tracking[key];
+          delete state.data.metadata[key];
+        }
+        changed.push(key);
+      } else if (decision === 'same' && local && remote.meta && (!state.data.metadata[key] || state.data.metadata[key].placeholder)) {
+        state.data.metadata[key] = remote.meta;
+        changed.push(key);
+      }
+    }
+    saveSyncState();
+    if (changed.length) {
+      persist();
+      if (changed.length > 5) { renderView(); renderRelated(); renderChrome(); } else changed.forEach(refreshItem);
+    }
+    if (Object.keys(sync.state.dirty).length) schedulePush(0); else if (!sync.pushing) setSyncStatus('ok');
+  }
+  function onRemoteSettings(snap) {
+    const d = snap.exists() ? snap.data() : null;
+    const prefs = state.data.preferences;
+    if (d && typeof d.tmdbKey === 'string' && Number.isFinite(d.at) && d.at > sync.state.keyAt) {
+      sync.state.keyAt = d.at;
+      saveSyncState();
+      const key = D.sanitizePreferences({ apiKey: d.tmdbKey }).apiKey;
+      if (key !== prefs.apiKey) {
+        prefs.apiKey = key;
+        persist();
+        resetNetworkState();
+        handleRoute();
+        if (key) toast('Clé TMDB récupérée depuis ton compte.', 'success');
+      }
+    } else if (!d && prefs.apiKey) {
+      pushSettings();
+    }
+  }
+  function pushSettings() {
+    if (!sync.user) return;
+    const at = Date.now();
+    sync.state.keyAt = at;
+    saveSyncState();
+    const { fs, db } = sync.fb;
+    fs.setDoc(fs.doc(db, 'users', sync.user.uid, 'settings', 'app'), { tmdbKey: state.data.preferences.apiKey || '', at }).catch(onSyncError);
+  }
+
+  /* Envoi : appelé après chaque sauvegarde locale ; regroupe les modifications rapprochées. */
+  function noteLocalChanges() {
+    if (!sync.state.uid) return;
+    if (D.markLocalChanges(sync.state, state.data.tracking, activityStamp(), false).length) { saveSyncState(); schedulePush(600); }
+  }
+  function schedulePush(delay) {
+    if (!sync.user) return;
+    clearTimeout(sync.timer);
+    sync.timer = setTimeout(pushDirty, delay);
+  }
+  async function pushDirty() {
+    if (!sync.user || sync.pushing) return;
+    const keys = Object.keys(sync.state.dirty);
+    if (!keys.length) { setSyncStatus('ok'); return; }
+    sync.pushing = true;
+    setSyncStatus('syncing');
+    clearTimeout(sync.pendingTimer);
+    sync.pendingTimer = setTimeout(() => { if (sync.pushing) setSyncStatus('pending'); }, 4000); // hors ligne : Firestore garde l'envoi en file
+    const { fs, db } = sync.fb;
+    const uid = sync.user.uid;
+    try {
+      for (let i = 0; i < keys.length; i += 400) {
+        const batch = fs.writeBatch(db);
+        const sent = [];
+        for (const k of keys.slice(i, i + 400)) {
+          const track = getTrack(k);
+          const at = sync.state.dirty[k] ? sync.state.dirty[k].at : Date.now();
+          batch.set(fs.doc(db, 'users', uid, 'items', k), D.buildRemoteDoc(track, state.data.metadata[k], at));
+          sent.push([k, D.fingerprint(track), at]);
+        }
+        await batch.commit();
+        if (!sync.user || sync.user.uid !== uid) return;
+        sent.forEach(([k, h, at]) => D.confirmPush(sync.state, k, h, at));
+        saveSyncState();
+      }
+      sync.pushing = false;
+      if (Object.keys(sync.state.dirty).length) schedulePush(300); else setSyncStatus('ok');
+    } catch (err) {
+      sync.pushing = false;
+      onSyncError(err);
+      schedulePush(30000);
+    } finally {
+      sync.pushing = false;
+      clearTimeout(sync.pendingTimer);
+    }
+  }
+  async function signIn() {
+    if (!sync.fb) return;
+    const { auth, a } = sync.fb;
+    setSyncStatus('signing');
+    try {
+      await auth.signInWithPopup(a, new auth.GoogleAuthProvider());
+    } catch (err) {
+      if (err && (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request')) { setSyncStatus(sync.user ? 'ok' : 'signedout'); return; }
+      if (err && (err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment')) { await auth.signInWithRedirect(a, new auth.GoogleAuthProvider()); return; }
+      setSyncStatus('error', syncErrorText(err));
+    }
+  }
+  async function signOutSync() {
+    if (!sync.fb) return;
+    stopListeners();
+    clearTimeout(sync.timer);
+    sync.state = D.emptySyncState(null);
+    saveSyncState();
+    await sync.fb.auth.signOut(sync.fb.a);
+    toast('Déconnecté : ta liste reste sur cet appareil, elle n’est plus synchronisée.', 'info');
+  }
+  function syncSummary() {
+    switch (sync.status) {
+      case 'off': return { tone: 'muted', short: '', text: 'Synchronisation non configurée dans cette version : ta liste reste dans ce navigateur.' };
+      case 'file': return { tone: 'muted', short: '', text: 'Ouverte depuis un fichier, l’application ne peut pas se connecter. Ouvre-la depuis son adresse web pour synchroniser.' };
+      case 'loading': return { tone: 'muted', short: 'Synchro…', text: 'Chargement de la synchronisation…' };
+      case 'signedout': return { tone: 'muted', short: 'Synchro désactivée', text: 'Non connecté : ta liste reste uniquement sur cet appareil.' };
+      case 'signing': return { tone: 'muted', short: 'Connexion…', text: 'Connexion à Google en cours (une fenêtre Google s’ouvre)…' };
+      case 'syncing': return { tone: 'muted', short: 'Synchronisation…', text: 'Synchronisation en cours…' };
+      case 'pending': return { tone: 'warn', short: 'Envoi en attente', text: 'Envoi en attente : les changements partiront dès que la connexion reviendra.' };
+      case 'ok': return { tone: 'ok', short: 'Synchronisé', text: 'À jour sur tous tes appareils connectés.' };
+      default: return { tone: 'err', short: 'Erreur de synchro', text: sync.error || 'Erreur de synchronisation.' };
+    }
+  }
+  function renderSyncChip() {
+    const s = syncSummary();
+    document.querySelectorAll('[data-sync-chip]').forEach((el) => {
+      el.hidden = !s.short;
+      el.className = 'sync-chip sync-' + s.tone;
+      el.title = s.text;
+      el.querySelector('[data-sync-text]').textContent = s.short;
+    });
+  }
+  function syncPanelInner() {
+    const s = syncSummary();
+    let html = '<h2>Synchronisation entre appareils</h2><p class="sync-line sync-' + s.tone + '"><span class="sync-dot" aria-hidden="true"></span><span role="status">' + esc(s.text) + '</span></p>';
+    if (sync.user) {
+      html += '<p>Connecté avec <strong>' + esc(sync.user.email || sync.user.name || 'ton compte Google') + '</strong>.</p>' +
+        '<div class="row"><button type="button" class="btn" data-action="sync-now">Synchroniser maintenant</button><button type="button" class="btn btn-ghost" data-action="sync-signout">Se déconnecter</button></div>';
+    } else if (sync.fb) {
+      html += '<p>Connecte-toi avec le même compte Google sur ton ordinateur et ton téléphone : chaque changement apparaît sur les deux. Ta clé TMDB suit aussi.</p>' +
+        '<div class="row"><button type="button" class="btn btn-primary" data-action="sync-signin"' + (sync.status === 'signing' ? ' disabled' : '') + '>Se connecter avec Google</button></div>';
+    }
+    if (sync.status !== 'off' && sync.status !== 'file') html += '<p class="hint">Ta liste est enregistrée dans ton espace Firebase, lisible uniquement par ton compte. Elle reste aussi sur chaque appareil et fonctionne hors connexion. Si le même contenu est modifié sur deux appareils, la modification la plus récente l’emporte.</p>';
+    return html;
+  }
+
+  /* ===== Client TMDB ===== */
+  const TMDB_MESSAGES = {
+    nokey: 'Aucune clé TMDB configurée : ajoute ta clé dans Réglages.',
+    auth: 'Clé TMDB refusée (401) : vérifie-la dans Réglages.',
+    notfound: 'Contenu introuvable sur TMDB.',
+    rate: 'TMDB reçoit trop de requêtes : réessaie dans un instant.',
+    server: 'TMDB rencontre un problème (erreur serveur) : réessaie plus tard.',
+    network: 'Connexion à TMDB impossible : vérifie ta connexion Internet.',
+    invalid: 'Réponse TMDB inattendue.',
+    unknown: 'Erreur TMDB inattendue.'
+  };
+  class TmdbError extends Error {
+    constructor(kind, status) { super(TMDB_MESSAGES[kind] || TMDB_MESSAGES.unknown); this.name = 'TmdbError'; this.kind = kind; this.status = status || 0; }
+  }
+  const requestCache = new Map();
+  function currentKey() { return (state.data.preferences.apiKey || '').trim() || DEFAULT_TMDB_KEY; }
+  function tmdb(path, params, opts) {
+    const o = opts || {};
+    const key = o.key || currentKey();
+    if (!key) return Promise.reject(new TmdbError('nokey'));
+    const url = new URL(TMDB_API + path);
+    url.searchParams.set('language', LANGUAGE);
+    for (const [k, v] of Object.entries(params || {})) if (v != null && v !== '') url.searchParams.set(k, String(v));
+    const cacheKey = url.toString() + '|' + key;
+    if (!o.noCache) {
+      const hit = requestCache.get(cacheKey);
+      if (hit && Date.now() - hit.at < CACHE_TTL) return hit.promise;
+    }
+    const headers = { accept: 'application/json' };
+    if (/^eyJ/.test(key)) headers.Authorization = 'Bearer ' + key; else url.searchParams.set('api_key', key);
+    const promise = fetch(url.toString(), { headers, signal: o.signal })
+      .catch((err) => { throw err && err.name === 'AbortError' ? err : new TmdbError('network'); })
+      .then((res) => {
+        if (!res.ok) throw new TmdbError(res.status === 401 ? 'auth' : res.status === 404 ? 'notfound' : res.status === 429 ? 'rate' : res.status >= 500 ? 'server' : 'unknown', res.status);
+        return res.json().catch(() => { throw new TmdbError('invalid'); });
+      });
+    if (!o.noCache) {
+      requestCache.set(cacheKey, { at: Date.now(), promise });
+      promise.catch(() => requestCache.delete(cacheKey));
+    }
+    return promise;
+  }
+  function img(path, size) { return path ? TMDB_IMG + size + path : null; }
+  const noop = () => {};
+
+  /* ===== Accès aux données ===== */
+  const getTrack = (key) => state.data.tracking[key] || null;
+  function rememberSummary(s) { if (s && !state.cache.summaries.has(s.key)) state.cache.summaries.set(s.key, s); }
+  /* Meilleures métadonnées disponibles : fiche chargée > métadonnées sauvegardées > résumé affiché. Ne modifie rien. */
+  function buildMeta(key, prev) {
+    const d = state.cache.details.get(key);
+    const s = state.cache.summaries.get(key);
+    let m = d ? C.metaFromDetail(d, prev) : prev ? prev : s ? C.metaFromSummary(s, null) : C.placeholderMeta(key);
+    if (m && m.type === 'tv' && Array.isArray(m.seasonSummaries)) {
+      for (const sum of m.seasonSummaries) {
+        const season = state.cache.seasons.get(key + '#' + sum.number);
+        if (season) m = C.withSeasonEpisodes(m, season);
+      }
+    }
+    return m;
+  }
+  function viewMeta(key) { return state.data.metadata[key] || buildMeta(key, null); }
+  function itemState(key) { const pk = C.parseKey(key); return C.computeItemState(pk.type, viewMeta(key), getTrack(key)); }
+  function itemTitle(key) { return viewMeta(key).title; }
+
+  /* ===== Cycle d'action centralisé ===== */
+  function commit(key, change, opts) {
+    const o = opts || {};
+    const pk = C.parseKey(key);
+    const before = { track: getTrack(key), meta: state.data.metadata[key] || null };
+    let next;
+    try { next = change(before.track || C.emptyTrack(pk.type, pk.id)); } catch (err) { console.error(err); toast('Action impossible : ' + err.message, 'error'); return false; }
+    if (C.isPersonal(next)) {                                     // 1. état
+      state.data.tracking[key] = next;
+      state.data.metadata[key] = buildMeta(key, before.meta);
+    } else {
+      delete state.data.tracking[key];
+      delete state.data.metadata[key];
+    }
+    refreshItem(key);                                             // 2-3. agrégats + interface
+    persist();                                                    // 4. sauvegarde
+    if (o.undo) toast(o.undo, 'info', { label: 'Annuler', run: () => restore(key, before) });
+    return true;
+  }
+  function restore(key, before) {
+    if (before.track) { state.data.tracking[key] = before.track; state.data.metadata[key] = before.meta || buildMeta(key, null); }
+    else { delete state.data.tracking[key]; delete state.data.metadata[key]; }
+    refreshItem(key);
+    persist();
+  }
+  function refreshItem(key) {
+    patchItemUI(key);
+    if (state.route.name === 'detail' && state.route.key === key) patchDetail(key);
+    if (LIST_ROUTES.includes(state.route.name)) renderView();
+    renderChrome();
+  }
+
+  /* ===== Chargements réseau ===== */
+  async function loadHomeSection(sec, force) {
+    const cur = state.ui.home[sec.id];
+    if (!force && cur && (cur.status === 'ready' || cur.status === 'loading' || cur.status === 'empty')) return;
+    state.ui.home[sec.id] = { status: 'loading' };
+    renderHomeSection(sec.id);
+    try {
+      const json = await tmdb(sec.path, sec.params);
+      let items = (Array.isArray(json.results) ? json.results : []).map((r) => C.normalizeSummary(r, sec.type)).filter(Boolean);
+      if (sec.upcoming) items = C.filterUpcoming(items, todayIso());
+      items.forEach(rememberSummary);
+      state.ui.home[sec.id] = { status: items.length ? 'ready' : 'empty', items: items.slice(0, 20) };
+    } catch (err) {
+      state.ui.home[sec.id] = { status: 'error', error: err };
+    }
+    renderHomeSection(sec.id);
+  }
+
+  let searchSeq = 0, searchAbort = null, searchTimer = 0;
+  function startSearch(q, type, page) {
+    const s = state.ui.search;
+    const p = page || 1;
+    if (searchAbort) searchAbort.abort();
+    const seq = ++searchSeq;
+    s.q = q; s.type = type;
+    if (!q) { Object.assign(s, { status: 'idle', results: [], page: 0, totalPages: 0, error: null }); renderSearchBody(); return; }
+    s.error = null;
+    s.status = p === 1 ? 'loading' : 'loading-more';
+    if (p === 1) s.results = [];
+    renderSearchBody();
+    const ctrl = new AbortController();
+    searchAbort = ctrl;
+    const path = type === 'movie' ? '/search/movie' : type === 'tv' ? '/search/tv' : '/search/multi';
+    tmdb(path, { query: q, page: p, include_adult: 'false' }, { signal: ctrl.signal, noCache: true }).then((json) => {
+      if (seq !== searchSeq) return; // réponse périmée : une recherche plus récente a été lancée
+      const items = (Array.isArray(json.results) ? json.results : []).map((r) => C.normalizeSummary(r, type === 'all' ? null : type)).filter(Boolean);
+      items.forEach(rememberSummary);
+      const merged = p === 1 ? items : s.results.concat(items.filter((i) => !s.results.some((r) => r.key === i.key)));
+      Object.assign(s, { results: merged, page: p, totalPages: C.num(json.total_pages), status: merged.length ? 'ready' : 'empty' });
+      renderSearchBody();
+    }).catch((err) => {
+      if (seq !== searchSeq || (err && err.name === 'AbortError')) return;
+      Object.assign(s, { status: p === 1 ? 'error' : 'ready', error: err });
+      renderSearchBody();
+      if (p > 1) toast(err.message, 'error');
+    });
+  }
+
+  let detailToken = 0;
+  async function loadDetail(route, force) {
+    const key = route.key;
+    const token = ++detailToken;
+    if (!force && state.cache.details.has(key)) {
+      state.ui.detail = { key, status: 'ready', error: null };
+      afterDetailReady(key);
+      return;
+    }
+    state.ui.detail = { key, status: 'loading', error: null };
+    if (force) renderView();
+    try {
+      const raw = await tmdb('/' + route.type + '/' + route.id, { append_to_response: 'recommendations' });
+      const d = C.normalizeDetail(raw, route.type);
+      if (!d) throw new TmdbError('invalid');
+      state.cache.details.set(key, d);
+      rememberSummary(d);
+      d.recommendations.forEach(rememberSummary);
+      if (C.isPersonal(getTrack(key))) { state.data.metadata[key] = buildMeta(key, state.data.metadata[key] || null); persist(); }
+      if (token !== detailToken) return;
+      state.ui.detail = { key, status: 'ready', error: null };
+      if (d.type === 'tv') expandedSeasons(key);
+      renderView();
+      renderRelated();
+      renderChrome();
+      afterDetailReady(key);
+    } catch (err) {
+      if (token !== detailToken) return;
+      state.ui.detail = { key, status: 'error', error: err };
+      renderView();
+      renderRelated();
+    }
+  }
+  function afterDetailReady(key) {
+    const d = state.cache.details.get(key);
+    if (d.type === 'tv') { for (const n of expandedSeasons(key)) ensureSeason(key, n).catch(noop); }
+    else if (d.collection) ensureCollection(d.collection.id);
+  }
+  /* Saisons ouvertes : choix de l'utilisateur, sinon la première saison régulière non terminée. */
+  function expandedSeasons(key) {
+    if (state.ui.expanded[key]) return state.ui.expanded[key];
+    const meta = viewMeta(key);
+    const st = C.computeShowState(meta, getTrack(key));
+    const first = st.seasons.find((s) => s.status !== 'seen') || st.seasons[st.seasons.length - 1];
+    state.ui.expanded[key] = new Set(first ? [first.number] : []);
+    return state.ui.expanded[key];
+  }
+  const seasonPromises = new Map();
+  function ensureSeason(key, n) {
+    const id = key + '#' + n;
+    if (state.cache.seasons.has(id)) return Promise.resolve(state.cache.seasons.get(id));
+    if (seasonPromises.has(id)) return seasonPromises.get(id);
+    const pk = C.parseKey(key);
+    state.ui.seasonLoad[id] = { status: 'loading' };
+    patchSeason(key, n);
+    const p = tmdb('/tv/' + pk.id + '/season/' + n).then((raw) => {
+      const season = C.normalizeSeason(raw);
+      if (!season || season.number !== n) throw new TmdbError('invalid');
+      state.cache.seasons.set(id, season);
+      delete state.ui.seasonLoad[id];
+      const m = state.data.metadata[key];
+      if (m) {
+        const updated = C.withSeasonEpisodes(m, season);
+        const before = (m.seasonSummaries || []).find((x) => x.number === n);
+        if (!before || JSON.stringify(before.episodeNumbers) !== JSON.stringify(season.episodes.map((e) => e.number))) { state.data.metadata[key] = updated; persist(); renderChrome(); }
+      }
+      patchSeason(key, n);
+      patchTrackBox(key);
+      return season;
+    }, (err) => {
+      state.ui.seasonLoad[id] = { status: 'error', error: err };
+      patchSeason(key, n);
+      throw err;
+    }).finally(() => seasonPromises.delete(id));
+    seasonPromises.set(id, p);
+    return p;
+  }
+  function ensureCollection(id) {
+    const cur = state.cache.collections.get(id);
+    if (cur && cur.status !== 'error') return;
+    state.cache.collections.set(id, { status: 'loading' });
+    tmdb('/collection/' + id).then((json) => {
+      const parts = Array.isArray(json.parts) ? json.parts : [];
+      parts.forEach((p) => rememberSummary(C.normalizeSummary(p, 'movie')));
+      state.cache.collections.set(id, { status: 'ready', parts, name: C.str(json.name, 200) });
+    }, (err) => {
+      state.cache.collections.set(id, { status: 'error', error: err });
+    }).then(renderRelated);
+  }
+  /* Complète les métadonnées des contenus suivis qui en manquent (anciennes sauvegardes, imports). Ne touche pas au suivi. */
+  async function refreshStaleMetadata() {
+    const keys = Object.keys(state.data.tracking).filter((k) => {
+      const m = state.data.metadata[k];
+      return !m || m.placeholder || (m.type === 'tv' && !Array.isArray(m.seasonSummaries));
+    });
+    if (!keys.length) return;
+    let i = 0, changed = false;
+    async function worker() {
+      while (i < keys.length) {
+        const k = keys[i++];
+        const pk = C.parseKey(k);
+        try {
+          const raw = await tmdb('/' + pk.type + '/' + pk.id, { append_to_response: 'recommendations' });
+          const d = C.normalizeDetail(raw, pk.type);
+          if (!d) continue;
+          state.cache.details.set(k, d);
+          if (state.data.tracking[k]) { state.data.metadata[k] = buildMeta(k, state.data.metadata[k] || null); changed = true; }
+        } catch (e) { /* hors ligne ou contenu retiré : nouvel essai au prochain démarrage */ }
+      }
+    }
+    await Promise.all([worker(), worker()]);
+    if (!changed) return;
+    persist();
+    renderChrome();
+    if (LIST_ROUTES.includes(state.route.name)) renderView();
+    else Object.keys(state.data.tracking).forEach(patchItemUI);
+  }
+  /* Charge toutes les saisons régulières (4 en parallèle) ; renvoie les listes d'épisodes et les échecs. */
+  async function loadRegularSeasons(key, onProgress) {
+    const d = state.cache.details.get(key);
+    const regular = d.seasonSummaries.filter((s) => s.number > 0);
+    const map = {}, failed = [];
+    let i = 0, done = 0;
+    async function worker() {
+      while (i < regular.length) {
+        const s = regular[i++];
+        try { const season = await ensureSeason(key, s.number); if (season.episodes.length) map[s.number] = season.episodes.map((e) => e.number); }
+        catch (e) { failed.push(s.number); }
+        onProgress(++done, regular.length);
+      }
+    }
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    return { map, failed: failed.sort((a, b) => a - b) };
+  }
+
+  /* ===== Actions utilisateur (délégation d'événements, aucun onclick inline) ===== */
+  function seasonFromCache(key, n) { return state.cache.seasons.get(key + '#' + n) || null; }
+  function setBusy(id, on) { if (on) state.ui.busy[id] = true; else delete state.ui.busy[id]; }
+  async function seasonForAction(el, key, n) {
+    const cached = seasonFromCache(key, n);
+    if (cached) return cached;
+    el.classList.add('is-busy');
+    try { return await ensureSeason(key, n); }
+    catch (err) { toast('Saison ' + n + ' : ' + err.message + ' Rien n’a été modifié.', 'error'); return null; }
+    finally { el.classList.remove('is-busy'); }
+  }
+  const actions = {
+    'toggle-favorite'(el) {
+      const key = el.dataset.key;
+      const wasOn = !!(getTrack(key) && getTrack(key).favorite);
+      commit(key, (t) => C.toggleFlag(t, 'favorite', Date.now()), wasOn ? { undo: '« ' + itemTitle(key) + ' » retiré des favoris.' } : null);
+    },
+    'toggle-watchlist'(el) {
+      const key = el.dataset.key;
+      const wasOn = !!(getTrack(key) && getTrack(key).watchlist);
+      commit(key, (t) => C.toggleFlag(t, 'watchlist', Date.now()), wasOn ? { undo: '« ' + itemTitle(key) + ' » retiré de la watchlist.' } : null);
+    },
+    'movie-status'(el) { commit(el.dataset.key, (t) => C.setMovieStatus(t, el.dataset.status, activityStamp())); },
+    'episode-status'(el) {
+      const n = Number(el.dataset.season), e = Number(el.dataset.episode);
+      commit(el.dataset.key, (t) => C.setEpisodeStatus(t, n, e, el.dataset.status, activityStamp()));
+    },
+    async 'episodes-upto'(el) {
+      const key = el.dataset.key, n = Number(el.dataset.season), e = Number(el.dataset.episode);
+      const season = seasonFromCache(key, n);
+      if (!season) return;
+      const nums = season.episodes.map((x) => x.number);
+      commit(key, (t) => C.setEpisodesUpTo(t, n, nums, e, activityStamp()), { undo: 'Saison ' + n + ' : épisodes jusqu’à É' + e + ' marqués « Vu ».' });
+    },
+    async 'season-status'(el) {
+      const key = el.dataset.key, n = Number(el.dataset.season), status = el.dataset.status;
+      const season = await seasonForAction(el, key, n);
+      if (!season) return;
+      const nums = season.episodes.map((x) => x.number);
+      if (!nums.length) { toast('Aucun épisode n’est encore disponible pour la saison ' + n + ' : rien à modifier.', 'error'); return; }
+      commit(key, (t) => C.setSeasonStatus(t, n, nums, status, activityStamp()),
+        { undo: (n === 0 ? 'Épisodes spéciaux' : 'Saison ' + n) + ' : ' + nums.length + ' épisode(s) marqué(s) « ' + C.STATUS_LABELS[status] + ' ».' });
+    },
+    'season-toggle'(el) {
+      const key = el.dataset.key, n = Number(el.dataset.season);
+      const set = expandedSeasons(key);
+      if (set.has(n)) set.delete(n); else set.add(n);
+      patchSeason(key, n);
+      if (set.has(n)) ensureSeason(key, n).catch(noop);
+    },
+    'season-retry'(el) { ensureSeason(el.dataset.key, Number(el.dataset.season)).catch(noop); },
+    'show-start'(el) { commit(el.dataset.key, (t) => C.startShow(t, activityStamp())); },
+    'show-reset'(el) { commit(el.dataset.key, (t) => C.resetShow(t, activityStamp()), { undo: 'Progression de « ' + itemTitle(el.dataset.key) + ' » remise à « À voir ».' }); },
+    async 'show-all-seen'(el) {
+      const key = el.dataset.key;
+      if (state.ui.busy['all:' + key] || !state.cache.details.has(key)) return;
+      setBusy('all:' + key, true);
+      patchTrackBox(key);
+      try {
+        const { map, failed } = await loadRegularSeasons(key, (done, total) => {
+          const b = document.querySelector('[data-action="show-all-seen"][data-key="' + key + '"]');
+          if (b) b.textContent = 'Chargement des saisons… ' + done + '/' + total;
+        });
+        const count = Object.values(map).reduce((n, a) => n + a.length, 0);
+        if (!count) { toast('Aucun épisode disponible : rien n’a été marqué.', 'error'); return; }
+        commit(key, (t) => C.markShowSeen(t, map, activityStamp()), { undo: count + ' épisode(s) marqué(s) « Vu ».' });
+        if (failed.length) toast('Saison(s) ' + failed.join(', ') + ' impossible(s) à charger : elles n’ont pas été modifiées et la série reste « En cours ».', 'error', null, 9000);
+      } finally {
+        setBusy('all:' + key, false);
+        patchTrackBox(key);
+      }
+    },
+    'legacy-apply'(el) { actions['show-all-seen'](el); },
+    'legacy-dismiss'(el) { commit(el.dataset.key, (t) => C.dismissLegacy(t)); },
+    async 'remove-item'(el) {
+      const key = el.dataset.key;
+      const title = itemTitle(key);
+      const pk = C.parseKey(key);
+      commit(key, () => C.emptyTrack(pk.type, pk.id), { undo: '« ' + title + ' » retiré de ta liste (progression, favori et watchlist).' });
+    },
+    'retry-section'(el) { const sec = HOME_SECTIONS.find((s) => s.id === el.dataset.section); if (sec) loadHomeSection(sec, true); },
+    'retry-detail'() { if (state.route.name === 'detail') loadDetail(state.route, true); },
+    'retry-search'() { startSearch(state.ui.search.q, state.ui.search.type, 1); },
+    'search-more'() { const s = state.ui.search; startSearch(s.q, s.type, s.page + 1); },
+    'search-type'(el) {
+      const type = el.dataset.type;
+      navigate(C.buildHash('search', { q: state.ui.search.q || byId('search-input').value.trim(), type: type === 'all' ? '' : type }), true);
+    },
+    'lib-status'(el) {
+      state.data.preferences.libraryStatus = el.dataset.status;
+      persist();
+      if (state.route.params.status) navigate(C.buildHash(state.route.name, {}), true); else renderView();
+    },
+    'rail-scroll'(el) {
+      const rail = byId('rail-' + el.dataset.rail);
+      rail.scrollBy({ left: Number(el.dataset.dir) * rail.clientWidth * 0.85, behavior: 'smooth' });
+    },
+    'toggle-theme'() { setTheme(state.data.preferences.theme === 'dark' ? 'light' : 'dark'); },
+    'set-theme'(el) { setTheme(el.dataset.theme); },
+    'dismiss-banner'(el) { removeBanner(el.dataset.banner); },
+    async 'sync-signin'() { await signIn(); },
+    async 'sync-signout'() { await signOutSync(); },
+    'sync-now'() { if (Object.keys(sync.state.dirty).length) schedulePush(0); else toast('Tout est déjà synchronisé.', 'success'); },
+    'unblock-storage'() { state.persistBlocked = false; removeBanner('corrupt'); persist(); toast('La sauvegarde repart de zéro.', 'success'); },
+    'toast-action'(el) { const run = toastActions.get(el.dataset.toast); removeToast(el.dataset.toast); if (run) run(); },
+    'toast-close'(el) { removeToast(el.dataset.toast); },
+    'dialog-choose'(el) { byId('app-dialog').close(el.dataset.value); },
+    'export-full'() { downloadJson('crazy-liste-sauvegarde-' + todayIso() + '.json', D.buildFullExport(state.data, new Date().toISOString())); },
+    'export-lists'() { downloadJson('crazy-liste-favoris-watchlist-' + todayIso() + '.json', D.buildListsExport(state.data, new Date().toISOString())); },
+    'import-open'() { byId('import-file').click(); },
+    async 'key-save'() {
+      const k = byId('tmdb-key-input').value.trim();
+      if (!/^[\w.\-]{16,600}$/.test(k)) { setKeyResult('err', 'Format invalide : colle une clé API v3 (32 caractères) ou un jeton d’accès v4.'); return; }
+      setKeyResult('', 'Test de la clé auprès de TMDB…');
+      try {
+        await tmdb('/configuration', {}, { key: k, noCache: true });
+        state.data.preferences.apiKey = k;
+        persist();
+        pushSettings();
+        resetNetworkState();
+        setKeyResult('ok', 'Clé valide : elle est enregistrée et utilisée.');
+      } catch (err) {
+        setKeyResult('err', (err.kind === 'auth' ? 'TMDB refuse cette clé.' : err.message) + ' La clé n’a pas été enregistrée.');
+      }
+    },
+    'key-reset'() {
+      state.data.preferences.apiKey = '';
+      persist();
+      pushSettings();
+      resetNetworkState();
+      renderView();
+      toast(DEFAULT_TMDB_KEY ? 'Clé intégrée rétablie.' : 'Clé retirée.', 'success');
+    },
+    async 'clear-data'() {
+      const choice = await ask('Effacer toutes mes données ?', '<p>Ta progression, tes favoris et ta watchlist seront supprimés de ce navigateur. Une copie de secours est conservée sous la clé « crazy-liste-backup-before-reset ».</p>',
+        [{ value: 'cancel', label: 'Annuler' }, { value: 'clear', label: 'Tout effacer', tone: 'danger' }]);
+      if (choice !== 'clear') return;
+      if (!storage.set('crazy-liste-backup-before-reset', JSON.stringify(state.data)).ok && storage.available) { toast('Copie de secours impossible : rien n’a été effacé.', 'error'); return; }
+      const prefs = state.data.preferences;
+      state.data = D.emptyData();
+      state.data.preferences = prefs;
+      persist();
+      renderAll();
+      toast('Données effacées. La copie de secours reste disponible dans le navigateur.', 'success');
+    }
+  };
+  function setTheme(theme) {
+    state.data.preferences.theme = theme === 'light' ? 'light' : 'dark';
+    applyTheme();
+    persist();
+    if (state.route.name === 'settings') renderView();
+  }
+  function applyTheme() {
+    const t = state.data.preferences.theme;
+    document.documentElement.setAttribute('data-theme', t);
+    document.querySelectorAll('[data-theme-label]').forEach((el) => { el.textContent = t === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'; });
+  }
+  function resetNetworkState() {
+    requestCache.clear();
+    state.ui.home = {};
+    state.cache.details.clear();
+    state.cache.seasons.clear();
+    state.cache.collections.clear();
+  }
+  function setKeyResult(tone, text) {
+    if (state.route.name !== 'settings') return;
+    const el = byId('key-result');
+    el.className = 'hint' + (tone === 'ok' ? ' ok-text' : tone === 'err' ? ' err-text' : '');
+    el.textContent = text;
+  }
+  function downloadJson(filename, obj) {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast('Fichier « ' + filename + ' » enregistré dans tes téléchargements.', 'success');
+  }
+  async function importFile(file) {
+    let text;
+    try { text = await file.text(); } catch (e) { toast('Lecture du fichier impossible.', 'error'); return; }
+    const res = D.parseImportText(text);
+    if (!res.ok) { showImportResult('err', 'Import refusé : ' + res.error); toast('Import refusé : ' + res.error, 'error', null, 8000); return; }
+    const s = res.summary;
+    const kind = { full: 'Sauvegarde complète Crazy Liste', lists: 'Export favoris + watchlist', legacy: 'Ancienne sauvegarde (version précédente)' }[res.kind];
+    const choice = await ask('Importer « ' + file.name + ' »',
+      '<p><strong>' + esc(kind) + '</strong> : ' + s.items + ' contenu(s), ' + s.favorites + ' favori(s), ' + s.watchlist + ' en watchlist, ' + s.episodes + ' épisode(s) renseigné(s).' +
+      (res.invalid ? ' ' + res.invalid + ' entrée(s) invalide(s) seront ignorées.' : '') + '</p>' +
+      '<p><strong>Fusionner</strong> ajoute ces contenus à ta liste (en cas de conflit, la progression la plus récente est gardée, favoris et watchlist sont cumulés).</p>' +
+      '<p><strong>Remplacer</strong> remplace toute ta liste par ce fichier (copie de secours de la liste actuelle conservée).</p>',
+      [{ value: 'cancel', label: 'Annuler' }, { value: 'replace', label: 'Remplacer', tone: 'danger' }, { value: 'merge', label: 'Fusionner', tone: 'primary' }]);
+    if (choice === 'merge') {
+      const r = D.mergeData(state.data, res.data);
+      applyImported(r.data, 'Import fusionné : ' + r.report.added + ' contenu(s) ajouté(s), ' + r.report.updated + ' mis à jour.');
+    } else if (choice === 'replace') {
+      if (storage.available && !storage.set('crazy-liste-backup-before-import', JSON.stringify(state.data)).ok) { toast('Copie de secours impossible : import annulé.', 'error'); return; }
+      const r = D.replaceData(state.data, res.data);
+      applyImported(r.data, 'Liste remplacée par l’import (' + r.report.added + ' contenu(s)). Ancienne liste copiée sous « crazy-liste-backup-before-import ».');
+    } else {
+      showImportResult('', 'Import annulé : rien n’a été modifié.');
+    }
+  }
+  function applyImported(data, message) {
+    state.data = data;
+    applyTheme();
+    persist();
+    renderAll();
+    showImportResult('ok', message);
+    toast(message, 'success', null, 7000);
+    refreshStaleMetadata();
+  }
+  function showImportResult(tone, text) {
+    if (state.route.name !== 'settings') return;
+    const el = byId('import-result');
+    el.className = 'hint' + (tone === 'ok' ? ' ok-text' : tone === 'err' ? ' err-text' : '');
+    el.textContent = text;
+  }
+
+  /* ===== Toasts et dialogue ===== */
+  let toastSeq = 0;
+  const toastActions = new Map();
+  function toast(message, tone, action, timeout) {
+    const id = 't' + (++toastSeq);
+    const root = byId('toasts');
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + (tone || 'info');
+    el.dataset.toastId = id;
+    const p = document.createElement('p');
+    p.textContent = message;
+    el.append(p);
+    if (action) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn btn-sm'; b.textContent = action.label;
+      b.dataset.action = 'toast-action'; b.dataset.toast = id;
+      el.append(b);
+      toastActions.set(id, action.run);
+    }
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = 'btn btn-sm btn-ghost btn-icon'; x.textContent = '✕';
+    x.setAttribute('aria-label', 'Fermer'); x.dataset.action = 'toast-close'; x.dataset.toast = id;
+    el.append(x);
+    root.append(el);
+    while (root.children.length > 3) removeToast(root.firstElementChild.dataset.toastId);
+    setTimeout(() => removeToast(id), timeout || (action ? 8000 : 4500));
+  }
+  function removeToast(id) {
+    toastActions.delete(id);
+    const el = document.querySelector('[data-toast-id="' + id + '"]');
+    if (el) el.remove(); // déjà fermé par l'utilisateur : rien à faire
+  }
+  let dialogResolve = null;
+  function ask(title, html, buttons) {
+    const dlg = byId('app-dialog');
+    if (dialogResolve) { dialogResolve('cancel'); dialogResolve = null; }
+    byId('dialog-title').textContent = title;
+    byId('dialog-content').innerHTML = html;
+    byId('dialog-actions').innerHTML = buttons.map((b) => '<button type="button" class="btn' + (b.tone ? ' btn-' + b.tone : '') + '" data-action="dialog-choose" data-value="' + esc(b.value) + '">' + esc(b.label) + '</button>').join('');
+    dlg.returnValue = '';
+    return new Promise((resolve) => { dialogResolve = resolve; dlg.showModal(); });
+  }
+
+  /* ===== Fragments HTML : fonctions de rendu en lecture seule (aucune écriture d'état, aucune date courante) ===== */
+  const STATUS_LABELS = C.STATUS_LABELS, TYPE_LABELS = C.TYPE_LABELS;
+  const CHEVRON = '<svg class="icon chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  function statusBadge(status, key) {
+    return '<span class="status status-' + status + '"' + (key ? ' data-status-for="' + key + '"' : '') + '>' + STATUS_LABELS[status] + '</span>';
+  }
+  function ratingHtml(v, title) {
+    return '<span class="rating rating-' + C.ratingTier(v) + '" title="' + esc(title || 'Note TMDB') + '">' + C.formatRating(v) + '</span>';
+  }
+  function posterHtml(item, size) {
+    const src = img(item.posterPath, size);
+    return '<span class="poster-fallback">' + esc(item.title) + '</span>' + (src ? '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async">' : '');
+  }
+  function toggleLabel(kind, on) {
+    return kind === 'favorite' ? (on ? '♥ En favori' : '♡ Ajouter favori') : (on ? '✓ En watchlist' : '＋ Ajouter watchlist');
+  }
+  function listButton(kind, key, size) {
+    const t = getTrack(key);
+    const on = !!(t && t[kind]);
+    return '<button type="button" class="btn ' + (size == null ? 'btn-sm' : size) + ' ' + (kind === 'favorite' ? 'btn-fav' : 'btn-watch') + '" data-action="toggle-' + kind +
+      '" data-key="' + key + '" aria-pressed="' + on + '">' + toggleLabel(kind, on) + '</button>';
+  }
+  function segHtml(action, key, season, episode, current, label, large) {
+    const attrs = ' data-key="' + key + '"' + (season != null ? ' data-season="' + season + '"' : '') + (episode != null ? ' data-episode="' + episode + '"' : '');
+    return '<div class="seg' + (large ? ' seg-lg' : '') + '" role="group" aria-label="' + esc(label) + '">' + C.STATUSES.map((s) =>
+      '<button type="button" data-action="' + action + '"' + attrs + ' data-status="' + s + '" aria-pressed="' + (current === s) + '">' + STATUS_LABELS[s] + '</button>').join('') + '</div>';
+  }
+  function cardHtml(item) {
+    const key = item.key;
+    return '<article class="card" data-item-key="' + key + '">' +
+      '<div class="poster">' + posterHtml(item, 'w342') + ratingHtml(item.voteAverage) + (C.isAnime(item) ? '<span class="type-tag">Anime</span>' : '') + '</div>' +
+      '<div class="card-body">' +
+        '<h3 class="card-title"><a class="card-link" href="' + C.detailHash(item.type, item.id) + '">' + esc(item.title) + '</a></h3>' +
+        '<div class="card-meta"><span>' + esc(item.year || 'Date inconnue') + '</span><span aria-hidden="true">·</span><span>' + TYPE_LABELS[item.type] + '</span></div>' +
+        '<div class="card-meta">' + statusBadge(itemState(key).status, key) + '</div>' +
+        (item.overview ? '<p class="card-overview">' + esc(item.overview) + '</p>' : '') +
+        '<div class="card-actions">' + listButton('favorite', key) + listButton('watchlist', key) + '</div>' +
+      '</div></article>';
+  }
+  function skeletonCards(n) { return '<div class="skeleton card-skeleton" aria-hidden="true"></div>'.repeat(n); }
+  function errorHtml(err, action, attrs) {
+    const kind = err && err.kind;
+    return '<div class="error-box" role="alert"><p>' + esc(err && err.message ? err.message : 'Erreur inattendue.') + '</p>' +
+      '<button type="button" class="btn btn-sm" data-action="' + action + '"' + (attrs || '') + '>Réessayer</button>' +
+      (kind === 'auth' || kind === 'nokey' ? '<a class="btn btn-sm" href="#settings">Réglages TMDB</a>' : '') + '</div>';
+  }
+  function emptyHtml(title, text, link) {
+    return '<div class="empty"><strong>' + esc(title) + '</strong>' + (text ? esc(text) : '') +
+      (link ? '<br><a class="btn btn-sm" href="' + link.href + '">' + esc(link.label) + '</a>' : '') + '</div>';
+  }
+
+  /* ----- Accueil ----- */
+  function homeHtml() {
+    if (!currentKey()) return welcomeHtml();
+    return '<div class="page-head"><div><h1>Crazy Liste</h1><p>Tendances et nouveautés TMDB. Clique sur une affiche pour ouvrir sa fiche et suivre ta progression.</p></div></div>' +
+      HOME_SECTIONS.map((sec) => '<section class="section" id="home-sec-' + sec.id + '" aria-labelledby="home-title-' + sec.id + '">' + homeSectionInner(sec) + '</section>').join('');
+  }
+  /* Aucune clé TMDB (version publique, premier lancement) : un seul message clair au lieu de six erreurs. */
+  function welcomeHtml() {
+    const canSignIn = sync.fb && !sync.user;
+    return '<div class="page-head"><div><h1>Bienvenue sur Crazy Liste</h1><p>Suis tes films, séries et anime, épisode par épisode.</p></div></div>' +
+      '<section class="panel welcome" id="welcome-panel"><h2>Pour commencer</h2>' +
+      (canSignIn ? '<p><strong>Tu utilises déjà Crazy Liste sur un autre appareil ?</strong> Connecte-toi avec le même compte Google : ta liste et ta clé TMDB arrivent automatiquement.</p>' : '') +
+      '<p>' + (canSignIn ? 'Sinon, colle' : 'Colle') + ' ta clé TMDB gratuite dans Réglages (themoviedb.org › Paramètres › API).</p>' +
+      '<div class="row">' + (canSignIn ? '<button type="button" class="btn btn-primary" data-action="sync-signin"' + (sync.status === 'signing' ? ' disabled' : '') + '>Se connecter avec Google</button>' : '') +
+      '<a class="btn' + (canSignIn ? '' : ' btn-primary') + '" href="#settings">Coller ma clé TMDB</a></div></section>';
+  }
+  function homeSectionInner(sec) {
+    const s = state.ui.home[sec.id] || { status: 'loading' };
+    const ready = s.status === 'ready';
+    let body;
+    if (ready) body = '<div class="rail" id="rail-' + sec.id + '">' + s.items.map(cardHtml).join('') + '</div>';
+    else if (s.status === 'error') body = errorHtml(s.error, 'retry-section', ' data-section="' + sec.id + '"');
+    else if (s.status === 'empty') body = emptyHtml('Rien à afficher pour le moment.', '');
+    else body = '<div class="rail" aria-busy="true">' + skeletonCards(6) + '</div>';
+    const nav = ready ? '<div class="rail-nav"><button type="button" class="btn btn-sm btn-icon" data-action="rail-scroll" data-rail="' + sec.id + '" data-dir="-1" aria-label="Défiler vers la gauche">‹</button>' +
+      '<button type="button" class="btn btn-sm btn-icon" data-action="rail-scroll" data-rail="' + sec.id + '" data-dir="1" aria-label="Défiler vers la droite">›</button></div>' : '';
+    return '<div class="section-head"><h2 id="home-title-' + sec.id + '">' + esc(sec.title) + '</h2>' + nav + '</div>' + body;
+  }
+  function renderHomeSection(id) {
+    if (state.renderedView !== 'home') return;
+    byId('home-sec-' + id).innerHTML = homeSectionInner(HOME_SECTIONS.find((s) => s.id === id));
+  }
+
+  /* ----- Recherche ----- */
+  function searchHtml() {
+    const s = state.ui.search;
+    return '<div class="page-head"><div><h1>Recherche</h1><p>Films, séries et anime sur TMDB.</p></div></div>' +
+      '<div class="toolbar" role="group" aria-label="Type de contenu">' + [['all', 'Tout'], ['movie', 'Films'], ['tv', 'Séries / anime']].map(([v, l]) =>
+        '<button type="button" class="chip chip-btn" data-action="search-type" data-type="' + v + '" aria-pressed="' + (s.type === v) + '">' + l + '</button>').join('') + '</div>' +
+      '<div id="search-results">' + searchBodyHtml() + '</div>';
+  }
+  function searchBodyHtml() {
+    const s = state.ui.search;
+    if (s.status === 'idle') return emptyHtml('Que veux-tu regarder ?', 'Saisis un titre dans la barre de recherche : les résultats s’affichent pendant la frappe.');
+    if (s.status === 'loading') return '<p class="hint" role="status">Recherche de « ' + esc(s.q) + ' »…</p><div class="grid" aria-busy="true">' + skeletonCards(8) + '</div>';
+    if (s.status === 'error') return errorHtml(s.error, 'retry-search');
+    if (s.status === 'empty') return emptyHtml('Aucun résultat pour « ' + s.q + ' »', s.type !== 'all' ? 'Essaie le filtre « Tout » ou une autre orthographe.' : 'Vérifie l’orthographe ou essaie le titre original.');
+    const loadingMore = s.status === 'loading-more';
+    const more = s.page < s.totalPages ? '<div class="row" style="justify-content:center;margin-top:16px"><button type="button" class="btn" data-action="search-more"' + (loadingMore ? ' disabled' : '') + '>' +
+      (loadingMore ? 'Chargement…' : 'Plus de résultats') + '</button></div>' : '';
+    return '<p class="hint" role="status">' + s.results.length + ' résultat(s) pour « ' + esc(s.q) + ' »</p><div class="grid">' + s.results.map(cardHtml).join('') + '</div>' + more;
+  }
+  function renderSearchBody() {
+    if (state.renderedView !== 'search') return;
+    byId('search-results').innerHTML = searchBodyHtml();
+  }
+
+  /* ----- Bibliothèque, Favoris, Watchlist ----- */
+  const LIST_TITLES = {
+    library: ['Bibliothèque', 'Tous tes contenus suivis, favoris et watchlist.'],
+    favorites: ['Favoris', 'Les contenus que tu as mis en favori.'],
+    watchlist: ['Watchlist', 'Ce que tu veux regarder plus tard.']
+  };
+  function listPageHtml(name) {
+    const prefs = state.data.preferences;
+    const status = C.isStatus(state.route.params.status) ? state.route.params.status : prefs.libraryStatus;
+    const list = name === 'library' ? 'all' : name;
+    const base = C.computeLibrary(state.data, { list, type: prefs.libraryType });
+    const rows = C.computeLibrary(state.data, { list, status, type: prefs.libraryType, sort: prefs.librarySort });
+    const total = C.computeLibrary(state.data, { list }).length;
+    const count = (st) => (st === 'all' ? base.length : base.filter((e) => e.status === st).length);
+    const tabs = '<nav class="tabs" aria-label="Mes listes">' + [['library', 'Bibliothèque'], ['favorites', 'Favoris'], ['watchlist', 'Watchlist']].map(([r, l]) =>
+      '<a href="#' + r + '"' + (r === name ? ' aria-current="page"' : '') + '>' + l + '</a>').join('') + '</nav>';
+    const filters = [['all', 'Tous'], ['seen', 'Vu'], ['progress', 'En cours'], ['todo', 'À voir']].map(([v, l]) =>
+      '<button type="button" class="chip chip-btn" data-action="lib-status" data-status="' + v + '" aria-pressed="' + (status === v) + '">' + l + ' (' + count(v) + ')</button>').join('');
+    const select = (id, change, label, current, options) => '<label class="visually-hidden" for="' + id + '">' + label + '</label><select id="' + id + '" class="select" data-change="' + change + '">' +
+      options.map(([v, l]) => '<option value="' + v + '"' + (current === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>';
+    let body;
+    if (!total) {
+      body = emptyHtml(name === 'favorites' ? 'Aucun favori pour l’instant.' : name === 'watchlist' ? 'Ta watchlist est vide.' : 'Ta bibliothèque est vide.',
+        name === 'library' ? 'Marque un film ou un épisode, ou ajoute un contenu en favori ou à ta watchlist.' : 'Utilise les boutons des cartes ou des fiches.', { href: '#home', label: 'Explorer l’accueil' });
+    } else if (!rows.length) {
+      body = emptyHtml('Aucun contenu ne correspond à ces filtres.', '');
+    } else {
+      body = '<div class="grid">' + rows.map((e) => cardHtml(e.meta)).join('') + '</div>';
+    }
+    return tabs + '<div class="page-head"><div><h1>' + LIST_TITLES[name][0] + '</h1><p>' + LIST_TITLES[name][1] + '</p></div><p class="hint">' + rows.length + ' affiché(s) sur ' + total + '</p></div>' +
+      '<div class="toolbar"><div class="row" role="group" aria-label="Filtrer par statut">' + filters + '</div><span class="spacer"></span>' +
+      select('lib-type', 'lib-type', 'Type de contenu', prefs.libraryType, [['all', 'Tous types'], ['movie', 'Films'], ['tv', 'Séries / anime']]) +
+      select('lib-sort', 'lib-sort', 'Tri', prefs.librarySort, [['activity', 'Activité récente'], ['added', 'Ajout récent'], ['title', 'Titre (A → Z)'], ['rating', 'Note TMDB']]) +
+      '</div>' + body;
+  }
+
+  /* ----- Reprendre (page + panneau : même liste calculée) ----- */
+  function resumePageHtml() {
+    return '<div class="page-head"><div><h1>Reprendre</h1><p>Tes 5 contenus « En cours » modifiés le plus récemment, du plus récent au plus ancien.</p></div></div>' +
+      '<ol id="resume-page-list" class="resume-list resume-page"></ol><div id="resume-page-more"></div>';
+  }
+  function resumeRowHtml(entry, rank) {
+    const m = entry.meta, st = entry.state;
+    let sub, pct = null;
+    if (entry.type === 'tv') {
+      const nu = C.nextUpEpisode(m, entry.track);
+      if (st.intentOnly) sub = 'Suivi commencé · aucun épisode vu';
+      else sub = (st.known ? st.seenEpisodes + '/' + st.totalEpisodes + ' épisodes' : st.seenEpisodes + ' épisode(s) vu(s)') +
+        (nu && !nu.announced && nu.episode != null ? ' · prochain : ' + C.episodeLabel(nu.season, nu.episode) : '');
+      if (st.known && st.totalEpisodes) pct = Math.round((st.seenEpisodes / st.totalEpisodes) * 100);
+    } else {
+      sub = 'Film · en cours';
+    }
+    return '<li><a class="resume-row" href="' + C.detailHash(entry.type, entry.id) + '" data-resume-key="' + entry.key + '">' +
+      '<span class="resume-thumb">' + posterHtml(m, 'w92') + '</span>' +
+      '<span class="resume-text"><span class="resume-title">' + esc(m.title) + '</span><span class="resume-sub">' + esc(sub) + '</span>' +
+      (pct != null ? '<span class="progress-bar" aria-hidden="true"><span style="width:' + pct + '%"></span></span>' : '') + '</span>' +
+      '<span class="resume-rank" aria-hidden="true">' + rank + '</span></a></li>';
+  }
+  function renderResumeLists() {
+    const resume = C.computeResume(state.data, 5); // calculée une fois, affichée aux deux emplacements
+    const html = resume.length ? resume.map((e, i) => resumeRowHtml(e, i + 1)).join('')
+      : '<li class="empty">Aucun contenu en cours. Marque un épisode ou un film « En cours » pour le retrouver ici.</li>';
+    byId('resume-panel-list').innerHTML = html;
+    if (state.renderedView === 'resume') {
+      byId('resume-page-list').innerHTML = html;
+      const others = C.computeLibrary(state.data, { status: 'progress' }).length - resume.length;
+      byId('resume-page-more').innerHTML = others > 0 ? '<p class="hint" style="margin-top:12px">' + others + ' autre(s) contenu(s) en cours dans ta <a href="#library?status=progress">bibliothèque</a>.</p>' : '';
+    }
+  }
+
+  /* ----- Réglages ----- */
+  function settingsHtml() {
+    const p = state.data.preferences;
+    const custom = !!p.apiKey;
+    const total = C.computeStats(state.data).total;
+    return '<div class="page-head"><div><h1>Réglages</h1><p>Synchronisation, apparence, connexion TMDB et sauvegardes.</p></div></div><div class="settings">' +
+      '<section class="panel" id="sync-panel">' + syncPanelInner() + '</section>' +
+      '<section class="panel"><h2>Apparence</h2><div class="seg seg-lg" role="group" aria-label="Thème">' + [['dark', 'Sombre'], ['light', 'Clair']].map(([v, l]) =>
+        '<button type="button" data-action="set-theme" data-theme="' + v + '" aria-pressed="' + (p.theme === v) + '">' + l + '</button>').join('') + '</div></section>' +
+      '<section class="panel"><h2>Connexion TMDB</h2><p>' + (custom ? 'Clé utilisée : <strong>ta clé personnelle</strong>.' : DEFAULT_TMDB_KEY ? 'Clé utilisée : <strong>la clé intégrée, reprise de la version précédente</strong>.' : '<strong>Aucune clé configurée</strong> : colle ta clé TMDB ci-dessous' + (FIREBASE_CONFIG ? ', ou connecte-toi pour la récupérer depuis ton compte' : '') + '.') + '</p>' +
+        '<div class="field"><label for="tmdb-key-input">Clé API TMDB (v3) ou jeton d’accès en lecture (v4)</label>' +
+        '<input id="tmdb-key-input" class="input" type="text" autocomplete="off" spellcheck="false" placeholder="Colle ta clé ici" value="' + esc(p.apiKey) + '"></div>' +
+        '<div class="row"><button type="button" class="btn btn-primary" data-action="key-save">Tester et enregistrer</button>' +
+        (custom ? '<button type="button" class="btn" data-action="key-reset">' + (DEFAULT_TMDB_KEY ? 'Revenir à la clé intégrée' : 'Retirer ma clé') + '</button>' : '') + '</div>' +
+        '<p id="key-result" class="hint" role="status"></p>' +
+        '<p class="hint">Une clé placée dans une page web n’est jamais secrète : elle reste lisible dans ce fichier et dans le navigateur. Utilise une clé TMDB gratuite et personnelle (themoviedb.org › Paramètres › API).</p></section>' +
+      '<section class="panel"><h2>Sauvegarde</h2><p>' + (storage.available ? 'Tes données sont enregistrées automatiquement dans ce navigateur.' : 'Stockage local indisponible : exporte régulièrement tes données.') +
+        ' Contenus dans ta liste : <strong>' + total + '</strong>.</p>' +
+        '<div class="row"><button type="button" class="btn btn-primary" data-action="export-full">Exporter la sauvegarde complète</button>' +
+        '<button type="button" class="btn" data-action="export-lists">Exporter favoris + watchlist</button>' +
+        '<button type="button" class="btn" data-action="import-open">Importer un fichier JSON…</button></div>' +
+        '<p id="import-result" class="hint" role="status"></p>' +
+        '<p class="hint">La sauvegarde complète contient la progression (films, saisons, épisodes), les favoris et la watchlist. À l’import, tu choisis entre fusionner et remplacer. Les exports des anciennes versions sont acceptés.</p></section>' +
+      '<section class="panel"><h2>Données</h2><p>' + (sync.user ? 'Effacer toute ta liste, sur cet appareil et sur tes autres appareils connectés (une copie de secours est conservée dans ce navigateur).' : 'Effacer toute ta liste de ce navigateur (une copie de secours est conservée).') + '</p><button type="button" class="btn btn-danger" data-action="clear-data">Effacer mes données…</button></section>' +
+      '<section class="panel"><h2>À propos</h2><p>Données et images fournies par TMDB (The Movie Database). Ce produit utilise l’API TMDB mais n’est ni approuvé ni certifié par TMDB.</p></section></div>';
+  }
+  function notFoundHtml(title, text) { return emptyHtml(title, text, { href: '#home', label: 'Retour à l’accueil' }); }
+
+  /* ----- Fiche ----- */
+  const NO_SEASONS = new Set();
+  const openSet = (key) => state.ui.expanded[key] || NO_SEASONS;
+  function formatRuntime(min) { const h = Math.floor(min / 60), m = min % 60; return h ? h + ' h' + (m ? ' ' + String(m).padStart(2, '0') : '') : m + ' min'; }
+  function detailHtml() {
+    const r = state.route, key = r.key;
+    const d = state.cache.details.get(key);
+    const meta = state.data.metadata[key];
+    const ui = state.ui.detail;
+    if (!d && !meta) {
+      if (ui.status === 'error') return '<div class="page-head"><div><h1>Fiche indisponible</h1><p>' + (r.type === 'tv' ? 'Série' : 'Film') + ' TMDB n°' + r.id + '</p></div></div>' + errorHtml(ui.error, 'retry-detail');
+      return '<div class="detail-hero" aria-busy="true"><div class="detail-grid"><div class="skeleton" style="aspect-ratio:2/3"></div><div class="detail-info">' +
+        '<div class="skeleton" style="height:34px;width:60%"></div><div class="skeleton" style="height:22px;width:40%"></div><div class="skeleton" style="height:110px"></div></div></div></div>';
+    }
+    const item = d || meta;
+    const isTv = r.type === 'tv';
+    const prod = d ? d.productionStatus : meta.productionStatus || '';
+    const facts = [[isTv ? 'Première diffusion' : 'Sortie', item.date ? C.formatDate(item.date) : 'Date inconnue']];
+    if (d && d.genres.length) facts.push(['Genres', d.genres.join(', ')]);
+    if (d && d.runtime) facts.push([isTv ? 'Durée d’un épisode' : 'Durée', formatRuntime(d.runtime)]);
+    if (isTv && d) facts.push(['Saisons', String(d.seasonSummaries.filter((s) => s.number > 0).length)], ['Épisodes', d.numberOfEpisodes ? String(d.numberOfEpisodes) : '—']);
+    if (prod) facts.push(['Statut TMDB', C.productionLabel(prod)]);
+    const notice = d ? '' : ui.status === 'error'
+      ? '<div class="error-box" role="alert" style="margin-bottom:14px"><p>Affichage hors ligne à partir de tes données enregistrées. ' + esc(ui.error.message) + '</p><button type="button" class="btn btn-sm" data-action="retry-detail">Réessayer</button></div>'
+      : '<p class="hint" role="status">Mise à jour depuis TMDB…</p>';
+    const backdrop = img(item.backdropPath, 'w1280');
+    return '<article class="detail" data-item-key="' + key + '">' + notice +
+      '<section class="detail-hero">' + (backdrop ? '<img class="detail-backdrop" src="' + esc(backdrop) + '" alt="">' : '') +
+      '<div class="detail-grid"><div class="detail-poster poster">' + posterHtml(item, 'w500') + '</div><div class="detail-info">' +
+        '<div class="detail-head"><h1>' + esc(item.title) + '</h1>' +
+        (item.originalTitle && item.originalTitle !== item.title ? '<p class="detail-original">Titre original : ' + esc(item.originalTitle) + '</p>' : '') +
+        '<div class="detail-badges">' + ratingHtml(item.voteAverage, 'Note TMDB') + (d && d.voteCount ? '<span class="chip">' + d.voteCount.toLocaleString('fr-FR') + ' votes</span>' : '') +
+        '<span class="chip">' + TYPE_LABELS[r.type] + '</span>' + (C.isAnime(item) ? '<span class="chip">Anime</span>' : '') + (item.year ? '<span class="chip">' + esc(item.year) + '</span>' : '') +
+        '<span class="track-label">Mon suivi :</span>' + statusBadge(itemState(key).status, key) + '</div></div>' +
+        (d && d.tagline ? '<p class="detail-tagline">' + esc(d.tagline) + '</p>' : '') +
+        '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p>' +
+        '<dl class="facts">' + facts.map(([k, v]) => '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>').join('') + '</dl>' +
+        '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div>' +
+      '</div></div></section>' +
+      (isTv ? '<section id="seasons-section" aria-labelledby="seasons-title">' + seasonsHtml(key) + '</section>' : '') + '</article>';
+  }
+  function trackBoxHtml(key) {
+    const pk = C.parseKey(key);
+    const t = getTrack(key);
+    const lists = '<div class="track-row">' + listButton('favorite', key, '') + listButton('watchlist', key, '') +
+      (C.isPersonal(t) ? '<button type="button" class="btn btn-sm btn-danger" data-action="remove-item" data-key="' + key + '">Retirer de ma liste</button>' : '') + '</div>';
+    if (pk.type === 'movie') {
+      const current = t && t.trackingStatus ? t.trackingStatus : null;
+      return '<div class="track-row"><span class="track-label">Mon statut</span>' + segHtml('movie-status', key, null, null, current, 'Statut du film', true) +
+        (current ? '' : '<span class="hint">Pas encore suivi : choisis un statut pour l’ajouter à ta bibliothèque.</span>') + '</div>' + lists;
+    }
+    const meta = viewMeta(key);
+    const st = C.computeShowState(meta, t);
+    const loaded = state.cache.details.has(key);
+    const busy = !!state.ui.busy['all:' + key];
+    const pct = st.known && st.totalEpisodes ? Math.round((st.seenEpisodes / st.totalEpisodes) * 100) : 0;
+    const nu = C.nextUpEpisode(meta, t);
+    const next = st.intentOnly ? 'Suivi commencé : aucun épisode vu pour l’instant.'
+      : st.complete ? 'Toutes les saisons régulières sont vues.'
+      : nu && C.hasActivity(t) ? (nu.announced ? 'Prochaine étape : saison ' + nu.season + ' (annoncée, sans épisode disponible).' : 'Prochain à voir : ' + C.episodeLabel(nu.season, nu.episode) + '.') : '';
+    const hasData = C.hasActivity(t) || st.intentOnly || !!(t && Object.keys(t.seasons).length);
+    const legacy = t && t.legacy && !st.complete
+      ? '<div class="legacy-note"><p>L’ancienne version indiquait « Vu » pour cette série sans le détail des épisodes : rien n’a été coché automatiquement.</p>' +
+        '<button type="button" class="btn btn-sm" data-action="legacy-apply" data-key="' + key + '"' + (loaded && !busy ? '' : ' disabled') + '>Marquer toute la série comme vue</button>' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-action="legacy-dismiss" data-key="' + key + '">Ignorer</button></div>' : '';
+    return '<div class="track-row"><span class="track-label">Ma progression</span>' + statusBadge(st.status) + '<span class="track-summary">' +
+      (st.known ? st.seenEpisodes + ' / ' + st.totalEpisodes + ' épisodes vus' : st.seenEpisodes + ' épisode(s) vu(s)') + ' · hors épisodes spéciaux</span></div>' +
+      (st.known ? '<div class="progress-bar" role="progressbar" aria-label="Épisodes vus" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><span style="width:' + pct + '%"></span></div>' : '') +
+      (next ? '<div class="track-summary">' + esc(next) + '</div>' : '') + legacy +
+      '<div class="track-row">' +
+        (st.status === 'todo' ? '<button type="button" class="btn btn-sm" data-action="show-start" data-key="' + key + '" title="Place la série dans « En cours » sans cocher d’épisode">▶ Commencer le suivi</button>' : '') +
+        '<button type="button" class="btn btn-sm" data-action="show-all-seen" data-key="' + key + '"' + (loaded && !busy && !st.complete ? '' : ' disabled') +
+          ' title="Marque comme vus tous les épisodes de toutes les saisons régulières (hors spéciaux)">' + (busy ? 'Chargement des saisons…' : '✓ Tout marquer comme vu') + '</button>' +
+        (hasData ? '<button type="button" class="btn btn-sm" data-action="show-reset" data-key="' + key + '" title="Remet tous les épisodes à « À voir »">↺ Tout remettre à « À voir »</button>' : '') +
+      '</div>' + lists;
+  }
+  function seasonsHtml(key) {
+    const meta = viewMeta(key);
+    const sums = meta.seasonSummaries;
+    const head = '<div class="seasons-head"><h2 id="seasons-title">Saisons et épisodes</h2><p>Les boutons d’une saison s’appliquent à tous ses épisodes ; ceux d’un épisode ne modifient que lui.</p></div>';
+    if (!Array.isArray(sums)) {
+      return head + (state.ui.detail.status === 'error' ? emptyHtml('Saisons indisponibles hors ligne.', 'Réessaie quand la connexion à TMDB est rétablie.')
+        : '<div class="season-loading" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>');
+    }
+    const regular = sums.filter((s) => s.number > 0);
+    return head + '<div class="season-list">' + (regular.length ? regular.map((s) => seasonHtml(key, s.number)).join('') : emptyHtml('Aucune saison annoncée par TMDB.', '')) +
+      (sums.some((s) => s.number === 0) ? seasonHtml(key, 0) : '') + '</div>';
+  }
+  function uniformStatus(season, t, n) {
+    if (!season.episodes.length) return null;
+    const first = C.episodeStatus(t, n, season.episodes[0].number);
+    return season.episodes.every((e) => C.episodeStatus(t, n, e.number) === first) ? first : null;
+  }
+  function seasonHtml(key, n) {
+    const meta = viewMeta(key);
+    const summary = meta.seasonSummaries.find((s) => s.number === n);
+    const t = getTrack(key);
+    const ss = C.computeSeasonState(summary, t && t.seasons[n]);
+    const id = key + '#' + n;
+    const season = state.cache.seasons.get(id);
+    const load = state.ui.seasonLoad[id];
+    const open = openSet(key).has(n);
+    const uniform = season ? uniformStatus(season, t, n) : ss.seen === 0 && ss.progress === 0 ? 'todo' : ss.status === 'seen' ? 'seen' : null;
+    const label = n === 0 ? 'Épisodes spéciaux' : 'Saison ' + n;
+    const custom = summary.name && !/^(saison|season|série|series|staffel)\s*\d+$/i.test(summary.name.trim()) && n !== 0 ? summary.name : '';
+    const pct = ss.total ? Math.round((ss.seen / ss.total) * 100) : 0;
+    const nu = n > 0 && C.hasActivity(t) ? C.nextUpEpisode(meta, t) : null;
+    const nextNum = nu && nu.season === n ? nu.episode : null;
+    let body = '';
+    if (open) {
+      if (season) {
+        body = season.episodes.length ? '<div class="episodes">' + season.episodes.map((ep, i) => episodeHtml(key, n, ep, i, t, nextNum)).join('') + '</div>'
+          : emptyHtml('Aucun épisode disponible pour cette saison.', 'La saison est annoncée mais TMDB ne liste pas encore ses épisodes.');
+      } else if (load && load.status === 'error') {
+        body = errorHtml(load.error, 'season-retry', ' data-key="' + key + '" data-season="' + n + '"');
+      } else if (!state.cache.details.has(key) && !(load && load.status === 'loading')) {
+        body = emptyHtml('Épisodes indisponibles : la fiche n’a pas pu être chargée depuis TMDB.', '');
+      } else {
+        body = '<div class="season-loading" aria-busy="true">' + '<div class="skeleton"></div>'.repeat(Math.min(4, Math.max(1, ss.total))) + '</div>';
+      }
+    }
+    return '<section class="season" id="season-' + n + '" data-season="' + n + '" data-status="' + ss.status + '">' +
+      '<div class="season-head"><h3 class="season-title"><button type="button" class="season-toggle" data-action="season-toggle" data-key="' + key + '" data-season="' + n + '" aria-expanded="' + open + '" aria-controls="season-body-' + n + '">' +
+        '<span class="season-name">' + CHEVRON + label + '</span><span class="season-meta"><span>' + esc(summary.airDate || 'Date inconnue') + '</span><span aria-hidden="true">•</span><span>' +
+        ss.total + ' épisode' + (ss.total > 1 ? 's' : '') + '</span><span aria-hidden="true">•</span>' + statusBadge(ss.status) + (custom ? '<span class="season-custom">' + esc(custom) + '</span>' : '') + '</span></button></h3>' +
+        '<div class="season-tools"><span class="seg-label">Toute la saison</span>' + segHtml('season-status', key, n, null, uniform, n === 0 ? 'Statut de tous les épisodes spéciaux' : 'Statut de toute la saison ' + n) + '</div></div>' +
+      (n === 0 ? '<p class="specials-note">Hors progression globale : les épisodes spéciaux ne comptent pas dans le statut de la série.</p>' : '') +
+      (ss.total ? '<div class="progress-bar" aria-hidden="true"><span style="width:' + pct + '%"></span></div>' : '') +
+      '<div class="season-body" id="season-body-' + n + '"' + (open ? '' : ' hidden') + '>' + body + '</div></section>';
+  }
+  function episodeHtml(key, n, ep, index, t, nextNum) {
+    const status = C.episodeStatus(t, n, ep.number);
+    const upcoming = !!ep.airDate && ep.airDate > state.today;
+    return '<div class="ep" data-ep="' + n + '-' + ep.number + '" data-status="' + status + '">' +
+      '<div class="ep-num" aria-hidden="true">É' + ep.number + '</div>' +
+      '<div class="ep-main"><p class="ep-title" title="' + esc(ep.name) + '"><span class="visually-hidden">Épisode ' + ep.number + ' : </span>' + esc(ep.name || 'Épisode ' + ep.number) + '</p>' +
+        '<div class="ep-meta">' + (nextNum === ep.number ? '<span class="ep-next">Prochain</span>' : '') + statusBadge(status) +
+        (ep.airDate ? '<span>' + esc(ep.airDate) + '</span>' : '') + (upcoming ? '<span class="chip">À venir</span>' : '') + (ep.runtime ? '<span>' + ep.runtime + ' min</span>' : '') +
+        ratingHtml(ep.voteAverage, 'Note TMDB de l’épisode') + '</div></div>' +
+      '<div class="ep-controls">' + segHtml('episode-status', key, n, ep.number, status, 'Statut de l’épisode ' + ep.number) +
+        (index > 0 ? '<button type="button" class="btn btn-sm btn-ghost" data-action="episodes-upto" data-key="' + key + '" data-season="' + n + '" data-episode="' + ep.number +
+          '" title="Marque comme vus les épisodes de cette saison jusqu’à É' + ep.number + ' inclus">Vu jusqu’ici</button>' : '') + '</div></div>';
+  }
+
+  /* ----- Panneau « Prochain contenu lié » ----- */
+  function box(titleHtml, inner) { return '<div class="related-box"><h3>' + titleHtml + '</h3>' + inner + '</div>'; }
+  function relatedLink(item, sub) {
+    return '<a class="related-link" href="' + C.detailHash(item.type, item.id) + '"><span class="resume-thumb">' + posterHtml(item, 'w92') + '</span>' +
+      '<span class="resume-text"><span class="resume-title">' + esc(item.title) + '</span><span class="resume-sub">' + esc(sub || '') + '</span></span></a>';
+  }
+  function relatedHtml() {
+    const r = state.route;
+    if (r.name !== 'detail') return '<p class="related-note">Ouvre une fiche pour voir ici le prochain épisode annoncé, la suite d’un film ou des recommandations.</p>';
+    const d = state.cache.details.get(r.key);
+    if (!d) {
+      return state.ui.detail.status === 'error' ? '<p class="related-note">Indisponible : la fiche n’a pas pu être chargée depuis TMDB.</p>'
+        : '<div class="skeleton" style="height:96px" aria-hidden="true"></div>';
+    }
+    const parts = [];
+    if (d.type === 'tv') {
+      const ne = d.nextEpisode;
+      parts.push(box('Prochain épisode annoncé', ne
+        ? '<p><strong>' + C.episodeLabel(ne.season, ne.episode) + '</strong>' + (ne.name ? ' — ' + esc(ne.name) : '') + '</p><p class="muted">' + (ne.airDate ? 'Diffusion prévue le ' + C.formatDate(ne.airDate) : 'Date de diffusion non communiquée') + '</p>'
+        : '<p>Aucun prochain épisode annoncé par TMDB.</p><p class="muted">Statut TMDB : ' + esc(C.productionLabel(d.productionStatus) || 'inconnu') + '</p>'));
+      const le = d.lastEpisode;
+      if (le) parts.push(box('Dernier épisode diffusé', '<p>' + C.episodeLabel(le.season, le.episode) + (le.name ? ' — ' + esc(le.name) : '') + '</p>' + (le.airDate ? '<p class="muted">' + C.formatDate(le.airDate) + '</p>' : '')));
+      const t = getTrack(r.key);
+      const nu = C.hasActivity(t) ? C.nextUpEpisode(viewMeta(r.key), t) : null;
+      if (nu) parts.push(box('À regarder ensuite (ta progression)', '<p>' + (nu.announced ? 'Saison ' + nu.season + ' annoncée, sans épisode disponible' : C.episodeLabel(nu.season, nu.episode)) + '</p>'));
+    } else if (!d.collection) {
+      parts.push(box('Suite ou collection', '<p>Aucune collection ni suite répertoriée par TMDB pour ce film.</p>'));
+    } else {
+      const c = state.cache.collections.get(d.collection.id);
+      const title = 'Collection « ' + esc((c && c.name) || d.collection.name) + ' »';
+      if (!c || c.status === 'loading') parts.push(box(title, '<p class="muted">Chargement de la collection…</p>'));
+      else if (c.status === 'error') parts.push(box(title, '<p class="muted">Collection indisponible : ' + esc(c.error.message) + '</p>'));
+      else {
+        const nb = C.collectionNeighbors(c.parts, d.id, state.today);
+        let html = '<p class="muted">' + nb.list.length + ' film(s) dans la collection, classés par date de sortie.</p>';
+        if (nb.next) html += '<p class="related-note">' + (nb.nextIsUpcoming ? 'Film suivant (à venir)' : 'Film suivant') + '</p>' +
+          relatedLink(nb.next, nb.next.date ? (nb.nextIsUpcoming ? 'Sortie prévue le ' : 'Sorti le ') + C.formatDate(nb.next.date) : 'Date de sortie inconnue');
+        else html += '<p>C’est le dernier film connu de cette collection.</p>';
+        if (nb.previous) html += '<p class="related-note">Film précédent</p>' + relatedLink(nb.previous, nb.previous.year || '');
+        parts.push(box(title, html));
+      }
+    }
+    const recos = d.recommendations.slice(0, 5);
+    parts.push(box('Recommandations TMDB', '<p class="related-note">Suggestions proches : ce ne sont pas des suites officielles.</p>' +
+      (recos.length ? '<div class="related-list">' + recos.map((x) => relatedLink(x, (x.year ? x.year + ' · ' : '') + TYPE_LABELS[x.type])).join('') + '</div>' : '<p class="muted">Aucune recommandation disponible.</p>')));
+    return parts.join('');
+  }
+  function renderRelated() { byId('related-panel').innerHTML = relatedHtml(); }
+
+  /* ----- Éléments permanents : compteurs, statistiques, Reprendre ----- */
+  function renderChrome() {
+    const s = C.computeStats(state.data);
+    const counts = { progress: s.progress, total: s.total, favorites: s.favorites, watchlist: s.watchlist };
+    document.querySelectorAll('[data-count]').forEach((el) => { const v = counts[el.dataset.count]; el.textContent = v ? String(v) : ''; });
+    byId('stats-panel').innerHTML = [['seen', 'Vu', s.seen, '#library?status=seen', 'Contenus vus'], ['progress', 'En cours', s.progress, '#library?status=progress', 'Contenus en cours'],
+      ['fav', 'Favoris', s.favorites, '#favorites', 'Favoris'], ['total', 'Total', s.total, '#library', 'Total personnel : contenus suivis, favoris et watchlist']].map(([c, l, v, h, title]) =>
+      '<a class="stat stat-' + c + '" href="' + h + '" data-stat="' + c + '" title="' + title + '"><strong>' + v + '</strong><span>' + l + '</span></a>').join('');
+    renderResumeLists();
+  }
+
+  /* ----- Mises à jour ciblées (aucune requête réseau) ----- */
+  function captureFocus() {
+    const el = document.activeElement;
+    if (!el || !el.dataset || !el.dataset.action) return null;
+    return ['action', 'key', 'season', 'episode', 'status', 'type', 'theme'].filter((k) => el.dataset[k] != null)
+      .map((k) => '[data-' + k + '="' + CSS.escape(el.dataset[k]) + '"]').join('');
+  }
+  function restoreFocus(sel) {
+    if (!sel || document.activeElement && document.activeElement !== document.body) return;
+    const el = document.querySelector(sel);
+    if (el) el.focus({ preventScroll: true }); // le bouton peut légitimement disparaître (ex. « Commencer le suivi »)
+  }
+  function patchItemUI(key) {
+    const st = itemState(key).status;
+    const t = getTrack(key);
+    document.querySelectorAll('[data-status-for="' + key + '"]').forEach((el) => { el.className = 'status status-' + st; el.textContent = STATUS_LABELS[st]; });
+    for (const kind of ['favorite', 'watchlist']) {
+      const on = !!(t && t[kind]);
+      document.querySelectorAll('[data-action="toggle-' + kind + '"][data-key="' + key + '"]').forEach((b) => { b.setAttribute('aria-pressed', String(on)); b.textContent = toggleLabel(kind, on); });
+    }
+  }
+  /* Ce que la fiche affichée contient réellement (mis à jour à chaque rendu de la fiche) :
+     full = en-tête et suivi rendus ; seasons = liste des saisons rendue. Pendant un squelette de chargement, rien n'est à corriger. */
+  function detailRenderFlags(key) {
+    const full = !!(state.cache.details.get(key) || state.data.metadata[key]);
+    return { key, full, seasons: full && C.parseKey(key).type === 'tv' && Array.isArray(viewMeta(key).seasonSummaries) };
+  }
+  const rendered = (key, part) => state.renderedView === 'detail' && state.renderedDetail && state.renderedDetail.key === key && state.renderedDetail[part];
+  function patchTrackBox(key) {
+    if (!rendered(key, 'full')) return;
+    const f = captureFocus();
+    byId('detail-track').innerHTML = trackBoxHtml(key);
+    restoreFocus(f);
+  }
+  function patchSeason(key, n) {
+    if (!rendered(key, 'seasons')) return;
+    const f = captureFocus();
+    byId('season-' + n).outerHTML = seasonHtml(key, n);
+    restoreFocus(f);
+  }
+  function patchDetail(key) {
+    if (!rendered(key, 'full')) return;
+    patchTrackBox(key);
+    if (C.parseKey(key).type === 'tv') {
+      const f = captureFocus();
+      byId('seasons-section').innerHTML = seasonsHtml(key);
+      state.renderedDetail = detailRenderFlags(key);
+      restoreFocus(f);
+    }
+    renderRelated();
+  }
+
+  /* ===== Navigation par hash ===== */
+  let currentHash = null, pendingTop = false;
+  const scrollMemory = new Map();
+  function navigate(hash, replace) {
+    if (replace) { history.replaceState(null, '', hash); handleRoute(); return; }
+    if (location.hash === hash) { handleRoute(); return; }
+    pendingTop = true;
+    location.hash = hash; // l'événement hashchange appelle handleRoute
+  }
+  function handleRoute() {
+    if (currentHash !== null) scrollMemory.set(currentHash, window.scrollY);
+    const hash = location.hash || '#home';
+    const route = C.parseRoute(hash);
+    state.route = route;
+    state.today = todayIso();
+    detailToken++; // un chargement de fiche précédent ne s'affichera plus
+    if (route.name === 'detail') {
+      state.ui.detail = { key: route.key, status: state.cache.details.has(route.key) ? 'ready' : 'loading', error: null };
+      if (route.type === 'tv' && (state.cache.details.has(route.key) || state.data.metadata[route.key])) expandedSeasons(route.key);
+    }
+    if (route.name === 'search') {
+      const q = (route.params.q || '').trim().slice(0, 120);
+      const type = route.params.type === 'movie' || route.params.type === 'tv' ? route.params.type : 'all';
+      const s = state.ui.search;
+      if (q !== s.q || type !== s.type || s.status === 'error') startSearch(q, type, 1);
+      const input = byId('search-input');
+      if (document.activeElement !== input && input.value.trim() !== q) input.value = q;
+    }
+    currentHash = hash;
+    document.querySelectorAll('[data-nav]').forEach((a) => {
+      const on = a.dataset.nav === route.name || (a.dataset.navGroup || '').split(' ').includes(route.name);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    renderView();
+    renderRelated();
+    window.scrollTo(0, pendingTop || !scrollMemory.has(hash) ? 0 : scrollMemory.get(hash));
+    pendingTop = false;
+    if (route.name === 'home' && currentKey()) HOME_SECTIONS.forEach((sec) => loadHomeSection(sec, false));
+    else if (route.name === 'detail') loadDetail(route, false);
+  }
+  function renderView() {
+    const r = state.route;
+    let html, title;
+    switch (r.name) {
+      case 'home': html = homeHtml(); title = 'Accueil'; break;
+      case 'search': html = searchHtml(); title = state.ui.search.q ? 'Recherche « ' + state.ui.search.q + ' »' : 'Recherche'; break;
+      case 'detail': html = detailHtml(); title = ((state.cache.details.get(r.key) || state.data.metadata[r.key] || {}).title) || 'Fiche'; break;
+      case 'resume': html = resumePageHtml(); title = 'Reprendre'; break;
+      case 'library': case 'favorites': case 'watchlist': html = listPageHtml(r.name); title = LIST_TITLES[r.name][0]; break;
+      case 'settings': html = settingsHtml(); title = 'Réglages'; break;
+      case 'invalid': html = notFoundHtml('Lien de fiche invalide', 'Le type ou l’identifiant de ce lien n’est pas reconnu (attendu : #detail/movie/123 ou #detail/tv/123).'); title = 'Lien invalide'; break;
+      default: html = notFoundHtml('Page introuvable', 'Cette adresse ne correspond à aucune page de Crazy Liste.'); title = 'Page introuvable';
+    }
+    const f = captureFocus();
+    byId('view-root').innerHTML = html;
+    state.renderedView = r.name;
+    state.renderedDetail = r.name === 'detail' ? detailRenderFlags(r.key) : null;
+    if (r.name === 'resume') renderResumeLists();
+    document.title = title + ' · Crazy Liste';
+    restoreFocus(f);
+  }
+  function renderAll() { applyTheme(); renderBanners(); renderView(); renderRelated(); renderChrome(); }
+
+  /* ===== Événements (délégation) ===== */
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[href^="#"]');
+    if (link && e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && link.getAttribute('href') !== location.hash) pendingTop = true;
+    const el = e.target.closest('[data-action]');
+    if (!el || el.disabled) return;
+    const fn = actions[el.dataset.action];
+    if (!fn) throw new Error('Action inconnue : ' + el.dataset.action);
+    e.preventDefault();
+    Promise.resolve(fn(el, e)).catch((err) => { console.error(err); toast('Erreur inattendue : ' + err.message, 'error'); });
+  });
+  document.addEventListener('change', (e) => {
+    const el = e.target;
+    if (el.id === 'import-file') { const f = el.files && el.files[0]; el.value = ''; if (f) importFile(f); return; }
+    if (el.dataset.change === 'lib-type') { state.data.preferences.libraryType = el.value; persist(); renderView(); }
+    if (el.dataset.change === 'lib-sort') { state.data.preferences.librarySort = el.value; persist(); renderView(); }
+  });
+  document.addEventListener('error', (e) => { if (e.target instanceof HTMLImageElement) e.target.remove(); }, true); // affiche est remplacée par le titre
+  const searchInput = byId('search-input');
+  function submitSearch() {
+    const q = searchInput.value.trim();
+    const type = state.ui.search.type || 'all';
+    navigate(C.buildHash('search', { q, type: type === 'all' ? '' : type }), state.route.name === 'search');
+  }
+  byId('search-form').addEventListener('submit', (e) => { e.preventDefault(); clearTimeout(searchTimer); submitSearch(); });
+  searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(submitSearch, 350); });
+  document.addEventListener('keydown', (e) => { // « / » : aller à la recherche depuis n'importe quelle page
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || (t && t.isContentEditable)) return;
+    e.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+  });
+  byId('app-dialog').addEventListener('close', () => { const r = dialogResolve; dialogResolve = null; if (r) r(byId('app-dialog').returnValue || 'cancel'); });
+  window.addEventListener('hashchange', handleRoute);
+  window.addEventListener('storage', (e) => {
+    if (e.key !== D.STORAGE_KEY || e.newValue == null) return;
+    let parsed;
+    try { parsed = JSON.parse(e.newValue); } catch (err) { return; }
+    state.data = D.sanitizeData(parsed).data;
+    renderAll();
+  });
+
+  /* ===== Démarrage ===== */
+  state.today = todayIso();
+  state.data = loadData();
+  for (const t of Object.values(state.data.tracking)) if (t.lastActivityAt > lastStamp) lastStamp = t.lastActivityAt;
+  applyTheme();
+  renderBanners();
+  handleRoute();
+  renderChrome();
+  refreshStaleMetadata();
+  initSync();
+})();
+</script>
+</body>
+</html>

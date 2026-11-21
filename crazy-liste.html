@@ -1232,7 +1232,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* Début commun du titre : avant « : », « - », « – » ou « ( ». Trop court ou trop générique : pas de licence. */
   function licenceBase(title) {
     const head = String(title || '').split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0];
-    const base = normTitle(head);
+    const base = normTitle(head).replace(/\s+(le film|the movie|movie|film|gekijouban|劇場版)$/, '').replace(/^(劇場版|gekijouban)\s+/, '');
     if (base.length < 3 || LICENCE_STOP.has(base)) return '';
     return base;
   }
@@ -1250,9 +1250,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* Titres de la même licence (fiche courante comprise), par date, sans doublon ; anime : seulement l'animation (ou genre pas encore renseigné). */
   function licenceList(current, candidates, base, max) {
     const anime = isAnime(current);
+    const bases = [].concat(base).filter(Boolean);
     const seen = new Set([current.key]);
     const others = (Array.isArray(candidates) ? candidates : []).filter((c) => c && (c.type === 'tv' || c.type === 'movie') && !seen.has(c.key) && seen.add(c.key) &&
-      inLicence(base, c) && (!anime || !Array.isArray(c.genreIds) || !c.genreIds.length || c.genreIds.includes(16))); // fiche récente sans genre : gardée
+      bases.some((b) => inLicence(b, c)) && (!anime || !Array.isArray(c.genreIds) || !c.genreIds.length || c.genreIds.includes(16))); // fiche récente sans genre : gardée
     return [current].concat(others).sort(byDateThenTitle).slice(0, max || 10);
   }
   /* Suite probable : la première série de la licence qui commence après celle-ci (ou sans date, donc à venir). */
@@ -2752,11 +2753,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const linkedKeys = [...new Set(w.next.concat(w.prev, chainKeys))].slice(0, 10);
     const linked = (await Promise.all(linkedKeys.map((k) => summaryOf(k).catch(() => null)))).filter(Boolean);
     const current = state.cache.summaries.get(key) || d;
-    const list = C.licenceList(current, found, rel.base, 10);
+    // Titres AniList de la chaîne (souvent plus proches du nom de la licence que les titres français de TMDB)
+    const alBases = [...new Set(chain.map((n) => C.licenceBase(C.anilistTitle(n))).filter((b) => b && b !== rel.base))].slice(0, 2);
+    for (const extra of await Promise.all(alBases.map((b) => tmdb('/search/multi', { query: b, include_adult: 'false' })
+      .then((j) => (Array.isArray(j.results) ? j.results : []).map((x) => C.normalizeSummary(x, null)).filter(Boolean)).catch(() => []))))
+      for (const x of extra) if (!found.some((y) => y.key === x.key)) { rememberSummary(x); found.push(x); }
+    if (!rel.base && alBases.length) rel.base = alBases[0];
+    const list = C.licenceList(current, found, [rel.base].concat(alBases), 10);
     for (const x of linked) if (!list.some((y) => y.key === x.key)) list.push(x); // titres liés par Wikidata ou AniList même si leur titre diffère
     // Films de chaque série de la licence (recherche de films par début de titre, 4 séries au plus)
     const anime = C.isAnime(current);
-    const bases = [...new Set(list.filter((x) => x.type === 'tv').map((x) => C.licenceBaseOf(x)).filter(Boolean))].slice(0, 4);
+    const bases = [...new Set(list.filter((x) => x.type === 'tv').map((x) => C.licenceBaseOf(x)).concat(alBases).filter(Boolean))].slice(0, 4);
     const films = (await Promise.all(bases.map((b) => tmdb('/search/movie', { query: b, include_adult: 'false' })
       .then((j) => (Array.isArray(j.results) ? j.results : []).map((x) => C.normalizeSummary(x, 'movie')).filter(Boolean)).catch(() => [])))).flat();
     films.forEach(rememberSummary);

@@ -86,6 +86,12 @@ describe('Licence : séries et films', () => {
     assert.deepEqual(orphans, [], 'aucun film perdu');
     assert.deepEqual(C.licenceGroups([mv(1, 'Seul', '2000-01-01')]), { groups: [], orphans: [mv(1, 'Seul', '2000-01-01')] });
   });
+  it('recherche « Quand regarder … » : anime ou série, texte encodé', () => {
+    const u = new URL(C.watchWhenSearchUrl('The Last : Naruto, le film', 'Naruto Shippuden', true));
+    assert.equal(u.origin + u.pathname, 'https://www.google.com/search');
+    assert.equal(u.searchParams.get('q'), "Quand regarder The Last : Naruto, le film dans l'anime Naruto Shippuden");
+    assert.equal(new URL(C.watchWhenSearchUrl('A & B', 'C#D', false)).searchParams.get('q'), 'Quand regarder A & B dans la série C#D');
+  });
 });
 
 describe('Licence : carte Diffusion', () => {
@@ -116,6 +122,14 @@ describe('Licence : carte Diffusion', () => {
     assert.deepEqual(await eras(page), ['tv-219', 'tv-216', 'tv-217'], 'une ligne par série, par date ; faux ami « Licencieux » écarté');
     assert.deepEqual(await page.$$eval('#detail-licence [data-series="tv-216"] .lfilm', (els) => els.map((e) => e.dataset.itemKey)), ['movie-140'], 'le film va avec la série dont il reprend le nom');
     assert.equal(await page.locator('#detail-licence .lera.is-current').getAttribute('data-series'), 'tv-216');
+    // Films liés, juste au-dessus des saisons, avec une recherche « Quand le regarder ? »
+    assert.deepEqual(await page.$$eval('#detail-films .film-row', (els) => els.map((e) => e.dataset.itemKey)), ['movie-140']);
+    assert.equal(await page.evaluate(() => document.getElementById('detail-films').nextElementSibling.id), 'seasons-section');
+    const search = page.locator('#detail-films .film-row-search');
+    assert.equal(await search.getAttribute('target'), '_blank');
+    assert.equal(await search.getAttribute('rel'), 'noopener noreferrer');
+    assert.equal(new URL(await search.getAttribute('href')).searchParams.get('q'), 'Quand regarder Licence Test : le film dans la série Licence Test : Première partie');
+    assert.doesNotMatch(await page.locator('#detail-films').textContent(), /Histoire/, 'aucun avis « histoire / hors histoire »');
     assert.match(await page.locator('#detail-licence .lera.is-current').textContent(), /tu es ici/);
     assert.ok(mock.state.requests.some((r) => r.startsWith('/search/multi') && /query=licence\+test/.test(r)));
     assert.ok(mock.state.requests.some((r) => r.startsWith('/search/movie') && /query=licence\+test/.test(r)), 'films cherchés pour chaque série');
@@ -180,6 +194,7 @@ describe('Licence : carte Diffusion', () => {
     await page.waitForTimeout(800);
     assert.equal(await page.locator('#detail-cards [data-col="suite"]').count(), 0);
     assert.equal(await page.locator('#detail-licence-btn .licbtn').count(), 0, 'pas de bouton Licence sans titre lié');
+    assert.equal(await page.locator('#detail-films .film-row').count(), 0, 'pas de section Films liés sans film');
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

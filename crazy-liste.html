@@ -219,6 +219,14 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .dcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; }
 .dcols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .dcol[data-col="suite"] .dcol-big a { color: var(--accent); }
+.films-section { margin: 22px 0 6px; } .films-section:empty { display: none; }
+.films-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.film-row { display: grid; gap: 8px; padding: 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); align-content: start; }
+.film-row-main { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: start; color: inherit; text-decoration: none; }
+.film-row-main:hover strong { color: var(--accent); }
+.film-row-poster { width: 52px; aspect-ratio: 2 / 3; border-radius: 6px; overflow: hidden; } .film-row-poster .poster-fallback { font-size: .5rem; }
+.film-row-text { display: grid; gap: 3px; min-width: 0; font-size: .84rem; } .film-row-text strong { font-size: .9rem; line-height: 1.25; overflow-wrap: anywhere; }
+.film-row-search { justify-self: start; text-decoration: none; }
 .licbtn { display: grid; gap: 2px; width: 100%; text-align: left; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 750; font-size: .85rem; cursor: pointer; }
 .licbtn small { color: var(--text-2); font-weight: 600; font-size: .76rem; }
 .licbtn:hover { filter: brightness(.97); }
@@ -1274,6 +1282,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     return { groups, orphans };
   }
+  /* Recherche web « Quand regarder <film> dans l'anime / la série <titre> » (l'ordre de visionnage varie selon les sources). */
+  function watchWhenSearchUrl(filmTitle, seriesTitle, anime) {
+    const q = 'Quand regarder ' + str(filmTitle, 200) + (anime ? " dans l'anime " : ' dans la série ') + str(seriesTitle, 200);
+    return 'https://www.google.com/search?' + new URLSearchParams({ q }).toString();
+  }
   /* Réponse SPARQL de Wikidata → clés TMDB des titres suivants / précédents (séries ou films). */
   function parseWikidataRelations(json) {
     const out = { next: [], prev: [], anilist: [] };
@@ -1600,7 +1613,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
-    normTitle, licenceBase, inLicence, licenceList, probableNext, licenceGroups, parseWikidataRelations, wikidataQuery,
+    normTitle, licenceBase, inLicence, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
     anilistQuery, anilistStep, anilistTitle, wikidataAnilistQuery, parseWikidataAnilistMap, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
@@ -3809,6 +3822,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       (d && d.gallery.length ? '<section class="gallery-section" aria-labelledby="gallery-title"><div class="gallery-head"><h2 id="gallery-title">Images</h2><span class="hint">Visuels officiels du titre, sans images d’épisodes pour éviter les spoilers.</span></div>' +
         '<div class="gallery">' + d.gallery.map((p, i) => '<button type="button" class="gallery-item" data-action="gallery-open" data-key="' + key + '" data-index="' + i + '" aria-label="Agrandir l’image ' + (i + 1) + ' sur ' + d.gallery.length + '">' +
           '<img src="' + esc(img(p, 'w780')) + '" alt="" loading="lazy" decoding="async"></button>').join('') + '</div></section>' : '') +
+      (isTv ? '<section id="detail-films" class="films-section" aria-label="Films liés">' + filmsSectionHtml(key) + '</section>' : '') +
       (isTv ? '<section id="seasons-section" aria-labelledby="seasons-title">' + seasonsHtml(key) + '</section>' : '') +
       '<section id="detail-reco" class="reco-section" aria-label="Dans le même esprit">' + recoHtml(key) + '</section></article>';
   }
@@ -4011,7 +4025,25 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button></div>' +
       L.groups.map(era).join('') + ann + (L.orphans.length ? '<div class="lera"><div class="lseries"><span class="lseries-text"><span class="lseries-title">Autres films</span></span></div><div class="lfilms">' + L.orphans.map(film).join('') + '</div></div>' : '');
   }
+  /* Films rangés avec cette série dans sa licence, avec une recherche « Quand le regarder ? » pour chacun. */
+  function filmsSectionHtml(key) {
+    const L = licenceData(key);
+    const g = L && L.groups.find((x) => x.series.key === key);
+    if (!g || !g.films.length) return '';
+    const d = state.cache.details.get(key) || viewMeta(key);
+    const anime = C.isAnime(d);
+    return '<div class="gallery-head"><h2 id="films-title">Films liés</h2><span class="hint">Films de la licence rattachés à cette série. Le bon moment pour les regarder varie selon les sources : vérifie avec la recherche.</span></div>' +
+      '<ul class="films-list">' + g.films.map((f) => {
+        const seen = getTrack(f.key) && itemState(f.key).status === 'seen';
+        return '<li class="film-row" data-item-key="' + f.key + '"><a class="film-row-main" href="' + C.detailHash('movie', f.id) + '"><span class="film-row-poster poster">' + posterHtml(f, 'w154') + '</span>' +
+          '<span class="film-row-text"><strong>' + esc(f.title) + '</strong><span class="muted">Film · ' + (f.date ? (f.date > state.today ? 'à venir · ' + esc(C.formatDate(f.date)) : esc(C.formatDate(f.date))) : 'date inconnue') + '</span>' +
+          (seen ? '<span class="tagc t-seen">✓ vu</span>' : '') + '</span></a>' +
+          '<a class="btn btn-sm film-row-search" href="' + esc(C.watchWhenSearchUrl(f.title, d.title, anime)) + '" target="_blank" rel="noopener noreferrer" title="Recherche Google : où placer ce film dans l’ordre de visionnage">🔎 Quand le regarder ?</a></li>';
+      }).join('') + '</ul>';
+  }
   function renderLicence(key) {
+    const films = document.getElementById('detail-films');
+    if (films) films.innerHTML = filmsSectionHtml(key);
     const btn = document.getElementById('detail-licence-btn');
     if (btn) btn.innerHTML = licenceButtonHtml(key);
     const panel = document.getElementById('detail-licence');

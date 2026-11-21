@@ -219,6 +219,8 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .avail-upcoming { background: rgba(8,10,16,.82); color: #fff; border: 1px dashed rgba(255,255,255,.45); }
 .avail-cinema { background: #f0a020; color: #1b1205; }
 .avail-available { background: var(--seen); color: var(--seen-ink); }
+.avail-released { background: #8a94a6; color: #0b0e14; }
+.avail-unknown { background: rgba(8,10,16,.7); color: #cfd6e4; }
 .snake-text .avail { justify-self: start; }
 .avail-toggle { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: .84rem; font-weight: 650; cursor: pointer; }
 .avail-toggle input { width: 17px; height: 17px; accent-color: var(--accent); }
@@ -686,7 +688,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (releaseDates === undefined) return 'unknown';
     return digitalReleased(releaseDates, today) ? 'available' : 'cinema';
   }
-  function isAvailable(state) { return state === 'available' || state === 'unknown'; }
+  function isAvailable(state) { return state === 'available' || state === 'unknown' || state === 'released'; }
   function normalizeSeason(raw) {
     if (!isObj(raw) || !Number.isInteger(raw.season_number)) return null;
     const seen = new Set();
@@ -2199,7 +2201,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       tmdb('/movie/' + pk.id + '/release_dates', {}).then((json) => {
         const item = state.cache.summaries.get(k) || state.data.metadata[k] || state.cache.details.get(k);
         state.cache.availability.set(k, C.availabilityOf(item, state.today, json));
-      }).catch(() => { state.cache.availability.delete(k); }).finally(() => {
+      }).catch(() => { state.cache.availability.set(k, 'released'); }).finally(() => {
         availRunning--;
         availabilityChanged(k);
         checkAvailability();
@@ -2702,11 +2704,13 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return '<div class="seg' + (large ? ' seg-lg' : '') + '" role="group" aria-label="' + esc(label) + '">' + C.STATUSES.map((s) =>
       '<button type="button" data-action="' + action + '"' + attrs + ' data-status="' + s + '" aria-pressed="' + (current === s) + '">' + STATUS_LABELS[s] + '</button>').join('') + '</div>';
   }
-  const AVAIL_LABELS = { upcoming: 'À venir', cinema: 'Au cinéma', available: 'Disponible', unknown: '' };
+  const AVAIL_LABELS = { upcoming: 'À venir', cinema: 'Au cinéma', available: 'Disponible', released: 'Sorti', unknown: 'Vérification…' };
   const AVAIL_TITLES = {
     upcoming: 'Pas encore sorti',
     cinema: 'Sorti au cinéma, pas encore disponible en vidéo à la demande, en streaming ou en DVD/Blu-ray',
-    available: 'Disponible en vidéo à la demande, en streaming ou en DVD/Blu-ray (ou sorti depuis plus de 9 mois)'
+    available: 'Film : disponible en vidéo à la demande, en streaming ou en DVD/Blu-ray (ou sorti depuis plus de 9 mois)',
+    released: 'Sorti au cinéma ; sa sortie en vidéo n’a pas pu être vérifiée auprès de TMDB',
+    unknown: 'Vérification de la sortie en vidéo auprès de TMDB'
   };
   function availHtml(st, key, date) {
     const label = st === 'upcoming' && date ? 'À venir · ' + C.formatDate(date).replace(/ \d{4}$/, (y) => (date.slice(0, 4) === state.today.slice(0, 4) ? '' : y)) : AVAIL_LABELS[st];
@@ -2714,7 +2718,6 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   function cardAvail(item) {
     const st = availability(item);
-    if (item.type === 'tv' && st !== 'upcoming') return ''; // séries : seule l'absence de diffusion est signalée
     return availHtml(st, item.key, item.date || '');
   }
   function cardHtml(item) {
@@ -3018,7 +3021,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       '<span class="snake-text"><span class="snake-num">' + n + '</span><strong>' + esc(it ? it.title : 'Titre TMDB n°' + pk.id) + '</strong>' +
       '<span class="snake-date">' + (d ? C.formatDate(d) : 'Date à venir') + ' · ' + (pk.type === 'movie' ? 'Film' : 'Série') + '</span>' +
       (k === next ? '<span class="snake-flag">Prochain à voir</span>' : upcoming ? '<span class="snake-flag soon">À venir</span>' : statusBadge(st, k)) +
-      (pk.type === 'movie' && !upcoming ? availHtml(av, k, d) : '') + '</span></a></li>';
+      (!upcoming ? availHtml(av, k, d) : '') + '</span></a></li>';
   }
   function renderSagaBody(id) {
     if (state.renderedView !== 'saga' || state.route.sagaId !== id) return;

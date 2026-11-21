@@ -24,7 +24,7 @@ describe('Disponibilité : règles', () => {
   it('série : à venir avant le premier épisode, sinon disponible ; filtre garde l’inconnu', () => {
     assert.equal(C.availabilityOf({ type: 'tv', date: '2027-01-01' }, TODAY), 'upcoming');
     assert.equal(C.availabilityOf({ type: 'tv', date: '2026-11-20' }, TODAY), 'available');
-    assert.deepEqual(['upcoming', 'cinema', 'available', 'unknown'].map(C.isAvailable), [false, false, true, true]);
+    assert.deepEqual(['upcoming', 'cinema', 'available', 'unknown', 'released'].map(C.isAvailable), [false, false, true, true, true]);
   });
   it('découverte : la case demande à TMDB les films déjà sortis en vidéo', () => {
     const [mv, tv] = C.discoverRequests(C.parseSearchFilters({}), 1, TODAY, 0, true);
@@ -38,6 +38,15 @@ describe('Disponibilité : miniatures et filtre', () => {
   let browser;
   before(async () => { browser = await launch(); });
   after(async () => { if (browser) await browser.close(); });
+  it('TMDB injoignable pour un film récent : étiquette « Sorti », jamais vide', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#search?q=sortie', mock: { fail: ['/movie/130/release_dates'] } });
+    await page.waitForSelector('#search-results .card');
+    await page.waitForFunction(() => document.querySelector('[data-item-key="movie-130"] .avail').textContent === 'Sorti');
+    assert.equal(await page.locator('#search-results .card .avail:empty').count(), 0);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
   const label = (page, key) => page.locator('#search-results [data-item-key="' + key + '"] .avail').textContent();
 
   it('étiquettes sur les miniatures, puis case cochée : seuls les titres disponibles restent, et le choix est retenu', T, async () => {
@@ -48,7 +57,8 @@ describe('Disponibilité : miniatures et filtre', () => {
     await page.waitForFunction(() => document.querySelector('[data-item-key="movie-131"] .avail').textContent === 'Disponible');
     assert.match(await label(page, 'movie-122'), /^À venir · 1er mai 2027$/);
     assert.equal(await label(page, 'movie-101'), 'Disponible', 'film de 2022 : disponible sans vérification');
-    assert.equal(await page.locator('#search-results [data-item-key="tv-201"] .avail').count(), 0, 'série déjà diffusée : pas d’étiquette');
+    assert.equal(await page.locator('#search-results [data-item-key="tv-201"] .avail').textContent(), 'Disponible', 'série déjà diffusée : disponible');
+    assert.equal(await page.locator('#search-results .card .avail:empty').count(), 0, 'aucune miniature sans étiquette');
     assert.equal(mock.state.releaseChecks, 2, 'seuls les deux films récents sont vérifiés auprès de TMDB');
     await page.locator('#search-filters [data-change="only-available"]').check();
     await page.waitForFunction(() => document.querySelectorAll('#search-results .card').length === 3);

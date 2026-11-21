@@ -3,6 +3,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCore } from './helpers/load-core.mjs';
 import { launch, openApp, jsErrors, duplicateIds } from './helpers/browser.mjs';
+import { anilistState } from './fixtures/tmdb-mock.mjs';
 
 const { Core: C } = loadCore();
 const T = { timeout: 60000 };
@@ -225,7 +226,7 @@ describe('Licence : carte Diffusion', () => {
     await page.waitForSelector('#detail-cards [data-col="suite"]');
     assert.equal(await col(page, 'suite'), 'Suite annoncéeChaine Yon : le retourAnime · en production · pas encore sur TMDB');
     assert.equal(await page.locator('#detail-cards [data-col="suite"] a').count(), 0);
-    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /4 séries · 0 film · 1 OVA \/ spécial$/, 'la suite annoncée compte comme série ; le spécial relié est compté');
+    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /4 séries · 1 film · 1 OVA \/ spécial$/, 'la suite annoncée compte comme série ; le spécial relié est compté');
     await openLicence(page);
     assert.deepEqual(await eras(page), ['tv-220', 'tv-221', 'tv-222']);
     assert.match(await page.locator('#detail-licence .lera.is-announced').textContent(), /Chaine Yon : le retour[\s\S]*annoncée · pas encore sur TMDB/);
@@ -239,6 +240,52 @@ describe('Licence : carte Diffusion', () => {
     await page.reload();
     await page.waitForSelector('#detail-cards [data-col="suite"]');
     assert.match(await col(page, 'suite'), /^Suite probable/);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('même licence depuis n’importe quelle fiche (série, autre série, film relié), puis affichage immédiat sans nouvelle requête AniList', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/220' });
+    const snapshot = async () => page.$$eval('#detail-licence .lera', (els) => els.map((e) => (e.dataset.series || 'annoncée') + ':' + [...e.querySelectorAll('.lfilm')].map((f) => f.dataset.itemKey).join(',')));
+    await openLicence(page);
+    const ref = await snapshot();
+    assert.deepEqual(ref, ['tv-220:', 'tv-221:movie-142', 'tv-222:anilist-99', 'annoncée:'], 'le film relié par AniList est rangé sous sa série parente');
+    const label = (await page.locator('#detail-licence-btn .licbtn').textContent()).slice(2); // sans la flèche ouvert / fermé
+    const calls = anilistState.calls;
+    for (const hash of ['#detail/tv/222', '#detail/movie/142']) {
+      await page.evaluate((h) => { location.hash = h; }, hash);
+      await page.waitForFunction((h) => location.hash === h, hash);
+      await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])');
+      assert.equal((await page.locator('#detail-licence-btn .licbtn').textContent()).slice(2), label, hash + ' : même bouton');
+      await openLicence(page);
+      assert.deepEqual(await snapshot(), ref, hash + ' : même contenu');
+    }
+    assert.equal(anilistState.calls, calls, 'licence réutilisée : aucune nouvelle requête AniList');
+    assert.equal(await page.locator('#detail-licence .lfilm.is-current').getAttribute('data-item-key'), 'movie-142', 'le film ouvert est mis en avant');
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('crazy-liste-licences')));
+    assert.equal(stored.list[0].id, 'al:11', 'licence gardée dans le navigateur, identifiée par sa série racine');
+    await page.reload();
+    await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])');
+    assert.equal(anilistState.calls, calls, 'après rechargement : licence gardée, affichée sans attendre AniList');
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('AniList refuse une requête (trop de demandes) : nouvelle tentative, la licence s’affiche quand même ; bouton « recherche » pendant le calcul', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#home' });
+    let refused = 0;
+    await context.route('https://graphql.anilist.co/**', async (route) => {
+      if (route.request().method() === 'POST' && refused === 0) { refused++; return route.fulfill({ status: 429, headers: { 'access-control-allow-origin': '*' }, body: '{}' }); }
+      await new Promise((r) => setTimeout(r, 150));
+      return route.fallback();
+    });
+    await page.evaluate(() => { location.hash = '#detail/tv/221'; });
+    await page.waitForSelector('#detail-licence-btn .licbtn[disabled]');
+    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /Recherche des séries, films et OVA/);
+    await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
+    assert.equal(refused, 1);
+    await openLicence(page);
+    assert.deepEqual(await eras(page), ['tv-220', 'tv-221', 'tv-222']);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

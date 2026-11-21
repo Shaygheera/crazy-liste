@@ -67,7 +67,10 @@ SHOWS[221] = { base: show(221, 'Chaîne Deux autre nom', { first_air_date: '2010
 SHOWS[222] = { base: show(222, 'Troisième Volet', { first_air_date: '2015-01-01', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 // Wikidata simulé : « suivi par » / « précédé par » avec numéros TMDB (série 201 → série 202) et numéros AniList.
 export const WIKIDATA = { 201: { next: [['tv', 202]], prev: [] }, 202: { next: [], prev: [['tv', 201]] }, 220: { anilist: 11 }, 221: { anilist: 12 }, 222: { anilist: 13 } };
-const WIKIDATA_ANILIST = { 11: ['tv', 220], 12: ['tv', 221], 13: ['tv', 222] };
+const WIKIDATA_MOVIES = { 142: { anilist: 60 } };
+const WIKIDATA_ANILIST = { 11: ['tv', 220], 12: ['tv', 221], 13: ['tv', 222], 60: ['movie', 142] };
+// Film de la chaîne au titre sans rapport (relié seulement par AniList : « série parente » 12)
+MOVIES[142] = movie(142, 'Volet spécial : le film', { release_date: '2012-05-05', original_language: 'ja', genre_ids: [16], _hidden: true });
 const lit = (v) => ({ type: 'literal', value: String(v) });
 export async function handleWikidata(route) {
   const q = new URL(route.request().url()).searchParams.get('query') || '';
@@ -77,8 +80,8 @@ export async function handleWikidata(route) {
     bindings = [...values[1].matchAll(/"(\d+)"/g)].map((m) => m[1]).filter((al) => WIKIDATA_ANILIST[al])
       .map((al) => ({ al: lit(al), [WIKIDATA_ANILIST[al][0] === 'tv' ? 'tv' : 'movie']: lit(WIKIDATA_ANILIST[al][1]) }));
   } else {
-    const m = /wdt:P4983 "(\d+)"/.exec(q);
-    const rel = (m && WIKIDATA[m[1]]) || {};
+    const m = /wdt:(P4983|P4947) "(\d+)"/.exec(q);
+    const rel = (m && (m[1] === 'P4947' ? WIKIDATA_MOVIES : WIKIDATA)[m[2]]) || {};
     bindings = ['next', 'prev'].flatMap((r) => (rel[r] || []).map(([type, id]) => ({ rel: lit(r), [type === 'tv' ? 'tv' : 'movie']: lit(id) })));
     if (rel.anilist) bindings.push({ rel: lit('anilist'), al: lit(rel.anilist) });
   }
@@ -86,8 +89,8 @@ export async function handleWikidata(route) {
 }
 // AniList simulé (GraphQL) : 13 a aussi un spécial « suite », qui doit être ignoré.
 const al = (id, title, year, status = 'FINISHED', format = 'TV') => ({ id, type: 'ANIME', format, status, title: { romaji: title, english: null }, startDate: { year, month: 1, day: 1 } });
-const AL_NODES = { 11: al(11, 'Chaine Ichi', 2005), 12: al(12, 'Chaine Ni', 2010), 13: al(13, 'Chaine San', 2015), 14: al(14, 'Chaine Yon : le retour', null, 'NOT_YET_RELEASED'), 99: al(99, 'Spécial', 2016, 'FINISHED', 'SPECIAL') };
-const AL_REL = { 11: [['SEQUEL', 12]], 12: [['PREQUEL', 11], ['SEQUEL', 13]], 13: [['PREQUEL', 12], ['SEQUEL', 99], ['SEQUEL', 14]], 14: [['PREQUEL', 13]] };
+const AL_NODES = { 60: al(60, 'Chaine Movie', 2012, 'FINISHED', 'MOVIE'), 11: al(11, 'Chaine Ichi', 2005), 12: al(12, 'Chaine Ni', 2010), 13: al(13, 'Chaine San', 2015), 14: al(14, 'Chaine Yon : le retour', null, 'NOT_YET_RELEASED'), 99: al(99, 'Spécial', 2016, 'FINISHED', 'SPECIAL') };
+const AL_REL = { 60: [['PARENT', 12]], 11: [['SEQUEL', 12]], 12: [['PREQUEL', 11], ['SEQUEL', 13], ['SIDE_STORY', 60]], 13: [['PREQUEL', 12], ['SEQUEL', 99], ['SEQUEL', 14]], 14: [['PREQUEL', 13]] };
 export const anilistState = { calls: 0 };
 export async function handleAnilist(route) {
   const req = route.request();

@@ -204,6 +204,7 @@ describe('Films, fiche et Reprendre', () => {
     const { page, errors, mock, context } = await openApp(browser, { hash: '#detail/movie/120' });
     await page.waitForSelector('#detail-track');
     await page.waitForFunction(() => document.querySelector('#detail-cards').textContent.includes('Saga : Partie 2'));
+    await page.waitForLoadState('networkidle'); // la licence se charge en arrière-plan après la fiche
     const requests = mock.state.requests.length;
     await page.locator('[data-action="movie-status"][data-status="seen"]').click();
     assert.equal(await page.locator('[data-action="movie-status"][data-status="seen"]').getAttribute('aria-pressed'), 'true');

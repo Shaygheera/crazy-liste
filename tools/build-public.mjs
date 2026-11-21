@@ -1,8 +1,9 @@
 // Prépare la version publiée sur GitHub Pages à partir de crazy-liste.html :
 //  - retire la clé TMDB intégrée (chacun utilise la sienne, enregistrée dans son compte) ;
 //  - insère la configuration web Firebase (identifiants publics du projet, pas des secrets) ;
+//  - insère l'adresse du relais TMDB si relais.json existe (la clé TMDB reste dans Cloudflare, jamais ici) ;
 //  - demande aux moteurs de recherche de ne pas référencer la page.
-// Usage : node tools/build-public.mjs firebase-config.json [dossier-de-sortie]   (défaut : public/)
+// Usage : node tools/build-public.mjs firebase-config.json [dossier-de-sortie]   (défaut : public/ ; relais lu dans relais.json s'il existe)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,11 +20,20 @@ export function validateConfig(config) {
   return Object.fromEntries(CONFIG_FIELDS.filter((f) => typeof config[f] === 'string').map((f) => [f, config[f].trim()]));
 }
 
-export function buildPublic(html, config) {
+export function validateRelay(url) {
+  if (url == null || url === '') return null;
+  const u = new URL(url);
+  if (u.protocol !== 'https:' || u.search || u.hash || u.username) throw new Error('Adresse du relais invalide (https, sans paramètres) : ' + url);
+  return u.origin + u.pathname.replace(/\/+$/, '');
+}
+
+export function buildPublic(html, config, relayUrl) {
   const clean = validateConfig(config);
+  const relay = validateRelay(relayUrl);
   const swaps = [
     [/const DEFAULT_TMDB_KEY = '[^']*';/, "const DEFAULT_TMDB_KEY = ''; // version publique : aucune clé intégrée"],
     [/const FIREBASE_CONFIG = null;/, 'const FIREBASE_CONFIG = ' + JSON.stringify(clean) + ';'],
+    [/const TMDB_RELAY = null;/, 'const TMDB_RELAY = ' + JSON.stringify(relay) + ';'],
     [/(<meta name="viewport"[^>]*>)/, '$1\n<meta name="robots" content="noindex, nofollow">']
   ];
   let out = html;
@@ -38,9 +48,11 @@ export function buildPublic(html, config) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [configPath, outDir = path.resolve(here, '..', 'public')] = process.argv.slice(2);
   if (!configPath) { console.error('Usage : node tools/build-public.mjs firebase-config.json [dossier]'); process.exit(1); }
-  const out = buildPublic(fs.readFileSync(SOURCE, 'utf8'), JSON.parse(fs.readFileSync(configPath, 'utf8')));
+  const relayFile = path.resolve(here, '..', 'relais.json');
+  const relay = fs.existsSync(relayFile) ? JSON.parse(fs.readFileSync(relayFile, 'utf8')).url : null;
+  const out = buildPublic(fs.readFileSync(SOURCE, 'utf8'), JSON.parse(fs.readFileSync(configPath, 'utf8')), relay);
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'index.html'), out);
   fs.writeFileSync(path.join(outDir, '.nojekyll'), '');
-  console.log('Version publique écrite dans ' + path.join(outDir, 'index.html'));
+  console.log('Version publique écrite dans ' + path.join(outDir, 'index.html') + (relay ? ' (relais TMDB : ' + relay + ')' : ' (sans relais TMDB)'));
 }

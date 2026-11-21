@@ -12,16 +12,18 @@ const API = '${API}';
 const KEY = '__mockFirebaseUser';
 let current = JSON.parse(localStorage.getItem(KEY) || 'null');
 const listeners = [];
+// Comme le vrai SDK : l'utilisateur fournit un jeton d'identité (ici factice, contrôlé par le relais simulé).
+const withToken = (u) => (u ? Object.assign({}, u, { getIdToken: async () => 'mock-id-token.' + u.uid }) : null);
 export function getAuth(app) { return { app }; }
 export class GoogleAuthProvider {}
-export function onAuthStateChanged(auth, cb) { listeners.push(cb); setTimeout(() => cb(current), 0); return () => {}; }
+export function onAuthStateChanged(auth, cb) { listeners.push(cb); setTimeout(() => cb(withToken(current)), 0); return () => {}; }
 export async function signInWithPopup(auth) {
   const r = await fetch(API + '/signin', { method: 'POST' });
   const j = await r.json();
   if (j.error) { const e = new Error(j.error); e.code = j.error; throw e; }
   current = j.user; localStorage.setItem(KEY, JSON.stringify(current));
-  listeners.forEach((cb) => cb(current));
-  return { user: current };
+  listeners.forEach((cb) => cb(withToken(current)));
+  return { user: withToken(current) };
 }
 export async function signInWithRedirect() { throw Object.assign(new Error('redirect'), { code: 'auth/redirect-unsupported-in-mock' }); }
 export async function signOut() { current = null; localStorage.removeItem(KEY); listeners.forEach((cb) => cb(null)); }`,

@@ -1843,6 +1843,9 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
      La protection des données repose sur les règles Firestore (lecture et écriture réservées au compte propriétaire).
      null : synchronisation désactivée (la liste reste dans ce navigateur). */
   const FIREBASE_CONFIG = null;
+  /* Relais TMDB (version publiée) : adresse d'un petit serveur qui garde la clé TMDB secrète et ne répond qu'aux personnes
+     connectées avec Google sur ce site (ticket Firebase vérifié). null : pas de relais, chacun colle sa propre clé. */
+  const TMDB_RELAY = null;
   const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
   const TMDB_API = 'https://api.themoviedb.org/3';
   const TMDB_IMG = 'https://image.tmdb.org/t/p/';
@@ -1995,7 +1998,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     sync.status = status;
     sync.error = error || '';
     renderSyncChip();
-    if (state.renderedView === 'home' && !currentKey()) byId('view-root').innerHTML = welcomeHtml();
+    if (state.renderedView === 'home' && !tmdbReady()) byId('view-root').innerHTML = welcomeHtml();
     if (state.renderedView === 'settings') byId('sync-panel').innerHTML = syncPanelInner();
   }
   const SYNC_ERRORS = {
@@ -2026,12 +2029,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function stopListeners() { sync.unsubs.forEach((u) => u()); sync.unsubs = []; }
   function onSyncUser(user) {
     stopListeners();
+    const wasReady = tmdbReady();
+    const reloadIfAccessChanged = () => { if (tmdbReady() !== wasReady) { requestCache.clear(); handleRoute(); } };
     if (!user) {
       sync.user = null;
+      sync.fbUser = null;
       setSyncStatus('signedout');
+      reloadIfAccessChanged();
       return;
     }
     sync.user = { uid: user.uid, email: user.email || '', name: user.displayName || '' };
+    sync.fbUser = user;
     if (sync.state.uid !== user.uid) {
       sync.state = D.emptySyncState(user.uid);
       D.markLocalChanges(sync.state, state.data.tracking, Date.now(), true);
@@ -2041,6 +2049,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const { fs, db } = sync.fb;
     sync.unsubs.push(fs.onSnapshot(fs.collection(db, 'users', user.uid, 'items'), onRemoteItems, onSyncError));
     sync.unsubs.push(fs.onSnapshot(fs.doc(db, 'users', user.uid, 'settings', 'app'), onRemoteSettings, onSyncError));
+    reloadIfAccessChanged();
   }
   function onSyncError(err) { console.warn('Synchronisation :', err); setSyncStatus('error', syncErrorText(err)); }
 
@@ -2208,6 +2217,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* ===== Client TMDB ===== */
   const TMDB_MESSAGES = {
     nokey: 'Aucune clé TMDB configurée : ajoute ta clé dans Réglages.',
+    login: 'Connecte-toi avec Google (Réglages) pour charger les films et séries.',
+    relayauth: 'Connexion Google expirée ou refusée par le relais : reconnecte-toi dans Réglages.',
+    relaydenied: 'Ce compte Google n’est pas autorisé à utiliser le relais Crazy Liste.',
+    relaykey: 'Le relais Crazy Liste n’a pas de clé TMDB valide : elle est à corriger dans Cloudflare.',
     auth: 'Clé TMDB refusée (401) : vérifie-la dans Réglages.',
     notfound: 'Contenu introuvable sur TMDB.',
     rate: 'TMDB reçoit trop de requêtes : réessaie dans un instant.',
@@ -2221,23 +2234,35 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   const requestCache = new Map();
   function currentKey() { return (state.data.preferences.apiKey || '').trim() || DEFAULT_TMDB_KEY; }
+  /* Sans clé : passage par le relais si la personne est connectée avec Google. */
+  const useRelay = () => !currentKey() && !!TMDB_RELAY && !!sync.user;
+  function tmdbReady() { return !!currentKey() || useRelay(); }
+  function relayToken() {
+    const u = sync.fbUser;
+    if (!u || typeof u.getIdToken !== 'function') return Promise.reject(new TmdbError('login'));
+    return Promise.resolve(u.getIdToken()).catch(() => { throw new TmdbError('relayauth'); });
+  }
   function tmdb(path, params, opts) {
     const o = opts || {};
     const key = o.key || currentKey();
-    if (!key) return Promise.reject(new TmdbError('nokey'));
-    const url = new URL(TMDB_API + path);
+    const relay = !key && useRelay();
+    if (!key && !relay) return Promise.reject(new TmdbError(TMDB_RELAY ? 'login' : 'nokey'));
+    const url = new URL((relay ? TMDB_RELAY.replace(/\/+$/, '') : TMDB_API) + path);
     url.searchParams.set('language', LANGUAGE);
     for (const [k, v] of Object.entries(params || {})) if (v != null && v !== '') url.searchParams.set(k, String(v));
-    const cacheKey = url.toString() + '|' + key;
+    const cacheKey = url.toString() + '|' + (relay ? 'relais' : key);
     if (!o.noCache) {
       const hit = requestCache.get(cacheKey);
       if (hit && Date.now() - hit.at < CACHE_TTL) return hit.promise;
     }
     const headers = { accept: 'application/json' };
-    if (/^eyJ/.test(key)) headers.Authorization = 'Bearer ' + key; else url.searchParams.set('api_key', key);
-    const promise = fetch(url.toString(), { headers, signal: o.signal })
-      .catch((err) => { throw err && err.name === 'AbortError' ? err : new TmdbError('network'); })
+    if (relay) { /* le ticket Google est ajouté juste avant l'envoi */ } else if (/^eyJ/.test(key)) headers.Authorization = 'Bearer ' + key; else url.searchParams.set('api_key', key);
+    const send = relay ? relayToken().then((t) => fetch(url.toString(), { headers: Object.assign({}, headers, { Authorization: 'Bearer ' + t }), signal: o.signal }))
+      : fetch(url.toString(), { headers, signal: o.signal });
+    const promise = send
+      .catch((err) => { throw err && (err.name === 'AbortError' || err instanceof TmdbError) ? err : new TmdbError('network'); })
       .then((res) => {
+        if (!res.ok && relay) throw new TmdbError(res.status === 401 ? 'relayauth' : res.status === 403 ? 'relaydenied' : res.status === 502 ? 'relaykey' : res.status === 404 ? 'notfound' : res.status === 429 ? 'rate' : res.status >= 500 ? 'server' : 'unknown', res.status);
         if (!res.ok) throw new TmdbError(res.status === 401 ? 'auth' : res.status === 404 ? 'notfound' : res.status === 429 ? 'rate' : res.status >= 500 ? 'server' : 'unknown', res.status);
         return res.json().catch(() => { throw new TmdbError('invalid'); });
       });
@@ -2424,7 +2449,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* Calendrier : fiches des séries de ma liste et des films pas encore sortis (6 à la fois). */
   async function loadAgenda(force) {
     const st = state.cache.agenda;
-    if (st.status === 'loading' || !currentKey()) return;
+    if (st.status === 'loading' || !tmdbReady()) return;
     const today = state.today;
     const keys = C.personalEntries(state.data)
       .filter((e) => e.type === 'tv' || (e.status !== 'seen' && (!e.meta.date || e.meta.date >= today)))
@@ -2439,7 +2464,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* Statistiques : durée manquante (anciennes données) récupérée une fois par session, 4 fiches à la fois. */
   async function fillRuntimes() {
     const st = state.cache.runtimes;
-    if (st.status === 'loading' || !currentKey()) return;
+    if (st.status === 'loading' || !tmdbReady()) return;
     const keys = C.personalEntries(state.data)
       .filter((e) => !e.meta.runtime && !st.tried.has(e.key) && (e.type === 'movie' ? e.status === 'seen' : e.state.seenEpisodes > 0))
       .map((e) => e.key);
@@ -3049,7 +3074,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const kind = err && err.kind;
     return '<div class="error-box" role="alert"><p>' + esc(err && err.message ? err.message : 'Erreur inattendue.') + '</p>' +
       '<button type="button" class="btn btn-sm" data-action="' + action + '"' + (attrs || '') + '>Réessayer</button>' +
-      (kind === 'auth' || kind === 'nokey' ? '<a class="btn btn-sm" href="#settings">Réglages TMDB</a>' : '') + '</div>';
+      (['auth', 'nokey', 'login', 'relayauth'].includes(kind) ? '<a class="btn btn-sm" href="#settings">' + (kind === 'login' || kind === 'relayauth' ? 'Se connecter' : 'Réglages TMDB') + '</a>' : '') + '</div>';
   }
   function emptyHtml(title, text, link) {
     return '<div class="empty"><strong>' + esc(title) + '</strong>' + (text ? esc(text) : '') +
@@ -3058,13 +3083,22 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
 
   /* ----- Accueil ----- */
   function homeHtml() {
-    if (!currentKey()) return welcomeHtml();
+    if (!tmdbReady()) return welcomeHtml();
     return '<div class="page-head"><div><h1>Crazy Liste</h1><p>Tendances et nouveautés TMDB. Clique sur une affiche pour ouvrir sa fiche et suivre ta progression.</p></div>' + availToggleHtml() + '</div>' +
       HOME_SECTIONS.map((sec) => '<section class="section" id="home-sec-' + sec.id + '" aria-labelledby="home-title-' + sec.id + '">' + homeSectionInner(sec) + '</section>').join('');
   }
   /* Aucune clé TMDB (version publique, premier lancement) : un seul message clair au lieu de six erreurs. */
   function welcomeHtml() {
     const canSignIn = sync.fb && !sync.user;
+    if (TMDB_RELAY && /^https?:$/.test(location.protocol)) {
+      const head = '<div class="page-head"><div><h1>Bienvenue sur Crazy Liste</h1><p>Suis tes films, séries et anime, épisode par épisode.</p></div></div>';
+      if (sync.status === 'loading') return head + '<p class="hint" role="status">Connexion en cours…</p>';
+      return head + '<section class="panel welcome" id="welcome-panel"><h2>Connecte-toi pour commencer</h2>' +
+        '<p>Connecte-toi avec ton compte Google : les films et séries s’affichent, et ta liste est enregistrée dans ton compte, sur tous tes appareils. Aucune clé à fournir.</p>' +
+        (sync.status === 'error' ? '<p class="hint">' + esc(sync.error) + '</p>' : '') +
+        '<div class="row">' + (canSignIn ? '<button type="button" class="btn btn-primary" data-action="sync-signin"' + (sync.status === 'signing' ? ' disabled' : '') + '>Se connecter avec Google</button>' : '') +
+        '<a class="btn" href="#settings">J’ai ma propre clé TMDB</a></div></section>';
+    }
     return '<div class="page-head"><div><h1>Bienvenue sur Crazy Liste</h1><p>Suis tes films, séries et anime, épisode par épisode.</p></div></div>' +
       '<section class="panel welcome" id="welcome-panel"><h2>Pour commencer</h2>' +
       (canSignIn ? '<p><strong>Tu utilises déjà Crazy Liste sur un autre appareil ?</strong> Connecte-toi avec le même compte Google : ta liste et ta clé TMDB arrivent automatiquement.</p>' : '') +
@@ -3216,7 +3250,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function agendaHtml() {
     const head = '<div class="page-head"><div><h1>À venir</h1><p>Les prochains épisodes des séries et anime de ta liste, et les sorties des films que tu n’as pas encore vus.</p></div>' +
       '<button type="button" class="btn btn-sm" data-action="agenda-refresh">↻ Actualiser</button></div>';
-    if (!currentKey()) return head + emptyHtml('Clé TMDB manquante.', 'Ajoute ta clé TMDB dans Réglages pour voir les prochaines sorties.', { href: '#settings', label: 'Ouvrir les Réglages' });
+    if (!tmdbReady()) return head + (TMDB_RELAY ? emptyHtml('Connexion requise.', 'Connecte-toi avec Google pour voir les prochaines sorties.', { href: '#settings', label: 'Se connecter' }) : emptyHtml('Clé TMDB manquante.', 'Ajoute ta clé TMDB dans Réglages pour voir les prochaines sorties.', { href: '#settings', label: 'Ouvrir les Réglages' }));
     return head + '<div id="agenda-body">' + agendaBodyHtml() + '</div>';
   }
   function agendaProgressText() { const st = state.cache.agenda; return 'Mise à jour depuis TMDB… ' + st.loaded + ' / ' + st.total; }
@@ -3428,7 +3462,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       '<section class="panel" id="sync-panel">' + syncPanelInner() + '</section>' +
       '<section class="panel"><h2>Apparence</h2><div class="seg seg-lg" role="group" aria-label="Thème">' + [['dark', 'Sombre'], ['light', 'Clair']].map(([v, l]) =>
         '<button type="button" data-action="set-theme" data-theme="' + v + '" aria-pressed="' + (p.theme === v) + '">' + l + '</button>').join('') + '</div></section>' +
-      '<section class="panel"><h2>Connexion TMDB</h2><p>' + (custom ? 'Clé utilisée : <strong>ta clé personnelle</strong>.' : DEFAULT_TMDB_KEY ? 'Clé utilisée : <strong>la clé intégrée à ce fichier</strong>.' : '<strong>Aucune clé configurée</strong> : colle ta clé TMDB ci-dessous' + (FIREBASE_CONFIG ? ', ou connecte-toi pour la récupérer depuis ton compte' : '') + '.') + '</p>' +
+      '<section class="panel"><h2>Connexion TMDB</h2><p>' + (custom ? 'Clé utilisée : <strong>ta clé personnelle</strong>.' : TMDB_RELAY ? (sync.user ? 'Accès à TMDB : <strong>par le relais Crazy Liste</strong>, grâce à ta connexion Google. Aucune clé à fournir ; tu peux quand même utiliser la tienne ci-dessous.' : 'Accès à TMDB : <strong>connecte-toi avec Google</strong> (ci-dessus) pour passer par le relais Crazy Liste, ou colle ta propre clé ci-dessous.') : DEFAULT_TMDB_KEY ? 'Clé utilisée : <strong>la clé intégrée à ce fichier</strong>.' : '<strong>Aucune clé configurée</strong> : colle ta clé TMDB ci-dessous' + (FIREBASE_CONFIG ? ', ou connecte-toi pour la récupérer depuis ton compte' : '') + '.') + '</p>' +
         '<div class="field"><label for="tmdb-key-input">Clé API TMDB (v3) ou jeton d’accès en lecture (v4)</label>' +
         '<input id="tmdb-key-input" class="input" type="text" autocomplete="off" spellcheck="false" placeholder="Colle ta clé ici" value="' + esc(p.apiKey) + '"></div>' +
         '<div class="row"><button type="button" class="btn btn-primary" data-action="key-save">Tester et enregistrer</button>' +
@@ -3823,11 +3857,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     renderRelated();
     window.scrollTo(0, pendingTop || !scrollMemory.has(hash) ? 0 : scrollMemory.get(hash));
     pendingTop = false;
-    if (route.name === 'home' && currentKey()) HOME_SECTIONS.forEach((sec) => loadHomeSection(sec, false));
+    if (route.name === 'home' && tmdbReady()) HOME_SECTIONS.forEach((sec) => loadHomeSection(sec, false));
     else if (route.name === 'detail') loadDetail(route, false);
     else if (route.name === 'agenda') loadAgenda(false);
     else if (route.name === 'stats') fillRuntimes();
-    else if (route.name === 'saga' && C.findSaga(route.sagaId) && currentKey()) loadSaga(C.findSaga(route.sagaId), C.parseSagaParams(route.params).extra);
+    else if (route.name === 'saga' && C.findSaga(route.sagaId) && tmdbReady()) loadSaga(C.findSaga(route.sagaId), C.parseSagaParams(route.params).extra);
   }
   function renderView() {
     const r = state.route;

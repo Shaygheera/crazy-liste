@@ -17,6 +17,15 @@ Raccourci : la touche **/** place le curseur dans la recherche.
 - Pour utiliser ta propre clé : **Réglages › Connexion TMDB**, colle une clé API v3 (32 caractères) ou un jeton d'accès v4, puis **Tester et enregistrer**. La clé n'est enregistrée que si TMDB l'accepte.
 - Une clé placée dans une page web n'est jamais secrète : elle reste lisible dans le fichier et dans le navigateur.
 
+### Relais TMDB (clé cachée, connexion Google suffisante)
+
+Avec le relais, personne n'a de clé à fournir : il suffit de se connecter avec Google. Le relais est un petit serveur Cloudflare Workers (offre gratuite, dossier `relay/`) qui garde la clé TMDB en secret. Le site lui envoie le ticket de connexion Google de la personne (jeton d'identité Firebase). Le relais vérifie sa signature, le projet et l'expiration, puis interroge TMDB avec sa clé. Sans ticket valide, il refuse (401), et il ne laisse passer que les parties de TMDB utilisées par l'appli, en lecture seule.
+
+- Mise en place (une fois, depuis `relay/`) : `npx wrangler login`, `npx wrangler deploy`, puis `npx wrangler secret put TMDB_KEY` (la clé se colle dans le terminal, elle n'est jamais dans le code).
+- Ensuite, l'adresse du relais va dans `relais.json` (`{ "url": "https://…workers.dev" }`) : la publication l'insère dans le site. Sans ce fichier, le site fonctionne comme avant (chacun colle sa clé).
+- Pour réserver le relais à certains comptes : `ALLOWED_EMAILS` dans `relay/wrangler.toml` (adresses séparées par des virgules), puis `npx wrangler deploy`.
+- Une clé personnelle collée dans Réglages reste prioritaire : elle est utilisée directement, sans le relais.
+
 ## Synchroniser PC et téléphone
 
 La version publiée en ligne (GitHub Pages) peut synchroniser ta liste entre tes appareils.
@@ -90,7 +99,7 @@ Prérequis : Node.js 18+ et Google Chrome installé.
 
 ```
 npm install
-npm test                      # 119 tests : logique (Node) + scénarios dans Chrome avec TMDB et Firebase simulés
+npm test                      # 132 tests : logique (Node) + scénarios dans Chrome avec TMDB et Firebase simulés
 npm run test:core             # logique seule, sans navigateur
 TMDB_KEY=ta-clé node tests/live-smoke.mjs   # contrôle contre la vraie API TMDB (Internet requis)
 node tests/check-legacy-file.mjs chemin/vers/ancien-export.json   # aperçu d'une migration (lecture seule)

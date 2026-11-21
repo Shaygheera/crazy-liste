@@ -1,0 +1,13 @@
+# Relais TMDB de Crazy Liste (Cloudflare Workers, offre gratuite).
+# Déploiement (depuis ce dossier) : npx wrangler deploy
+# Clé TMDB (secret, jamais dans le code) : npx wrangler secret put TMDB_KEY
+name = "crazy-liste-tmdb"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[vars]
+FIREBASE_PROJECT_ID = "crazy-liste-7c940"
+ALLOWED_ORIGINS = "https://shaygheera.github.io"
+# Facultatif : n'accepter que ces comptes Google (séparés par des virgules). Vide = tout compte connecté sur le site.
+ALLOWED_EMAILS = ""

@@ -52,7 +52,7 @@ SHOWS[215] = { base: show(215, 'Anime Mystère', { original_language: 'ja', genr
 // Offres en France (watch/providers) : film 101 en abonnement et en location.
 export const PROVIDERS = {
   'movie-101': { FR: { link: 'https://www.themoviedb.org/movie/101/watch?locale=FR',
-    flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }, { provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }],
+    flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }, { provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }, { provider_id: 1796, provider_name: 'Netflix Standard with Ads', logo_path: '/netflix-ads.jpg', display_priority: 9 }],
     rent: [{ provider_id: 2, provider_name: 'Apple TV', logo_path: '/apple.jpg', display_priority: 3 }], buy: [] }, US: { flatrate: [{ provider_id: 9, provider_name: 'Prime Video US', logo_path: '/p.jpg', display_priority: 1 }] } }
 };
 const STATUS_CODES = { 'Returning Series': '0', Planned: '1', 'In Production': '2', Ended: '3', Canceled: '4', Pilot: '5' };

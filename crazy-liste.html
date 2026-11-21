@@ -412,13 +412,17 @@ dialog.dialog.dialog-video { width: min(96vw, 1400px, calc((100dvh - 150px) * 16
 .stat-seen strong { color: var(--seen); } .stat-progress strong { color: var(--progress); } .stat-fav strong { color: var(--fav); }
 .where { display: grid; gap: 8px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: color-mix(in srgb, var(--surface-2) 75%, transparent); }
 .where-link { color: var(--accent); font-size: .78rem; font-weight: 700; text-decoration: none; } .where-link:hover { text-decoration: underline; }
-.detail-side .where-group { display: grid; gap: 6px; } .detail-side .where-kind { min-width: 0; }
-.detail-side .where-list { flex-direction: column; } .detail-side .provider { white-space: normal; line-height: 1.2; }
-.where-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.where-kind { font-size: .78rem; color: var(--muted); font-weight: 650; min-width: 92px; }
+.where { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.where-group { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.where-kind { font-size: .78rem; color: var(--muted); font-weight: 650; white-space: nowrap; line-height: 34px; }
+.where-link { margin-left: auto; }
+.where > .hint { margin: 0; }
+.detail-meta { display: grid; gap: 8px; align-content: start; }
+.detail-meta .detail-badges { gap: 6px; }
+.detail-meta .track-label { margin-right: 2px; }
 .where-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .provider { display: flex; align-items: center; gap: 6px; padding: 3px 9px 3px 3px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: .8rem; font-weight: 600; }
-.provider img { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; }
+.provider img { width: 26px; height: 26px; border-radius: 7px; object-fit: cover; }
 .where .hint a { color: var(--accent); }
 .agenda-group { margin-bottom: 22px; }
 .agenda-group h2 { font-size: 1.05rem; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
@@ -755,6 +759,28 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   /* Où regarder : offres françaises de TMDB (données JustWatch), par type d'offre, dans l'ordre d'affichage de TMDB. */
   const PROVIDER_KINDS = [['flatrate', 'Abonnement'], ['free', 'Gratuit'], ['ads', 'Gratuit avec pub'], ['rent', 'Location'], ['buy', 'Achat']];
+  /* Variantes d'un même service (« … with Ads », « … Amazon Channel », « Amazon Prime Video ») : même nom de base.
+     Si le service principal est listé, ses variantes sont regroupées avec lui ; sinon la variante garde son nom. */
+  const PROVIDER_ALIASES = { 'amazon prime video': 'prime video', 'anime digital network': 'animation digital network', 'adn': 'animation digital network' };
+  function providerBase(name) {
+    const b = String(name || '').toLowerCase().replace(/\s+(standard|basic|premium)?\s*with ads$/, '')
+      .replace(/\s+(amazon|apple tv|roku premium|youtube)\s+channel$/, '').replace(/\s+/g, ' ').trim();
+    return PROVIDER_ALIASES[b] || b;
+  }
+  function mergeProviderVariants(list) {
+    const groups = new Map();
+    for (const p of list) {
+      const base = providerBase(p.name);
+      if (!groups.has(base)) groups.set(base, []);
+      groups.get(base).push(p);
+    }
+    const out = [];
+    for (const [base, items] of groups) {
+      const main = items.find((p) => p.name.toLowerCase() === base || PROVIDER_ALIASES[p.name.toLowerCase()] === base) || items[0];
+      out.push(Object.assign({}, main, { also: items.filter((p) => p !== main).map((p) => p.name) }));
+    }
+    return out;
+  }
   function pickProviders(raw, country) {
     const res = isObj(raw) && isObj(raw.results) ? raw.results[country] : null;
     if (!isObj(res)) return null;
@@ -765,9 +791,9 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       const list = (Array.isArray(res[kind]) ? res[kind] : [])
         .filter((p) => isObj(p) && isPosInt(p.provider_id) && !seen.has(p.provider_id) && seen.add(p.provider_id))
         .sort((a, b) => num(a.display_priority) - num(b.display_priority))
-        .slice(0, 12)
         .map((p) => ({ id: p.provider_id, name: str(p.provider_name, 80) || 'Plateforme', logo: imgPath(p.logo_path) }));
-      if (list.length) groups.push({ kind, label, list });
+      const merged = mergeProviderVariants(list).slice(0, 12);
+      if (merged.length) groups.push({ kind, label, list: merged });
     }
     return groups.length ? { link, groups } : null;
   }
@@ -1407,7 +1433,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   root.CrazyCore = Object.freeze({
     SAGAS, sagaKey, findSaga, sagaKeys, parseSagaParams, sagaParamsToQuery, sagaSections,
     availabilityOf, digitalReleased, isAvailable,
-    pickTrailer, pickGallery, pickProviders, isAiringSoon, airingSeasonInfo, announcedSeason, ANNOUNCE_SPLIT_DAYS, NEEDS_DETAIL_STATUSES, genresFor, genreIdFor, addDays, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
+    pickTrailer, pickGallery, pickProviders, providerBase, isAiringSoon, airingSeasonInfo, announcedSeason, ANNOUNCE_SPLIT_DAYS, NEEDS_DETAIL_STATUSES, genresFor, genreIdFor, addDays, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
     normalizeSummary, normalizeDetail, normalizeSeason, isAnime, filterUpcoming,
@@ -3507,15 +3533,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       '<div class="detail-grid"><div class="detail-side">' + (item.posterPath
         ? '<button type="button" class="detail-poster poster poster-zoom" data-action="poster-zoom" data-key="' + key + '" aria-label="Agrandir l’affiche de ' + esc(item.title) + '">' + posterHtml(item, 'w500') + '<span class="zoom-hint" aria-hidden="true">⤢</span></button>'
         : '<div class="detail-poster poster">' + posterHtml(item, 'w500') + '</div>') +
-        '<div id="detail-where">' + providersHtml(d) + '</div></div>' +
+        '<div class="detail-meta">' +
+          '<div class="detail-badges">' + ratingHtml(item.voteAverage, 'Note TMDB') + (d && d.voteCount ? '<span class="chip">' + d.voteCount.toLocaleString('fr-FR') + ' votes</span>' : '') + '</div>' +
+          (genres.length ? '<div class="detail-badges detail-genres">' + genres.map((g) => '<span class="chip genre-tag">' + esc(g) + '</span>').join('') + '</div>' : '') +
+          '<div class="detail-badges"><span class="track-label">Mon suivi :</span>' + statusBadge(itemState(key).status, key) + '</div>' +
+        '</div></div>' +
       '<div class="detail-info">' +
         '<div class="detail-top"><div class="detail-titles"><h1>' + esc(item.title) + '</h1><p class="detail-sub">' + esc(detailSubline(item, d, isTv)) + '</p></div>' +
           '<div class="detail-actions">' + (d && d.trailer ? '<button type="button" class="btn btn-primary" data-action="trailer-open" data-key="' + key + '"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Bande-annonce' + (d.trailer.lang === 'fr' ? '' : ' (VO)') + '</button>' : '') +
           listButton('favorite', key, '') + listButton('watchlist', key, '') + '</div></div>' +
-        '<div class="detail-badges">' + ratingHtml(item.voteAverage, 'Note TMDB') + (d && d.voteCount ? '<span class="chip">' + d.voteCount.toLocaleString('fr-FR') + ' votes</span>' : '') +
-          genres.map((g) => '<span class="chip genre-tag">' + esc(g) + '</span>').join('') +
-          '<span class="track-label">Mon suivi :</span>' + statusBadge(itemState(key).status, key) + '</div>' +
         '<div id="detail-cards">' + detailCardHtml(key) + '</div>' +
+        '<div id="detail-where">' + providersHtml(d) + '</div>' +
         '<div class="detail-body"><div class="detail-summary"><h2 class="kicker">Résumé</h2>' +
           (d && d.tagline ? '<p class="detail-tagline">' + esc(d.tagline) + '</p>' : '') +
           '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p></div>' +
@@ -3550,7 +3578,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       (d.date && d.date > state.today ? 'Pas encore sorti : aucune offre pour l’instant.' : 'Aucune offre connue en France pour l’instant (streaming, location ou achat).') + '</p></section>';
     return '<section class="where" aria-label="Où regarder en France">' + p.groups.map((g) =>
       '<div class="where-group" data-kind="' + g.kind + '"><span class="where-kind">' + g.label + '</span><ul class="where-list">' + g.list.map((x) =>
-        '<li class="provider" title="' + esc(x.name) + '">' + (x.logo ? '<img src="' + esc(img(x.logo, 'w92')) + '" alt="" loading="lazy" decoding="async">' : '') + '<span>' + esc(x.name) + '</span></li>').join('') +
+        '<li class="provider" title="' + esc(x.name + (x.also.length ? ' (aussi : ' + x.also.join(', ') + ')' : '')) + '">' + (x.logo ? '<img src="' + esc(img(x.logo, 'w92')) + '" alt="" loading="lazy" decoding="async">' : '') + '<span>' + esc(x.name) + '</span></li>').join('') +
       '</ul></div>').join('') +
       (p.link ? '<a class="where-link" href="' + esc(p.link) + '" target="_blank" rel="noopener noreferrer" title="Offres en France selon JustWatch, via TMDB">via JustWatch ↗</a>' : '<span class="hint">via JustWatch</span>') + '</section>';
   }

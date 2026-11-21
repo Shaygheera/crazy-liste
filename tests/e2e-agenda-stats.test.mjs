@@ -19,6 +19,11 @@ describe('Règles : plateformes, genres, diffusion', () => {
     assert.deepEqual(p.groups.map((g) => [g.label, g.list.map((x) => x.name)]), [['Abonnement', ['A', 'B']], ['Achat', ['<b>C</b>']]]);
     assert.equal(p.link, 'https://www.themoviedb.org/movie/1/watch?locale=FR');
     assert.equal(C.pickProviders({ results: { US: raw.results.US } }, 'FR'), null);
+    const variants = C.pickProviders({ results: { FR: { flatrate: ['Netflix', 'Amazon Prime Video', 'Crunchyroll', 'Netflix Standard with Ads', 'Amazon Prime Video with Ads', 'Crunchyroll Amazon Channel', 'Anime Digital Network Amazon Channel', 'Paramount+ Amazon Channel']
+      .map((n, i) => ({ provider_id: i + 1, provider_name: n, display_priority: i })) } } }, 'FR');
+    assert.deepEqual(variants.groups[0].list.map((x) => x.name), ['Netflix', 'Amazon Prime Video', 'Crunchyroll', 'Anime Digital Network Amazon Channel', 'Paramount+ Amazon Channel'], 'variantes regroupées avec le service principal ; seules, elles gardent leur nom');
+    assert.deepEqual(variants.groups[0].list[0].also, ['Netflix Standard with Ads']);
+    assert.equal(C.providerBase('Animation Digital Network'), C.providerBase('Anime Digital Network Amazon Channel'));
     assert.equal(C.pickProviders({ results: { FR: { link: 'javascript:alert(1)', rent: [{ provider_id: 4, provider_name: 'D' }] } } }, 'FR').link, '', 'lien douteux écarté');
   });
   it('« Tout » : genres communs, équivalent série, genres propres aux films', () => {
@@ -176,7 +181,9 @@ describe('Dans Chrome', () => {
     assert.equal(await col('end'), 'Dernier épisode prévuÉ12 · ' + C.formatDate(last) + 'dans 3 jours · fin de la saison 1');
     assert.match(await page.locator('.detail-sub').textContent(), /^Anime · 1 saison · 12 épisodes · 42 min \/ ép\. · depuis le 5 avril 2015$/);
     assert.deepEqual(await page.$$eval('.detail-badges .genre-tag', (els) => els.map((e) => e.textContent)), ['Drame']);
-    assert.equal(await page.locator('.detail-side #detail-where .where').count(), 1, 'offres sous l’affiche');
+    assert.equal(await page.locator('.detail-info #detail-cards + #detail-where .where').count(), 1, 'offres juste sous la carte Diffusion');
+    assert.equal(await page.locator('.detail-side .detail-meta .genre-tag').count(), 1, 'note, genres et suivi sous l’affiche');
+    assert.equal(await page.locator('.detail-side .detail-meta [data-status-for="tv-210"]').count(), 1);
     assert.equal(await page.locator('.where-title').count(), 0, 'sans titre « Où regarder en France »');
     assert.equal(await page.locator('.detail-actions [data-action="toggle-watchlist"]').count(), 1);
     assert.equal(await page.locator('#detail-track [data-action="toggle-watchlist"]').count(), 0, 'favori et watchlist en haut, plus dans le suivi');

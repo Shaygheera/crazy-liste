@@ -855,7 +855,15 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function hasRefinement(f) { return f.type !== 'all' || f.status !== 'any' || !!(f.from || f.to || f.genre || f.rating || f.sort); }
   function sameFilters(a, b) { return !!a && !!b && ['type', 'status', 'from', 'to', 'genre', 'rating', 'sort'].every((k) => a[k] === b[k]); }
   /* Requêtes /discover (une par type : « Tout » interroge films et séries). today évite les titres pas encore sortis en tri « Plus récents ». */
-  function discoverRequests(f, page, today) {
+  /* Seuils de votes, du plus exigeant au plus souple : une période récente a peu de votes, on assouplit alors au lieu de ne rien montrer. */
+  const VOTE_LEVELS = { sortMovie: [1000, 300, 50], sortTv: [300, 100, 30], filterMovie: [100, 30, 10], filterTv: [50, 20, 5] };
+  function minVotesFor(f, movie, level) {
+    const l = Math.max(0, Math.min(2, level || 0));
+    if (f.sort === 'rating') return (movie ? VOTE_LEVELS.sortMovie : VOTE_LEVELS.sortTv)[l];
+    if (f.rating) return (movie ? VOTE_LEVELS.filterMovie : VOTE_LEVELS.filterTv)[l];
+    return 0;
+  }
+  function discoverRequests(f, page, today, level) {
     const types = f.type === 'all' ? ['movie', 'tv'] : [f.type === 'movie' ? 'movie' : 'tv'];
     return types.map((t) => {
       const movie = t === 'movie';
@@ -870,7 +878,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       if (f.to) params[dateKey + '.lte'] = f.to + '-12-31' < today || f.sort !== 'newest' ? f.to + '-12-31' : today;
       else if (f.sort === 'newest') params[dateKey + '.lte'] = today;
       if (f.rating) params['vote_average.gte'] = f.rating;
-      const minVotes = f.sort === 'rating' ? (movie ? 1000 : 300) : f.rating ? (movie ? 100 : 50) : 0; // évite les notes gonflées par une poignée de votes
+      const minVotes = minVotesFor(f, movie, level); // évite les notes gonflées par une poignée de votes
       if (minVotes) params['vote_count.gte'] = String(minVotes);
       if (!movie && f.status !== 'any') params.with_status = f.status === 'ended' ? '3|4' : '0|2';
       params.sort_by = f.sort === 'rating' ? 'vote_average.desc' : f.sort === 'newest' ? dateKey + '.desc' : f.sort === 'oldest' ? dateKey + '.asc' : 'popularity.desc';
@@ -910,7 +918,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
 
   root.CrazyCore = Object.freeze({
-    pickTrailer, genresFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
+    pickTrailer, genresFor, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
     normalizeSummary, normalizeDetail, normalizeSeason, isAnime, filterUpcoming,
@@ -1853,8 +1861,18 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     });
   }
   async function discoverSearch(f, p, signal) {
-    const reqs = C.discoverRequests(f, p, todayIso());
-    const answers = await Promise.all(reqs.map((r) => tmdb(r.path, r.params, { signal, noCache: true })));
+    const s = state.ui.search;
+    const needsVotes = f.sort === 'rating' || !!f.rating;
+    let level = p === 1 ? 0 : s.voteLevel || 0;
+    let reqs, answers;
+    for (;;) {
+      reqs = C.discoverRequests(f, p, todayIso(), level);
+      answers = await Promise.all(reqs.map((r) => tmdb(r.path, r.params, { signal, noCache: true })));
+      const total = answers.reduce((n, j) => n + C.num(j.total_results), 0);
+      if (p > 1 || !needsVotes || total >= 10 || level >= 2) break;
+      level++; // trop peu de titres assez votés (période récente) : seuil assoupli
+    }
+    s.voteLevel = level;
     const lists = answers.map((json, i) => (Array.isArray(json.results) ? json.results : []).map((x) => C.normalizeSummary(x, reqs[i].type)).filter(Boolean));
     return { items: C.mergeResults(lists, f.sort), totalPages: Math.min(500, Math.max(0, ...answers.map((j) => C.num(j.total_pages)))) };
   }
@@ -2451,7 +2469,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       (loadingMore ? 'Chargement…' : s.mode === 'text' && s.hidden ? 'Chercher plus loin' : 'Plus de résultats') + '</button></div>' : '';
     const hiddenNote = s.mode === 'text' && s.hidden ? ' · ' + s.hidden + ' autre(s) titre(s) écarté(s) par tes filtres' : '';
     const sortNote = s.mode === 'text' && f.sort && f.sort !== 'popular' ? ' · tri appliqué aux résultats chargés' : '';
+    const votes = s.mode === 'discover' && (f.sort === 'rating' || f.rating) ? C.minVotesFor(f, f.type === 'movie', s.voteLevel) : 0;
+    const voteNote = votes ? (s.voteLevel ? ' · peu de votes sur cette période : titres notés par au moins ' + votes + ' personnes' : ' · titres notés par au moins ' + votes + ' personnes') : '';
     return '<p class="hint" role="status">' + s.results.length + ' résultat(s) : ' + esc(what) + esc(hiddenNote + sortNote) + '</p>' +
+      (voteNote ? '<p class="hint">' + esc(voteNote.slice(3).replace(/^./, (c) => c.toUpperCase())) + '.</p>' : '') +
       (s.results.length ? '<div class="grid">' + s.results.map(cardHtml).join('') + '</div>' : '<p class="hint">Aucun titre de cette page ne correspond à tes filtres.</p>') + more;
   }
   function renderSearchBody() {

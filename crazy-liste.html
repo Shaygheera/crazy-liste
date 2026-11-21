@@ -84,8 +84,9 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .sync-line { display: flex; align-items: center; gap: 9px; font-weight: 600; }
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 12px 22px; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
 .topbar .brand { display: none; }
-.topbar .topbar-theme { display: none; }
-@media (max-width: 899px) { .topbar .topbar-theme { display: inline-flex; } .searchbar .btn { padding: 4px 8px; } }
+.topbar .topbar-settings { display: none; }
+.topbar .topbar-settings[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+@media (max-width: 899px) { .topbar .topbar-settings { display: inline-flex; } .searchbar .btn { padding: 4px 8px; } }
 .searchbar { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; max-width: 720px; padding: 4px 4px 4px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border-strong); }
 .searchbar:focus-within { border-color: var(--accent); }
 .searchbar input { flex: 1 1 auto; min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; padding: 7px 0; font-size: .95rem; }
@@ -106,7 +107,7 @@ h1, h2, h3, h4 { line-height: 1.2; }
   .view { padding: 16px 16px 28px; }
   .side-panel { padding: 14px 16px 92px; grid-template-columns: minmax(0, 1fr); }
   .bottom-nav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bg-elev); border-top: 1px solid var(--border); padding: 5px 4px calc(5px + env(safe-area-inset-bottom)); }
-  .bottom-nav a { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 0; border-radius: 10px; text-decoration: none; color: var(--muted); font-size: .64rem; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+  .bottom-nav a { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 0; border-radius: 10px; text-decoration: none; color: var(--muted); font-size: .68rem; font-weight: 600; white-space: nowrap; }
   .bottom-nav a[aria-current="page"] { color: var(--accent); }
   .bottom-nav .icon { width: 21px; height: 21px; }
 }
@@ -503,7 +504,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         <input id="search-input" type="search" name="q" placeholder="Rechercher un film, une série, un anime…" title="Raccourci clavier : touche /" enterkeyhint="search" spellcheck="false" maxlength="120">
         <button class="btn btn-primary btn-sm" type="submit">Rechercher</button>
       </form>
-      <button type="button" class="btn btn-icon btn-ghost topbar-theme" data-action="toggle-theme" aria-label="Changer de thème"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></svg></button>
+      <a class="btn btn-icon btn-ghost topbar-settings" href="#settings" data-nav="settings" aria-label="Réglages" title="Réglages (thème, synchronisation, clé TMDB, sauvegardes)"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></a>
     </header>
     <div id="banners"></div>
     <main id="view-root" class="view" tabindex="-1"></main>
@@ -532,7 +533,6 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   <a href="#agenda" data-nav="agenda"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>À venir</a>
   <a href="#library" data-nav="library" data-nav-group="favorites watchlist stats"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Ma liste</a>
   <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Sagas</a>
-  <a href="#settings" data-nav="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Réglages</a>
 </nav>
 
 <div id="toasts" class="toasts" role="status" aria-live="polite"></div>

@@ -60,7 +60,7 @@ Chaque envoi sur la branche `main` du dépôt GitHub lance `.github/workflows/pu
 - **Bibliothèque / Favoris / Watchlist** : filtres Tous / Vu / En cours / À voir, type, tri.
 - **À venir** : prochains épisodes des séries et anime de ta liste (suivis, favoris, watchlist), saisons annoncées et sorties des films pas encore vus, regroupés (aujourd'hui, cette semaine, dans le mois, plus tard, date non annoncée) avec « dans 3 jours », « dans 2 mois »… Les fiches sont relues sur TMDB à chaque visite de la page (bouton Actualiser).
 - **Statistiques** : dans le panneau de droite, Vu, En cours, Favoris, Total personnel. Page détaillée (onglet de Ma liste) : temps passé devant l'écran (films vus + épisodes vus × durée d'un épisode ; durées manquantes récupérées sur TMDB), films vus, épisodes vus, séries terminées, genres préférés, titres terminés par mois sur 12 mois. La date de fin est enregistrée au passage à « Vu » ; pour les titres vus avant cette fonctionnalité, c'est la date de dernière activité.
-- **Réglages** : thème sombre (par défaut) ou clair, clé TMDB, export complet, export favoris + watchlist, import (fusion ou remplacement), effacement avec copie de secours.
+- **Réglages** (sur téléphone : icône en haut à droite) : thème sombre (par défaut) ou clair, clé TMDB, export complet, export favoris + watchlist, import (fusion ou remplacement), effacement avec copie de secours.
 - **Navigation** : adresses `#home`, `#search?q=…`, `#resume`, `#library`, `#favorites`, `#watchlist`, `#settings`, `#detail/tv/123`, `#detail/movie/456`. Le rechargement et les boutons précédent/suivant fonctionnent.
 
 ## Règles de statut

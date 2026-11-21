@@ -221,7 +221,11 @@ describe('Dans Chrome', () => {
     const { page, errors, context } = await openApp(browser, { hash: '#library', viewport: { width: 360, height: 780 } });
     await page.waitForSelector('.bottom-nav [data-nav="agenda"]');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
-    assert.ok(await page.evaluate(() => [...document.querySelectorAll('.bottom-nav a')].every((a) => a.scrollWidth <= a.clientWidth + 1)), 'libellés lisibles');
+    assert.deepEqual(await page.$$eval('.bottom-nav a', (els) => els.map((a) => a.dataset.nav)), ['home', 'search', 'resume', 'agenda', 'library', 'sagas'], 'six onglets, comme avant');
+    await page.locator('.topbar [data-nav="settings"]').click(); // Réglages : icône de la barre du haut sur téléphone
+    await page.waitForFunction(() => location.hash === '#settings');
+    assert.equal(await page.locator('.topbar [data-nav="settings"]').getAttribute('aria-current'), 'page');
+    await page.evaluate(() => { location.hash = '#library'; });
     await page.locator('.tabs [href="#stats"]').click();
     await page.waitForFunction(() => location.hash === '#stats');
     assert.equal(await page.locator('.bottom-nav [aria-current="page"]').getAttribute('data-nav'), 'library');

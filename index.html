@@ -214,6 +214,31 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .detail-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .detail-overview { margin: 0; color: var(--text-2); max-width: 75ch; }
 .detail-cta { display: flex; gap: 8px; flex-wrap: wrap; }
+.poster-zoom { display: block; width: 100%; padding: 0; border: 0; cursor: zoom-in; color: inherit; font: inherit; }
+.poster-zoom .zoom-hint { position: absolute; right: 8px; bottom: 8px; z-index: 2; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: rgba(0,0,0,.6); color: #fff; font-size: 1rem; opacity: 0; transition: opacity .15s; }
+.poster-zoom:hover .zoom-hint, .poster-zoom:focus-visible .zoom-hint { opacity: 1; }
+@media (hover: none) { .poster-zoom .zoom-hint { opacity: .85; } }
+.gallery-section { margin: 22px 0 6px; }
+.gallery-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 10px; }
+.gallery-head h2 { margin: 0; font-size: 1.15rem; }
+.gallery { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 300px); gap: 10px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+.gallery-item { position: relative; aspect-ratio: 16 / 9; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface-2); cursor: zoom-in; scroll-snap-align: start; }
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform .25s; }
+.gallery-item:hover img { transform: scale(1.04); }
+@media (max-width: 899px) { .gallery { grid-auto-columns: 78%; } }
+dialog.lightbox { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: rgba(3,5,9,.94); color: #fff; }
+dialog.lightbox::backdrop { background: rgba(3,5,9,.6); }
+dialog.lightbox[open] { display: flex; align-items: center; justify-content: center; }
+.lb-figure { margin: 0; display: grid; justify-items: center; gap: 10px; padding: 52px 64px 20px; max-width: 100%; max-height: 100%; }
+.lb-figure img { max-width: calc(100vw - 128px); max-height: calc(100dvh - 120px); object-fit: contain; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.lb-figure figcaption { font-size: .85rem; color: #cfd6e4; text-align: center; }
+.lb-btn { position: absolute; z-index: 2; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: #fff; font-size: 1.6rem; line-height: 1; cursor: pointer; }
+.lb-btn:hover { background: rgba(255,255,255,.22); }
+.lb-btn[hidden] { display: none; }
+.lb-close { top: 12px; right: 12px; font-size: 1.1rem; }
+.lb-prev { left: 12px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 12px; top: 50%; transform: translateY(-50%); }
+@media (max-width: 899px) { .lb-figure { padding: 56px 8px 16px; } .lb-figure img { max-width: calc(100vw - 16px); max-height: calc(100dvh - 130px); } .lb-prev, .lb-next { top: auto; bottom: 14px; transform: none; } }
 .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; margin: 4px 0 18px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-lg, 14px); background: var(--surface); }
 .filter { display: grid; gap: 4px; font-size: .76rem; font-weight: 650; color: var(--muted); min-width: 0; }
 .filter .select, .filter .input { min-width: 0; height: 38px; font: inherit; font-size: .88rem; }
@@ -412,6 +437,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   <div class="video-frame" id="trailer-frame"></div>
   <p class="video-foot hint" id="trailer-foot"></p>
 </dialog>
+<dialog id="lightbox" class="lightbox" aria-label="Visionneuse d’images">
+  <button type="button" class="lb-btn lb-close" data-action="lightbox-close" aria-label="Fermer">✕</button>
+  <button type="button" class="lb-btn lb-prev" data-action="lightbox-prev" aria-label="Image précédente">‹</button>
+  <figure class="lb-figure"><img id="lightbox-img" alt=""><figcaption id="lightbox-caption"></figcaption></figure>
+  <button type="button" class="lb-btn lb-next" data-action="lightbox-next" aria-label="Image suivante">›</button>
+</dialog>
 <input type="file" id="import-file" accept="application/json,.json" hidden>
 <script id="crazy-core">
 /* Crazy Liste — logique métier pure : aucun accès au DOM, au réseau ni au stockage.
@@ -515,6 +546,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const reco = isObj(raw.recommendations) && Array.isArray(raw.recommendations.results) ? raw.recommendations.results : [];
     d.recommendations = reco.map((r) => normalizeSummary(r, type)).filter(Boolean).slice(0, 12);
     d.trailer = pickTrailer(raw.videos);
+    d.gallery = pickGallery(raw.images);
     if (type === 'tv') {
       const seen = new Set();
       d.seasonSummaries = (Array.isArray(raw.seasons) ? raw.seasons : [])
@@ -548,6 +580,19 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       if (score > bestScore || (score === bestScore && date > best.date)) { best = { key: v.key, name: str(v.name, 200), lang: v.iso_639_1 === 'fr' ? 'fr' : 'other', type: v.type, date }; bestScore = score; }
     }
     return best;
+  }
+  /* Galerie : grandes images officielles du titre (« backdrops ») et non les images d'épisodes, pour limiter les spoilers.
+     Priorité aux images sans texte, puis aux mieux notées ; 10 au maximum, sans doublon. */
+  function pickGallery(images, max) {
+    const list = isObj(images) && Array.isArray(images.backdrops) ? images.backdrops : [];
+    const seen = new Set();
+    return list
+      .filter((b) => isObj(b) && imgPath(b.file_path) && num(b.width) >= 780 && num(b.aspect_ratio) >= 1.5 && num(b.aspect_ratio) <= 2.1)
+      .map((b, i) => ({ path: imgPath(b.file_path), textless: b.iso_639_1 == null, score: num(b.vote_average), votes: num(b.vote_count), i }))
+      .sort((a, b) => (b.textless - a.textless) || (b.score - a.score) || (b.votes - a.votes) || (a.i - b.i))
+      .filter((b) => !seen.has(b.path) && seen.add(b.path))
+      .slice(0, max || 10)
+      .map((b) => b.path);
   }
   function normalizeSeason(raw) {
     if (!isObj(raw) || !Number.isInteger(raw.season_number)) return null;
@@ -919,7 +964,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
 
   root.CrazyCore = Object.freeze({
-    pickTrailer, genresFor, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
+    pickTrailer, pickGallery, genresFor, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
     normalizeSummary, normalizeDetail, normalizeSeason, isAnime, filterUpcoming,
@@ -1367,7 +1412,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     { id: 'upcoming', title: 'Films à venir', path: '/movie/upcoming', params: { region: 'FR' }, type: 'movie', upcoming: true }
   ];
   const LIST_ROUTES = ['library', 'favorites', 'watchlist', 'resume'];
-  const DETAIL_PARAMS = { append_to_response: 'recommendations,videos', include_video_language: 'fr,en,null' };
+  const DETAIL_PARAMS = { append_to_response: 'recommendations,videos,images', include_video_language: 'fr,en,null', include_image_language: 'null,fr,en' };
 
   /* ===== Stockage local protégé ===== */
   const storage = (function () {
@@ -2161,6 +2206,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       byId('trailer-foot').replaceChildren((t.lang === 'fr' ? 'Vidéo YouTube proposée par TMDB. ' : 'Pas de version française sur TMDB : version originale. ') + 'Si elle ne se lance pas : ', link);
       byId('trailer-dialog').showModal();
     },
+    'poster-zoom'(el) {
+      const item = viewMeta(el.dataset.key);
+      if (item.posterPath) openLightbox([img(item.posterPath, 'w780')], 0, 'Affiche · ' + item.title);
+    },
+    'gallery-open'(el) {
+      const d = state.cache.details.get(el.dataset.key);
+      if (d && d.gallery.length) openLightbox(d.gallery.map((p) => img(p, 'w1280')), Number(el.dataset.index) || 0, d.title);
+    },
+    'lightbox-prev'() { stepLightbox(-1); },
+    'lightbox-next'() { stepLightbox(1); },
+    'lightbox-close'() { byId('lightbox').close(); },
     'trailer-close'() { byId('trailer-frame').replaceChildren(); byId('trailer-dialog').close(); },
     async 'sync-signin'() { await signIn(); },
     async 'sync-signout'() { await signOutSync(); },
@@ -2311,6 +2367,27 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     toastActions.delete(id);
     const el = document.querySelector('[data-toast-id="' + id + '"]');
     if (el) el.remove(); // déjà fermé par l'utilisateur : rien à faire
+  }
+  /* Visionneuse : une liste d'adresses d'images, l'index affiché et un titre. */
+  const lightbox = { urls: [], index: 0, title: '' };
+  function openLightbox(urls, index, title) {
+    Object.assign(lightbox, { urls, index: Math.max(0, Math.min(urls.length - 1, index)), title });
+    showLightbox();
+    const dlg = byId('lightbox');
+    if (!dlg.open) dlg.showModal();
+  }
+  function stepLightbox(delta) {
+    if (lightbox.urls.length < 2) return;
+    lightbox.index = (lightbox.index + delta + lightbox.urls.length) % lightbox.urls.length;
+    showLightbox();
+  }
+  function showLightbox() {
+    const many = lightbox.urls.length > 1;
+    const im = byId('lightbox-img');
+    im.src = lightbox.urls[lightbox.index];
+    im.alt = lightbox.title;
+    byId('lightbox-caption').textContent = lightbox.title + (many ? ' · ' + (lightbox.index + 1) + ' / ' + lightbox.urls.length : '');
+    document.querySelectorAll('#lightbox .lb-prev, #lightbox .lb-next').forEach((b) => { b.hidden = !many; });
   }
   let dialogResolve = null;
   function ask(title, html, buttons) {
@@ -2608,7 +2685,9 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const backdrop = img(item.backdropPath, 'w1280');
     return '<article class="detail" data-item-key="' + key + '">' + notice +
       '<section class="detail-hero">' + (backdrop ? '<img class="detail-backdrop" src="' + esc(backdrop) + '" alt="">' : '') +
-      '<div class="detail-grid"><div class="detail-poster poster">' + posterHtml(item, 'w500') + '</div><div class="detail-info">' +
+      '<div class="detail-grid">' + (item.posterPath
+        ? '<button type="button" class="detail-poster poster poster-zoom" data-action="poster-zoom" data-key="' + key + '" aria-label="Agrandir l’affiche de ' + esc(item.title) + '">' + posterHtml(item, 'w500') + '<span class="zoom-hint" aria-hidden="true">⤢</span></button>'
+        : '<div class="detail-poster poster">' + posterHtml(item, 'w500') + '</div>') + '<div class="detail-info">' +
         '<div class="detail-head"><h1>' + esc(item.title) + '</h1>' +
         (item.originalTitle && item.originalTitle !== item.title ? '<p class="detail-original">Titre original : ' + esc(item.originalTitle) + '</p>' : '') +
         '<div class="detail-badges">' + ratingHtml(item.voteAverage, 'Note TMDB') + (d && d.voteCount ? '<span class="chip">' + d.voteCount.toLocaleString('fr-FR') + ' votes</span>' : '') +
@@ -2620,6 +2699,9 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         '<dl class="facts">' + facts.map(([k, v]) => '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>').join('') + '</dl>' +
         '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div>' +
       '</div></div></section>' +
+      (d && d.gallery.length ? '<section class="gallery-section" aria-labelledby="gallery-title"><div class="gallery-head"><h2 id="gallery-title">Images</h2><span class="hint">Visuels officiels du titre, sans images d’épisodes pour éviter les spoilers.</span></div>' +
+        '<div class="gallery">' + d.gallery.map((p, i) => '<button type="button" class="gallery-item" data-action="gallery-open" data-key="' + key + '" data-index="' + i + '" aria-label="Agrandir l’image ' + (i + 1) + ' sur ' + d.gallery.length + '">' +
+          '<img src="' + esc(img(p, 'w780')) + '" alt="" loading="lazy" decoding="async"></button>').join('') + '</div></section>' : '') +
       (isTv ? '<section id="seasons-section" aria-labelledby="seasons-title">' + seasonsHtml(key) + '</section>' : '') + '</article>';
   }
   function trackBoxHtml(key) {
@@ -2938,6 +3020,15 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     searchInput.focus();
     searchInput.select();
   });
+  byId('lightbox').addEventListener('click', (e) => { if (e.target === e.currentTarget || e.target.classList.contains('lb-figure')) e.currentTarget.close(); }); // clic à côté de l'image
+  byId('lightbox').addEventListener('close', () => { byId('lightbox-img').removeAttribute('src'); });
+  byId('lightbox').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); stepLightbox(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); stepLightbox(1); }
+  });
+  let touchX = null; // balayage sur téléphone
+  byId('lightbox').addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  byId('lightbox').addEventListener('touchend', (e) => { if (touchX == null) return; const dx = e.changedTouches[0].clientX - touchX; touchX = null; if (Math.abs(dx) > 50) stepLightbox(dx < 0 ? 1 : -1); });
   byId('trailer-dialog').addEventListener('close', () => { byId('trailer-frame').replaceChildren(); }); // arrête la lecture
   byId('trailer-dialog').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); }); // clic hors de la vidéo
   byId('app-dialog').addEventListener('close', () => { const r = dialogResolve; dialogResolve = null; if (r) r(byId('app-dialog').returnValue || 'cancel'); });

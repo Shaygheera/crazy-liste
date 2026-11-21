@@ -78,11 +78,11 @@ describe('Licence : séries et films', () => {
     const { groups, orphans } = C.licenceGroups([
       tv(1, 'Naruto', '2002-10-03'), tv(2, 'Naruto Shippuden', '2007-02-15'), tv(3, 'Boruto : Naruto Next Generations', '2017-04-05'),
       mv(10, 'Naruto et la Princesse des neiges', '2004-08-21'), mv(11, 'Naruto Shippuden : Les Liens', '2008-08-02'),
-      mv(12, 'Boruto : Naruto, le film', '2015-08-07'), mv(13, 'Naruto : Road to Ninja', '2012-07-28'), mv(14, 'The Last', '2014-12-06')
+      mv(12, 'Boruto : Naruto, le film', '2015-08-07'), mv(13, 'Naruto : Road to Ninja', '2012-07-28'), mv(14, 'The Last', '2014-12-06'), mv(15, 'Naruto the Last', '2014-12-06')
     ]);
     assert.deepEqual(groups.map((g) => [g.series.key, g.films.map((x) => x.key)]), [
-      ['tv-1', ['movie-10', 'movie-13']], ['tv-2', ['movie-11', 'movie-14']], ['tv-3', ['movie-12']]
-    ], '« Naruto : Road to Ninja » reprend le nom « Naruto » ; « The Last », sans nom commun, va avec la série en cours en 2014');
+      ['tv-1', ['movie-10']], ['tv-2', ['movie-11', 'movie-13', 'movie-15', 'movie-14']], ['tv-3', ['movie-12']]
+    ], 'nom « Naruto » mais sorti pendant Shippuden : avec Shippuden ; « Boruto, le film » avant la série Boruto : avec Boruto');
     assert.deepEqual(orphans, [], 'aucun film perdu');
     assert.deepEqual(C.licenceGroups([mv(1, 'Seul', '2000-01-01')]), { groups: [], orphans: [mv(1, 'Seul', '2000-01-01')] });
   });

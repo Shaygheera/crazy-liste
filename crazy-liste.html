@@ -1246,7 +1246,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return list.slice(i + 1).find((x) => x.type === 'tv' && (!x.date || !current.date || x.date > current.date)) || null;
   }
   /* Panneau « Licence » : une ligne par série (ordre de sortie), chaque film sous la série dont il reprend le nom
-     (base de titre la plus longue) ; à égalité, sous la dernière série commencée avant sa sortie, sinon la première. */
+     (base de titre la plus longue) ; à égalité, sous la dernière série commencée avant sa sortie, sinon la première.
+     Si une série plus récente de la licence était déjà en cours à sa sortie, le film va avec elle (« Naruto the Last » → Shippuden). */
   function licenceGroups(items) {
     const list = (Array.isArray(items) ? items : []).filter(Boolean);
     const series = list.filter((x) => x.type === 'tv').sort(byDateThenTitle);
@@ -1263,6 +1264,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       } else if (groups.length) {
         const started = groups.filter((g) => g.series.date && f.date && g.series.date <= f.date);
         target = started.length ? started[started.length - 1] : groups[0];
+      }
+      // nom commun, mais une série plus récente de la licence était déjà en cours à la sortie : le film va avec elle
+      if (target && f.date && target.series.date && target.series.date <= f.date) {
+        const later = groups.filter((g) => g.series.date && g.series.date > target.series.date && g.series.date <= f.date);
+        if (later.length) target = later[later.length - 1];
       }
       if (target) target.films.push(f); else orphans.push(f);
     }

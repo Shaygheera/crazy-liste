@@ -16,6 +16,8 @@ describe('Licence : règles', () => {
     assert.equal(C.licenceBase('Naruto Shippuden'), 'naruto shippuden');
     assert.equal(C.licenceBase('Élite - Histoires courtes'), 'elite');
     assert.equal(C.licenceBase('Up'), '');
+    assert.equal(C.licenceBase('The Maze Runner'), 'maze runner', 'article ignoré');
+    assert.equal(C.licenceBase("L'Attaque des Titans"), 'attaque des titans');
     assert.equal(C.licenceBase('KONOSUBA -An Explosion on This Wonderful World!'), 'konosuba', 'tiret collé au mot suivant');
     assert.equal(C.licenceBase("KONOSUBA -God's blessing on this wonderful world!"), 'konosuba');
     assert.equal(C.licenceBase('Spider-Man'), 'spider man', 'tiret à l’intérieur d’un mot : pas de coupure');
@@ -85,6 +87,21 @@ describe('AniList : chaîne d’une licence', () => {
     assert.deepEqual(C.parseWikidataAnilistMap({ results: { bindings: [{ al: { value: '20' }, tv: { value: '46260' } }, { al: { value: '21' }, movie: { value: '9' } }, { al: { value: '20' }, movie: { value: '1' } }] } }), { 20: 'tv-46260', 21: 'movie-9' });
     assert.match(C.wikidataAnilistQuery([20, 1735, 'x', -3]), /VALUES \?al \{ "20" "1735" \}/);
     assert.match(C.anilistQuery('97938 }'), /Media\(id: NaN, type: ANIME\)/);
+  });
+});
+
+describe('Licence : même univers', () => {
+  it('hors anime : titre original, même langue, un genre commun ; anime : anime japonais', () => {
+    const cur = { title: 'Le Labyrinthe', originalTitle: 'The Maze Runner', originalLanguage: 'en', genreIds: [28, 9648, 878] };
+    const ok = (c) => C.sameUniverse(cur, c, ['maze runner'], false);
+    assert.equal(ok({ title: 'Le Labyrinthe : La Terre brûlée', originalTitle: 'Maze Runner: The Scorch Trials', originalLanguage: 'en', genreIds: [28] }), true);
+    assert.equal(ok({ title: 'Le Labyrinthe', originalTitle: 'Le labyrinthe', originalLanguage: 'fr', genreIds: [18] }), false, 'même titre français, autre film');
+    assert.equal(ok({ title: 'Le Labyrinthe de Pan', originalTitle: 'El laberinto del fauno', originalLanguage: 'es', genreIds: [14] }), false);
+    assert.equal(ok({ title: 'Maze Runner : le documentaire', originalTitle: 'Maze Runner Behind', originalLanguage: 'en', genreIds: [99] }), false, 'aucun genre commun');
+    assert.equal(C.sameUniverse(cur, { title: 'Le Labyrinthe 2', originalTitle: 'Le Labyrinthe 2', originalLanguage: 'en', genreIds: [28] }, ['labyrinthe'], false), false, 'le titre français ne compte pas');
+    const anime = { title: 'Konosuba', originalLanguage: 'ja', genreIds: [16] };
+    assert.equal(C.sameUniverse(anime, { title: 'KONOSUBA -An Explosion', originalTitle: 'この素晴らしい世界に爆焔を！', originalLanguage: 'ja', genreIds: [16, 35] }, ['konosuba'], true), true, 'anime : titre français ou anglais accepté');
+    assert.equal(C.sameUniverse(anime, { title: 'Konosuba (série live)', originalLanguage: 'en', genreIds: [35] }, ['konosuba'], true), false);
   });
 });
 
@@ -187,6 +204,17 @@ describe('Licence : carte Diffusion', () => {
     await page.locator('#detail-licence .lfilm[data-item-key="movie-140"]').click();
     await page.waitForFunction(() => location.hash === '#detail/movie/140');
     assert.deepEqual(await duplicateIds(page), []);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('film d’une collection : la saga officielle seulement, sans les films au titre français proche', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/movie/150' });
+    await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
+    assert.equal(await page.locator('#detail-licence-btn .licbtn').textContent(), '▾ Licence « Le Labyrinthe »3 films');
+    await openLicence(page);
+    assert.deepEqual(await page.$$eval('#detail-licence .lfilm', (els) => els.map((e) => e.dataset.itemKey)), ['movie-150', 'movie-151', 'movie-152'], 'pas « Le Labyrinthe » (1953), « Le Labyrinthe de Pan », ni le documentaire');
+    assert.match(await page.locator('#detail-licence .lseries-title').textContent(), /^Films$/);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

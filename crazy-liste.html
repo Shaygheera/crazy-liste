@@ -1233,7 +1233,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* Début commun du titre : avant « : », « - », « – » ou « ( ». Trop court ou trop générique : pas de licence. */
   function licenceBase(title) {
     const head = String(title || '').split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0];
-    const base = normTitle(head).replace(/\s+(le film|the movie|movie|film|gekijouban|劇場版)$/, '').replace(/^(劇場版|gekijouban)\s+/, '');
+    const base = normTitle(head).replace(/\s+(le film|the movie|movie|film|gekijouban|劇場版)$/, '').replace(/^(劇場版|gekijouban)\s+/, '')
+      .replace(/^(the|le|la|les|l|a|an|der|die|das|el|los|las|il|lo)\s+/, ''); // article en tête ignoré (« The Maze Runner » → « maze runner »)
     if (base.length < 3 || LICENCE_STOP.has(base)) return '';
     return base;
   }
@@ -1247,6 +1248,18 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function inLicence(base, item) {
     if (!base || !item) return false;
     return [item.title, item.originalTitle].some((t) => { const n = normTitle(t); return n === base || n.startsWith(base + ' '); });
+  }
+  /* Même univers ? Anime : anime japonais au début de titre commun (titres AniList, français ou originaux).
+     Autres : le début commun doit venir du TITRE ORIGINAL (les traductions créent de faux points communs : « Le Labyrinthe »),
+     avec la même langue d'origine et au moins un genre en commun. */
+  function sameUniverse(current, c, bases, anime) {
+    if (!current || !c) return false;
+    const list = [].concat(bases).filter(Boolean);
+    if (anime) return list.some((b) => inLicence(b, c)) && (!c.originalLanguage || c.originalLanguage === 'ja') && (!Array.isArray(c.genreIds) || !c.genreIds.length || c.genreIds.includes(16));
+    if (!list.some((b) => inLicence(b, { title: c.originalTitle || c.title }))) return false;
+    if (current.originalLanguage && c.originalLanguage && current.originalLanguage !== c.originalLanguage) return false;
+    const g1 = Array.isArray(current.genreIds) ? current.genreIds : [], g2 = Array.isArray(c.genreIds) ? c.genreIds : [];
+    return !g1.length || !g2.length || g1.some((g) => g2.includes(g));
   }
   const byDateThenTitle = (a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : String(a.title).localeCompare(String(b.title), 'fr'));
   /* Titres de la même licence (fiche courante comprise), par date, sans doublon ; anime : seulement l'animation (ou genre pas encore renseigné). */
@@ -1705,7 +1718,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
-    normTitle, licenceBase, licenceBaseOf, inLicence, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
+    normTitle, licenceBase, licenceBaseOf, inLicence, sameUniverse, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
     anilistQuery, anilistStep, anilistParent, anilistTitle, anilistSearchQuery, pickAnilistMatch, wikidataAnilistQuery, parseWikidataAnilistMap, anilistExtras, attachExtras, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
@@ -2814,12 +2827,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function loadLicenceStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(LICENCE_STORE) || 'null');
-      if (!C.isObj(raw) || raw.v !== 5 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
+      if (!C.isObj(raw) || raw.v !== 6 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
       for (const L of raw.list) { const c = cleanStoredLicence(L); if (c && Date.now() - c.at < LICENCE_TTL) registerLicence(c); }
     } catch (e) { /* stockage indisponible ou illisible : la licence sera recalculée */ }
   }
   function saveLicenceStore() {
-    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 5, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
+    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 6, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
   }
   function wikiRelations(d) {
     if (!wikiCache.has(d.key)) {
@@ -2870,22 +2883,30 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     // 3. Débuts de titre : ceux de toute la chaîne (identiques quelle que soit la fiche ouverte), sinon celui de la fiche
     const keyed = [...new Set(chainInfo.map((c) => c.key).filter(Boolean).concat(w.next, w.prev))].slice(0, 12);
     const linked = (await Promise.all(keyed.map((k) => summaryOf(k).catch(() => null)))).filter(Boolean);
-    const chainBases = chain.map((n) => C.licenceBase(C.anilistTitle(n))).concat(linked.filter((x) => x.type === 'tv').map((x) => C.licenceBaseOf(x)));
-    const bases = [...new Set(chain.length ? chainBases : [C.licenceBaseOf(d)].concat(chainBases))].filter(Boolean).slice(0, 4);
-    // 4. Recherches TMDB (séries et films) pour chaque début de titre
-    const found = (await Promise.all(bases.flatMap((b) => [searchResults('/search/multi', b, null), searchResults('/search/movie', b, 'movie')]))).flat();
     const current = state.cache.summaries.get(key) || d;
     const anime = C.isAnime(current) || chain.length > 0;
+    const origBase = (x) => C.licenceBase(x.originalTitle || x.title);
+    const chainBases = chain.map((n) => C.licenceBase(C.anilistTitle(n))).concat(linked.filter((x) => x.type === 'tv').map((x) => (anime ? C.licenceBaseOf(x) : origBase(x))));
+    const bases = [...new Set(anime ? (chain.length ? chainBases : [C.licenceBaseOf(d)].concat(chainBases)) : [origBase(d)].concat(chainBases))].filter(Boolean).slice(0, 4);
+    // recherche : aussi avec le titre français (plus de résultats), mais le tri se fait sur les règles ci-dessus
+    const queries = [...new Set(bases.concat(anime ? [] : [C.licenceBase(d.title)]))].filter(Boolean).slice(0, 5);
+    // 4. Recherches TMDB (séries et films) pour chaque début de titre
+    const found = (await Promise.all(queries.flatMap((b) => [searchResults('/search/multi', b, null), searchResults('/search/movie', b, 'movie')]))).flat();
+    // films d'une collection TMDB (saga officielle) : toujours de la licence
+    const collection = d.type === 'movie' && d.collection ? await tmdb('/collection/' + d.collection.id, {}).catch(() => null) : null;
+    const parts = collection && Array.isArray(collection.parts) ? collection.parts.map((x) => C.normalizeSummary(x, 'movie')).filter(Boolean) : [];
     const items = [current];
     const add = (x) => { if (x && !items.some((y) => y.key === x.key)) items.push(x); };
-    for (const x of found) if ((x.type === 'tv' || x.type === 'movie') && bases.some((b) => C.inLicence(b, x)) && (!anime || !x.genreIds.length || x.genreIds.includes(16))) add(x);
+    parts.forEach(add);
+    for (const x of found) if ((x.type === 'tv' || x.type === 'movie') && C.sameUniverse(current, x, bases, anime)) add(x);
     linked.forEach(add);
     const missing = extras.filter((e) => e.key && e.seriesKey && !items.some((y) => y.key === e.key)).slice(0, 15);
     (await Promise.all(missing.map((e) => summaryOf(e.key).catch(() => null)))).forEach(add);
     // 5. Nom : la première série de la chaîne, sinon la série au nom le plus général
     const root = chainInfo.length && chainInfo[0].key ? items.find((x) => x.key === chainInfo[0].key) : null;
+    const colName = collection && collection.name ? String(collection.name).replace(/\s*[-–—:]\s*(saga|collection)$/i, '').replace(/^(saga|collection)\s+/i, '').trim() : '';
     const named = root || items.filter((x) => x.type === 'tv' && C.licenceBaseOf(x)).sort((p, q) => (C.licenceBaseOf(p).length - C.licenceBaseOf(q).length) || ((p.date || '9999') < (q.date || '9999') ? -1 : 1))[0] || current;
-    return { partial: (!!alId && !chain.length) || unreadable > 0, id: chain.length ? 'al:' + chain[0].id : 'base:' + (bases[0] || key), at: Date.now(), label: named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
+    return { partial: (!!alId && !chain.length) || unreadable > 0, id: chain.length ? 'al:' + chain[0].id : collection ? 'col:' + d.collection.id : 'base:' + (bases[0] || key), at: Date.now(), label: (!root && colName) || named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
       items: items.slice(0, 80), extras: extras.filter((e) => e.seriesKey).map(({ seriesAl, ...e }) => e), chain: chainInfo };
   }
   /* Ce que la fiche ouverte affiche, d'après la licence partagée : suite (Wikidata, puis chaîne AniList, sinon suite probable), suite annoncée. */
@@ -4212,7 +4233,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (!L) return '';
     const n = L.groups.length + (L.rel.upcoming ? 1 : 0);
     return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '" aria-expanded="' + licenceOpen(key) + '" aria-controls="detail-licence">' +
-      '<span>' + (licenceOpen(key) ? '▴' : '▾') + ' Licence « ' + esc(L.rel.label || '') + ' »</span><small>' + n + ' série' + (n > 1 ? 's' : '') + ' · ' + L.films + ' film' + (L.films > 1 ? 's' : '') + (L.ovas ? ' · ' + L.ovas + ' OVA / spécia' + (L.ovas > 1 ? 'ux' : 'l') : '') + '</small></button>';
+      '<span>' + (licenceOpen(key) ? '▴' : '▾') + ' Licence « ' + esc(L.rel.label || '') + ' »</span><small>' + [n ? n + ' série' + (n > 1 ? 's' : '') : '', L.films ? L.films + ' film' + (L.films > 1 ? 's' : '') : (n ? '0 film' : ''), L.ovas ? L.ovas + ' OVA / spécia' + (L.ovas > 1 ? 'ux' : 'l') : ''].filter(Boolean).join(' · ') + '</small></button>';
   }
   function seriesProgress(key) {
     const t = getTrack(key);
@@ -4244,7 +4265,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       '<span class="lseries-year">Série · ' + (L.rel.upcoming.status === 'NOT_YET_RELEASED' ? 'en production' : 'en cours') + '</span><span class="tagc t-ann">annoncée · pas encore sur TMDB</span></span></div><div class="lfilms"></div></div>' : '';
     return '<div class="licence-head"><h2>Licence « ' + esc(L.rel.label || '') + ' »</h2><span class="hint">Ordre de sortie · chaque série suivie de ses films et OVA</span>' +
       '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button></div>' +
-      L.groups.map(era).join('') + ann + (L.orphans.length ? '<div class="lera"><div class="lseries"><span class="lseries-text"><span class="lseries-title">Autres films</span></span></div><div class="lfilms">' + L.orphans.map(film).join('') + '</div></div>' : '');
+      L.groups.map(era).join('') + ann + (L.orphans.length ? '<div class="lera"><div class="lseries"><span class="lseries-text"><span class="lseries-title">' + (L.groups.length ? 'Autres films' : 'Films') + '</span></span></div><div class="lfilms">' + L.orphans.map(film).join('') + '</div></div>' : '');
   }
   /* Films rangés avec cette série dans sa licence, avec une recherche « Quand le regarder ? » pour chacun. */
   function filmsSectionHtml(key) {

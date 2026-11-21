@@ -71,11 +71,33 @@ describe('AniList : chaîne d’une licence', () => {
   });
 });
 
+describe('Licence : séries et films', () => {
+  it('chaque film va sous la série dont il reprend le nom, sinon sous la série en cours à sa sortie', () => {
+    const tv = (id, title, date) => ({ key: 'tv-' + id, type: 'tv', id, title, date });
+    const mv = (id, title, date) => ({ key: 'movie-' + id, type: 'movie', id, title, date });
+    const { groups, orphans } = C.licenceGroups([
+      tv(1, 'Naruto', '2002-10-03'), tv(2, 'Naruto Shippuden', '2007-02-15'), tv(3, 'Boruto : Naruto Next Generations', '2017-04-05'),
+      mv(10, 'Naruto et la Princesse des neiges', '2004-08-21'), mv(11, 'Naruto Shippuden : Les Liens', '2008-08-02'),
+      mv(12, 'Boruto : Naruto, le film', '2015-08-07'), mv(13, 'Naruto : Road to Ninja', '2012-07-28'), mv(14, 'The Last', '2014-12-06')
+    ]);
+    assert.deepEqual(groups.map((g) => [g.series.key, g.films.map((x) => x.key)]), [
+      ['tv-1', ['movie-10', 'movie-13']], ['tv-2', ['movie-11', 'movie-14']], ['tv-3', ['movie-12']]
+    ], '« Naruto : Road to Ninja » reprend le nom « Naruto » ; « The Last », sans nom commun, va avec la série en cours en 2014');
+    assert.deepEqual(orphans, [], 'aucun film perdu');
+    assert.deepEqual(C.licenceGroups([mv(1, 'Seul', '2000-01-01')]), { groups: [], orphans: [mv(1, 'Seul', '2000-01-01')] });
+  });
+});
+
 describe('Licence : carte Diffusion', () => {
   let browser;
   before(async () => { browser = await launch(); });
   after(async () => { if (browser) await browser.close(); });
   const col = (page, id) => page.locator('#detail-cards [data-col="' + id + '"]').textContent();
+  const eras = (page) => page.$$eval('#detail-licence .lera[data-series]', (els) => els.map((e) => e.dataset.series));
+  async function openLicence(page) {
+    await page.locator('#detail-licence-btn .licbtn').click();
+    await page.waitForSelector('#detail-licence:not([hidden]) .lera');
+  }
 
   it('suite probable d’après la licence, titres de la licence par date, fiche ouverte mise en avant', T, async () => {
     const { page, errors, context, mock } = await openApp(browser, { hash: '#detail/tv/216' });
@@ -84,11 +106,20 @@ describe('Licence : carte Diffusion', () => {
     assert.match(await col(page, 'suite'), /^Suite probableLicence Test : Seconde partie ›Série · à venir · même licence, après celui-ci$/);
     assert.equal(await page.locator('#detail-cards .dcols-4').count(), 1);
     assert.match(await col(page, 'next'), /Aucun nouvel épisode pour cette série/);
-    assert.deepEqual(await page.$$eval('#detail-cards .lic', (els) => els.map((e) => e.dataset.lic)), ['tv-219', 'movie-140', 'tv-216', 'tv-217'], 'par date, faux ami « Licencieux » écarté');
-    assert.equal(await page.locator('#detail-cards .lic-current').getAttribute('data-lic'), 'tv-216');
-    assert.match(await page.locator('.dlicence-label').textContent(), /Licence « Licence Test » :/);
+    assert.equal(await page.locator('#detail-cards .dlicence').count(), 0, 'plus de ligne d’étiquettes dans la carte');
+    assert.match(await page.locator('.detail-meta .detail-badges').first().textContent(), /^Mon suivi :/, 'Mon suivi juste sous l’affiche');
+    await page.waitForSelector('#detail-licence-btn .licbtn');
+    assert.equal(await page.locator('#detail-licence-btn .licbtn').textContent(), '▾ Licence « Licence Test »3 séries · 1 film');
+    assert.equal(await page.locator('#detail-licence').isHidden(), true, 'fermé par défaut');
+    await openLicence(page);
+    assert.equal(await page.locator('#detail-licence-btn .licbtn').getAttribute('aria-expanded'), 'true');
+    assert.deepEqual(await eras(page), ['tv-219', 'tv-216', 'tv-217'], 'une ligne par série, par date ; faux ami « Licencieux » écarté');
+    assert.deepEqual(await page.$$eval('#detail-licence [data-series="tv-216"] .lfilm', (els) => els.map((e) => e.dataset.itemKey)), ['movie-140'], 'le film va avec la série dont il reprend le nom');
+    assert.equal(await page.locator('#detail-licence .lera.is-current').getAttribute('data-series'), 'tv-216');
+    assert.match(await page.locator('#detail-licence .lera.is-current').textContent(), /tu es ici/);
     assert.ok(mock.state.requests.some((r) => r.startsWith('/search/multi') && /query=licence\+test/.test(r)));
-    await page.locator('#detail-cards a.lic[data-lic="movie-140"]').click();
+    assert.ok(mock.state.requests.some((r) => r.startsWith('/search/movie') && /query=licence\+test/.test(r)), 'films cherchés pour chaque série');
+    await page.locator('#detail-licence .lfilm[data-item-key="movie-140"]').click();
     await page.waitForFunction(() => location.hash === '#detail/movie/140');
     assert.deepEqual(await duplicateIds(page), []);
     assert.deepEqual(jsErrors(errors), []);
@@ -99,7 +130,10 @@ describe('Licence : carte Diffusion', () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/201' });
     await page.waitForSelector('#detail-cards [data-col="suite"]');
     assert.match(await col(page, 'suite'), /^SuiteAnime Bêta ›Anime · 2019$/);
-    assert.deepEqual(await page.$$eval('#detail-cards .lic', (els) => els.map((e) => e.dataset.lic)), ['tv-201', 'tv-202']);
+    await openLicence(page);
+    assert.deepEqual(await eras(page), ['tv-202', 'tv-201'], 'même date : ordre alphabétique');
+    await page.locator('#detail-licence [data-action="licence-toggle"]').click();
+    assert.equal(await page.locator('#detail-licence').isHidden(), true, '« Fermer » replie le panneau');
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });
@@ -108,8 +142,9 @@ describe('Licence : carte Diffusion', () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/221' });
     await page.waitForSelector('#detail-cards [data-col="suite"]');
     assert.match(await col(page, 'suite'), /^SuiteTroisième Volet ›Anime · 2015$/);
-    assert.deepEqual(await page.$$eval('#detail-cards .lic', (els) => els.map((e) => e.dataset.lic)), ['tv-220', 'tv-221', 'tv-222']);
-    assert.match(await page.locator('.dlicence-label').textContent(), /Licence « Chaîne Un » :/);
+    await openLicence(page);
+    assert.deepEqual(await eras(page), ['tv-220', 'tv-221', 'tv-222']);
+    assert.match(await page.locator('#detail-licence .licence-head h2').textContent(), /^Licence « Chaîne Un »$/);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });
@@ -119,7 +154,10 @@ describe('Licence : carte Diffusion', () => {
     await page.waitForSelector('#detail-cards [data-col="suite"]');
     assert.equal(await col(page, 'suite'), 'Suite annoncéeChaine Yon : le retourAnime · en production · pas encore sur TMDB');
     assert.equal(await page.locator('#detail-cards [data-col="suite"] a').count(), 0);
-    assert.deepEqual(await page.$$eval('#detail-cards .lic', (els) => els.map((e) => e.dataset.lic)), ['tv-220', 'tv-221', 'tv-222']);
+    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /4 séries · 0 film$/, 'la suite annoncée compte comme série');
+    await openLicence(page);
+    assert.deepEqual(await eras(page), ['tv-220', 'tv-221', 'tv-222']);
+    assert.match(await page.locator('#detail-licence .lera.is-announced').textContent(), /Chaine Yon : le retour[\s\S]*annoncée · pas encore sur TMDB/);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });
@@ -141,7 +179,7 @@ describe('Licence : carte Diffusion', () => {
     await page.waitForSelector('#detail-cards .dcard-head');
     await page.waitForTimeout(800);
     assert.equal(await page.locator('#detail-cards [data-col="suite"]').count(), 0);
-    assert.equal(await page.locator('#detail-cards .dlicence').count(), 0);
+    assert.equal(await page.locator('#detail-licence-btn .licbtn').count(), 0, 'pas de bouton Licence sans titre lié');
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

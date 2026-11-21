@@ -219,6 +219,34 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .dcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; }
 .dcols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .dcol[data-col="suite"] .dcol-big a { color: var(--accent); }
+.licbtn { display: grid; gap: 2px; width: 100%; text-align: left; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 750; font-size: .85rem; cursor: pointer; }
+.licbtn small { color: var(--text-2); font-weight: 600; font-size: .76rem; }
+.licbtn:hover { filter: brightness(.97); }
+.licence-panel { margin: 0 0 18px; padding: 14px 18px; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--surface); scroll-margin-top: 12px; }
+.licence-head { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; margin-bottom: 4px; }
+.licence-head h2 { margin: 0; font-size: 1.1rem; } .licence-head .hint { margin: 0; } .licence-head .btn { margin-left: auto; }
+.lera { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--border); align-items: start; }
+.licence-head + .lera { border-top: 0; }
+.lseries { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; align-items: start; color: inherit; text-decoration: none; }
+a.lseries:hover .lseries-title { color: var(--accent); }
+.lseries-poster { width: 62px; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; }
+.lseries-poster .poster-fallback { font-size: .55rem; }
+.lera.is-current .lseries-poster { outline: 3px solid var(--accent); outline-offset: 2px; }
+.lseries-ghost { display: block; background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 6px, var(--surface-3, var(--surface-2)) 6px, var(--surface-3, var(--surface-2)) 12px); border: 1px dashed var(--border-strong); }
+.lseries-text { display: grid; gap: 3px; align-content: start; min-width: 0; }
+.lseries-title { font-weight: 750; font-size: .92rem; line-height: 1.2; overflow-wrap: anywhere; } .lseries-year { font-size: .78rem; color: var(--muted); }
+.lfilms { display: flex; flex-wrap: wrap; gap: 10px; min-width: 0; } .lfilms > .hint { margin: 0; padding-top: 6px; }
+.lfilm { width: 84px; display: grid; gap: 3px; align-content: start; color: inherit; text-decoration: none; }
+.lfilm-poster { width: 84px; aspect-ratio: 2 / 3; border-radius: 7px; overflow: hidden; }
+.lfilm-poster .poster-fallback { font-size: .55rem; }
+.lfilm:hover .lfilm-title { color: var(--accent); }
+.lfilm-title { font-size: .74rem; font-weight: 650; line-height: 1.2; overflow-wrap: anywhere; } .lfilm-year { font-size: .7rem; color: var(--muted); }
+.tagc { justify-self: start; font-size: .68rem; font-weight: 750; border-radius: 999px; padding: 1px 7px; border: 1px solid; }
+.t-seen { background: var(--seen-soft, #dff6e6); color: var(--seen); border-color: color-mix(in srgb, var(--seen) 45%, transparent); }
+.t-here { background: var(--accent); color: #fff; border-color: var(--accent); }
+.t-ann { background: color-mix(in srgb, #f2c94c 22%, transparent); color: #8a6100; border-color: color-mix(in srgb, #f2c94c 60%, transparent); }
+.t-prog { background: color-mix(in srgb, var(--progress, #f2994a) 18%, transparent); color: var(--progress, #b35a00); border-color: color-mix(in srgb, var(--progress, #f2994a) 50%, transparent); }
+@media (max-width: 640px) { .lera { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
 .dlicence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding-top: 10px; border-top: 1px solid var(--border); }
 .dlicence-label { font-size: .8rem; color: var(--muted); font-weight: 650; margin-right: 2px; }
 .lic { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px 3px 3px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: inherit; text-decoration: none; font-size: .8rem; font-weight: 650; max-width: 100%; }
@@ -1217,6 +1245,29 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (i < 0) return null;
     return list.slice(i + 1).find((x) => x.type === 'tv' && (!x.date || !current.date || x.date > current.date)) || null;
   }
+  /* Panneau « Licence » : une ligne par série (ordre de sortie), chaque film sous la série dont il reprend le nom
+     (base de titre la plus longue) ; à égalité, sous la dernière série commencée avant sa sortie, sinon la première. */
+  function licenceGroups(items) {
+    const list = (Array.isArray(items) ? items : []).filter(Boolean);
+    const series = list.filter((x) => x.type === 'tv').sort(byDateThenTitle);
+    const groups = series.map((sr) => ({ series: sr, base: licenceBase(sr.title) || licenceBase(sr.originalTitle), films: [] }));
+    const orphans = [];
+    for (const f of list.filter((x) => x.type === 'movie').sort(byDateThenTitle)) {
+      const matching = groups.filter((g) => g.base && inLicence(g.base, f));
+      const longest = matching.reduce((n, g) => Math.max(n, g.base.length), 0);
+      const best = matching.filter((g) => g.base.length === longest);
+      let target = null;
+      if (best.length) {
+        const started = best.filter((g) => g.series.date && f.date && g.series.date <= f.date);
+        target = started.length ? started[started.length - 1] : f.date ? best[0] : best[best.length - 1]; // film sans date (à venir) : avec la dernière série
+      } else if (groups.length) {
+        const started = groups.filter((g) => g.series.date && f.date && g.series.date <= f.date);
+        target = started.length ? started[started.length - 1] : groups[0];
+      }
+      if (target) target.films.push(f); else orphans.push(f);
+    }
+    return { groups, orphans };
+  }
   /* Réponse SPARQL de Wikidata → clés TMDB des titres suivants / précédents (séries ou films). */
   function parseWikidataRelations(json) {
     const out = { next: [], prev: [], anilist: [] };
@@ -1543,7 +1594,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
-    normTitle, licenceBase, inLicence, licenceList, probableNext, parseWikidataRelations, wikidataQuery,
+    normTitle, licenceBase, inLicence, licenceList, probableNext, licenceGroups, parseWikidataRelations, wikidataQuery,
     anilistQuery, anilistStep, anilistTitle, wikidataAnilistQuery, parseWikidataAnilistMap, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
@@ -2016,6 +2067,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       search: { q: '', filters: C.parseSearchFilters({}), mode: 'idle', page: 0, totalPages: 0, results: [], hidden: 0, status: 'idle', error: null },
       detail: { key: null, status: 'idle', error: null },
       expanded: {},               // clé -> Set des saisons ouvertes
+      licenceOpen: null,          // clé de la fiche dont le panneau « Licence » est ouvert
       seasonLoad: {},             // "clé#n" -> { status, error }
       busy: {}                    // opérations longues en cours
     },
@@ -2623,6 +2675,14 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const current = state.cache.summaries.get(key) || d;
     const list = C.licenceList(current, found, rel.base, 10);
     for (const x of linked) if (!list.some((y) => y.key === x.key)) list.push(x); // titres liés par Wikidata ou AniList même si leur titre diffère
+    // Films de chaque série de la licence (recherche de films par début de titre, 4 séries au plus)
+    const anime = C.isAnime(current);
+    const bases = [...new Set(list.filter((x) => x.type === 'tv').map((x) => C.licenceBase(x.title) || C.licenceBase(x.originalTitle)).filter(Boolean))].slice(0, 4);
+    const films = (await Promise.all(bases.map((b) => tmdb('/search/movie', { query: b, include_adult: 'false' })
+      .then((j) => (Array.isArray(j.results) ? j.results : []).map((x) => C.normalizeSummary(x, 'movie')).filter(Boolean)).catch(() => [])))).flat();
+    films.forEach(rememberSummary);
+    const all = list.concat(films.filter((f, i, arr) => arr.findIndex((y) => y.key === f.key) === i && !list.some((y) => y.key === f.key) &&
+      bases.some((b) => C.inLicence(b, f)) && (!anime || !f.genreIds.length || f.genreIds.includes(16))));
     list.sort((a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : 0));
     const find = (k) => (k ? linked.find((x) => x.key === k) || null : null);
     const wikiNext = w.next.map(find).find(Boolean) || null;
@@ -2631,7 +2691,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const announced = alNextNode && !alNext && !wikiNext ? { title: C.anilistTitle(alNextNode), status: alNextNode.status } : null;
     const confirmedNext = wikiNext || alNext;
     const root = chain.length > 1 ? find(alMap[chain[0].id]) || (chain[0].id === al ? current : null) : null;
-    Object.assign(rel, { status: 'ready', list: list.length > 1 ? list : [], confirmed: !!confirmedNext, announced,
+    Object.assign(rel, { status: 'ready', list: list.length > 1 ? list : [], all, confirmed: !!confirmedNext, announced,
       next: confirmedNext || (announced ? null : C.probableNext(list, current)),
       label: (root || current).title.split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0] });
     if (state.route.name === 'detail' && state.route.key === key) renderRelated();
@@ -3026,6 +3086,14 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       link.textContent = 'Ouvrir sur YouTube';
       byId('trailer-foot').replaceChildren((t.lang === 'fr' ? 'Vidéo YouTube proposée par TMDB. ' : 'Pas de version française sur TMDB : version originale. ') + 'Si elle ne se lance pas : ', link);
       byId('trailer-dialog').showModal();
+    },
+    'licence-toggle'(el) {
+      const key = el.dataset.key;
+      state.ui.licenceOpen = licenceOpen(key) ? null : key;
+      renderLicence(key);
+      const target = licenceOpen(key) ? document.getElementById('detail-licence') : document.querySelector('#detail-licence-btn .licbtn');
+      if (target) { if (licenceOpen(key)) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); else target.focus(); }
+      checkAvailability();
     },
     'poster-zoom'(el) {
       const item = viewMeta(el.dataset.key);
@@ -3715,9 +3783,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         ? '<button type="button" class="detail-poster poster poster-zoom" data-action="poster-zoom" data-key="' + key + '" aria-label="Agrandir l’affiche de ' + esc(item.title) + '">' + posterHtml(item, 'w500') + '<span class="zoom-hint" aria-hidden="true">⤢</span></button>'
         : '<div class="detail-poster poster">' + posterHtml(item, 'w500') + '</div>') +
         '<div class="detail-meta">' +
+          '<div class="detail-badges"><span class="track-label">Mon suivi :</span>' + statusBadge(itemState(key).status, key) + '</div>' +
           '<div class="detail-badges">' + ratingHtml(item.voteAverage, 'Note TMDB') + (d && d.voteCount ? '<span class="chip">' + d.voteCount.toLocaleString('fr-FR') + ' votes</span>' : '') + '</div>' +
           (genres.length ? '<div class="detail-badges detail-genres">' + genres.map((g) => '<span class="chip genre-tag">' + esc(g) + '</span>').join('') + '</div>' : '') +
-          '<div class="detail-badges"><span class="track-label">Mon suivi :</span>' + statusBadge(itemState(key).status, key) + '</div>' +
+          '<div id="detail-licence-btn">' + licenceButtonHtml(key) + '</div>' +
         '</div></div>' +
       '<div class="detail-info">' +
         '<div class="detail-top"><div class="detail-titles"><h1>' + esc(item.title) + '</h1><p class="detail-sub">' + esc(detailSubline(item, d, isTv)) + '</p></div>' +
@@ -3730,6 +3799,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
           '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p></div>' +
           '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div></div>' +
       '</div></div></section>' +
+      '<section id="detail-licence" class="licence-panel" aria-label="Licence"' + (licenceOpen(key) ? '' : ' hidden') + '>' + (licenceOpen(key) ? licencePanelHtml(key) : '') + '</section>' +
       (d && d.gallery.length ? '<section class="gallery-section" aria-labelledby="gallery-title"><div class="gallery-head"><h2 id="gallery-title">Images</h2><span class="hint">Visuels officiels du titre, sans images d’épisodes pour éviter les spoilers.</span></div>' +
         '<div class="gallery">' + d.gallery.map((p, i) => '<button type="button" class="gallery-item" data-action="gallery-open" data-key="' + key + '" data-index="' + i + '" aria-label="Agrandir l’image ' + (i + 1) + ' sur ' + d.gallery.length + '">' +
           '<img src="' + esc(img(p, 'w780')) + '" alt="" loading="lazy" decoding="async"></button>').join('') + '</div></section>' : '') +
@@ -3890,16 +3960,56 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return dcol('suite', rel.confirmed ? 'Suite' : 'Suite probable', '<a href="' + C.detailHash(x.type, x.id) + '">' + esc(x.title) + ' ›</a>',
       (x.type === 'movie' ? 'Film' : C.isAnime(x) ? 'Anime' : 'Série') + ' · ' + when + (rel.confirmed ? '' : ' · même licence, après celui-ci'));
   }
-  function licenceRowHtml(key) {
+  /* Bouton « Licence » sous l'affiche et panneau ouvert sous la fiche. */
+  const licenceOpen = (key) => state.ui.licenceOpen === key;
+  function licenceData(key) {
     const rel = state.cache.relations.get(key);
-    if (!rel || rel.status !== 'ready' || rel.list.length < 2) return '';
-    const label = rel.label ? 'Licence « ' + esc(rel.label) + ' » :' : 'Titres liés :';
-    return '<div class="dlicence"><span class="dlicence-label">' + label + '</span>' + rel.list.map((x) => {
-      const cur = x.key === key;
-      const seen = getTrack(x.key) && itemState(x.key).status === 'seen';
-      const inner = '<span class="lic-thumb">' + posterHtml(x, 'w92') + '</span><span class="lic-text">' + esc(x.title) + ' · ' + (x.date ? (x.date > state.today ? 'à venir' : esc(x.year)) : 'à venir') + '</span>' + (seen ? '<span class="lic-seen" title="Vu">✓</span>' : '');
-      return cur ? '<span class="lic lic-current" aria-current="true" data-lic="' + x.key + '">' + inner + '</span>' : '<a class="lic" href="' + C.detailHash(x.type, x.id) + '" data-lic="' + x.key + '">' + inner + '</a>';
-    }).join('') + '</div>';
+    if (!rel || rel.status !== 'ready') return null;
+    const { groups, orphans } = C.licenceGroups(rel.all || rel.list);
+    const films = groups.reduce((n, g) => n + g.films.length, 0) + orphans.length;
+    if (groups.length + films + (rel.announced ? 1 : 0) < 2) return null;
+    return { rel, groups, orphans, films };
+  }
+  function licenceButtonHtml(key) {
+    const L = licenceData(key);
+    if (!L) return '';
+    const n = L.groups.length + (L.rel.announced ? 1 : 0);
+    return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '" aria-expanded="' + licenceOpen(key) + '" aria-controls="detail-licence">' +
+      '<span>' + (licenceOpen(key) ? '▴' : '▾') + ' Licence « ' + esc(L.rel.label || '') + ' »</span><small>' + n + ' série' + (n > 1 ? 's' : '') + ' · ' + L.films + ' film' + (L.films > 1 ? 's' : '') + '</small></button>';
+  }
+  function seriesProgress(key) {
+    const t = getTrack(key);
+    if (!t) return '';
+    const st = itemState(key);
+    if (st.status === 'seen') return '<span class="tagc t-seen">✓ vu</span>';
+    if (st.status === 'progress') return '<span class="tagc t-prog">en cours' + (st.known && st.totalEpisodes ? ' · ' + st.seenEpisodes + ' / ' + st.totalEpisodes : '') + '</span>';
+    return '';
+  }
+  function licencePanelHtml(key) {
+    const L = licenceData(key);
+    if (!L) return '';
+    const year = (x) => (x.date ? (x.date > state.today ? 'à venir · ' + esc(C.formatDate(x.date)) : esc(x.year)) : 'à venir');
+    const film = (f) => '<a class="lfilm" href="' + C.detailHash('movie', f.id) + '" data-item-key="' + f.key + '"><span class="lfilm-poster poster">' + posterHtml(f, 'w154') + '</span>' +
+      '<span class="lfilm-title">' + esc(f.title) + '</span><span class="lfilm-year">' + year(f) + '</span>' + (getTrack(f.key) && itemState(f.key).status === 'seen' ? '<span class="tagc t-seen">✓ vu</span>' : '') + '</a>';
+    const era = (g) => {
+      const x = g.series, cur = x.key === key;
+      const head = '<span class="lseries-poster poster">' + posterHtml(x, 'w154') + '</span><span class="lseries-text"><span class="lseries-title">' + esc(x.title) + '</span>' +
+        '<span class="lseries-year">' + (C.isAnime(x) ? 'Anime' : 'Série') + ' · ' + year(x) + '</span>' + (cur ? '<span class="tagc t-here">tu es ici</span>' : seriesProgress(x.key)) + '</span>';
+      return '<div class="lera' + (cur ? ' is-current' : '') + '" data-series="' + x.key + '">' +
+        (cur ? '<div class="lseries" aria-current="true">' + head + '</div>' : '<a class="lseries" href="' + C.detailHash('tv', x.id) + '">' + head + '</a>') +
+        '<div class="lfilms">' + (g.films.length ? g.films.map(film).join('') : '<span class="hint">Aucun film</span>') + '</div></div>';
+    };
+    const ann = L.rel.announced ? '<div class="lera is-announced"><div class="lseries"><span class="lseries-poster lseries-ghost" aria-hidden="true"></span><span class="lseries-text"><span class="lseries-title">' + esc(L.rel.announced.title) + '</span>' +
+      '<span class="lseries-year">Série · ' + (L.rel.announced.status === 'NOT_YET_RELEASED' ? 'en production' : 'en cours') + '</span><span class="tagc t-ann">annoncée · pas encore sur TMDB</span></span></div><div class="lfilms"></div></div>' : '';
+    return '<div class="licence-head"><h2>Licence « ' + esc(L.rel.label || '') + ' »</h2><span class="hint">Ordre de sortie · chaque série suivie de ses films</span>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button></div>' +
+      L.groups.map(era).join('') + ann + (L.orphans.length ? '<div class="lera"><div class="lseries"><span class="lseries-text"><span class="lseries-title">Autres films</span></span></div><div class="lfilms">' + L.orphans.map(film).join('') + '</div></div>' : '');
+  }
+  function renderLicence(key) {
+    const btn = document.getElementById('detail-licence-btn');
+    if (btn) btn.innerHTML = licenceButtonHtml(key);
+    const panel = document.getElementById('detail-licence');
+    if (panel) { const open = licenceOpen(key) && !!licenceData(key); panel.hidden = !open; panel.innerHTML = open ? licencePanelHtml(key) : ''; }
   }
   /* Date proche : jour de la semaine (« Jeudi 27 novembre ») ; sinon date complète. Suivie de « dans 6 jours ». */
   function whenHtml(date) {
@@ -3926,7 +4036,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       return dcard(sc ? 'Diffusion et suite' : 'Diffusion', status, dcol('last', 'Dernier épisode diffusé', le ? C.episodeLabel(le.season, le.episode) : '—', le && le.airDate ? esc(C.formatDate(le.airDate)) : '') +
         dcol('size', 'Saisons et épisodes', n + ' saison' + (n > 1 ? 's' : '') + (d.numberOfEpisodes ? ' · ' + d.numberOfEpisodes + ' épisodes' : ''), '') +
         dcol('next', 'Prochain épisode', 'Aucun annoncé', sc ? 'Aucun nouvel épisode pour cette série.' : ['Ended', 'Canceled'].includes(d.productionStatus) ? 'La série est terminée.' : 'TMDB n’annonce pas encore de suite.') + sc,
-        licenceRowHtml(key), sc ? 4 : 3);
+        '', sc ? 4 : 3);
     }
     const c1 = dcol('next', 'Prochain épisode', C.episodeLabel(ne.season, ne.episode), whenHtml(ne.airDate), genericEpName(ne.name) ? '' : '<span class="dcol-sub">' + esc(ne.name) + '</span>');
     let c2, c3;
@@ -3947,7 +4057,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       c3 = dcol('end', 'Dernier épisode prévu', 'É' + si.lastNumber, 'Date pas encore communiquée' + (si.datedUntil ? ' (dates connues jusqu’à l’É' + si.datedUntil.number + ', ' + esc(C.formatDate(si.datedUntil.date)) + ')' : ''));
     }
     const sc = suiteCol(key);
-    return dcard('Diffusion' + (si ? ' · saison ' + si.season : '') + (sc ? ' et suite' : ''), status, c1 + c2 + c3 + sc, licenceRowHtml(key), sc ? 4 : 3);
+    return dcard('Diffusion' + (si ? ' · saison ' + si.season : '') + (sc ? ' et suite' : ''), status, c1 + c2 + c3 + sc, '', sc ? 4 : 3);
   }
   function movieLinkCol(id, label, it) {
     const seen = getTrack(it.key) && itemState(it.key).status === 'seen';
@@ -3987,6 +4097,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (cards) cards.innerHTML = detailCardHtml(key);
     const where = document.getElementById('detail-where');
     if (where) where.innerHTML = providersHtml(state.cache.details.get(key));
+    renderLicence(key);
     const reco = document.getElementById('detail-reco');
     if (reco && !reco.firstChild) { reco.innerHTML = recoHtml(key); }
     checkAvailability();

@@ -1236,6 +1236,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (base.length < 3 || LICENCE_STOP.has(base)) return '';
     return base;
   }
+  /* Base d'un titre : la plus courte (donc la plus générale) entre titre français et titre original
+     (« Konosuba le film - … » / « KONOSUBA -God's blessing… » → « konosuba »). */
+  function licenceBaseOf(item) {
+    const b = [licenceBase(item && item.title), licenceBase(item && item.originalTitle)].filter(Boolean).sort((a, c) => a.length - c.length);
+    return b[0] || '';
+  }
   function inLicence(base, item) {
     if (!base || !item) return false;
     return [item.title, item.originalTitle].some((t) => { const n = normTitle(t); return n === base || n.startsWith(base + ' '); });
@@ -1261,7 +1267,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function licenceGroups(items) {
     const list = (Array.isArray(items) ? items : []).filter(Boolean);
     const series = list.filter((x) => x.type === 'tv').sort(byDateThenTitle);
-    const groups = series.map((sr) => ({ series: sr, base: licenceBase(sr.title) || licenceBase(sr.originalTitle), films: [] }));
+    const groups = series.map((sr) => ({ series: sr, base: licenceBaseOf(sr), films: [] }));
     const orphans = [];
     for (const f of list.filter((x) => x.type === 'movie').sort(byDateThenTitle)) {
       const matching = groups.filter((g) => g.base && inLicence(g.base, f));
@@ -1658,7 +1664,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
-    normTitle, licenceBase, inLicence, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
+    normTitle, licenceBase, licenceBaseOf, inLicence, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
     anilistQuery, anilistStep, anilistTitle, wikidataAnilistQuery, parseWikidataAnilistMap, anilistExtras, attachExtras, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
@@ -2719,7 +2725,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (state.cache.relations.has(key)) return;
     const d = state.cache.details.get(key);
     if (!d) return;
-    const rel = { status: 'loading', base: C.licenceBase(d.title) || C.licenceBase(d.originalTitle), list: [], next: null, confirmed: false };
+    const rel = { status: 'loading', base: C.licenceBaseOf(d), list: [], next: null, confirmed: false };
     state.cache.relations.set(key, rel);
     const wiki = fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataQuery(d.id, d.type)), { headers: { Accept: 'application/sparql-results+json' } })
       .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataRelations(j)).catch(() => ({ next: [], prev: [], anilist: [] }));
@@ -2750,7 +2756,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     for (const x of linked) if (!list.some((y) => y.key === x.key)) list.push(x); // titres liés par Wikidata ou AniList même si leur titre diffère
     // Films de chaque série de la licence (recherche de films par début de titre, 4 séries au plus)
     const anime = C.isAnime(current);
-    const bases = [...new Set(list.filter((x) => x.type === 'tv').map((x) => C.licenceBase(x.title) || C.licenceBase(x.originalTitle)).filter(Boolean))].slice(0, 4);
+    const bases = [...new Set(list.filter((x) => x.type === 'tv').map((x) => C.licenceBaseOf(x)).filter(Boolean))].slice(0, 4);
     const films = (await Promise.all(bases.map((b) => tmdb('/search/movie', { query: b, include_adult: 'false' })
       .then((j) => (Array.isArray(j.results) ? j.results : []).map((x) => C.normalizeSummary(x, 'movie')).filter(Boolean)).catch(() => [])))).flat();
     films.forEach(rememberSummary);

@@ -18,6 +18,8 @@ describe('Licence : règles', () => {
     assert.equal(C.licenceBase('KONOSUBA -An Explosion on This Wonderful World!'), 'konosuba', 'tiret collé au mot suivant');
     assert.equal(C.licenceBase("KONOSUBA -God's blessing on this wonderful world!"), 'konosuba');
     assert.equal(C.licenceBase('Spider-Man'), 'spider man', 'tiret à l’intérieur d’un mot : pas de coupure');
+    assert.equal(C.licenceBaseOf({ title: 'Konosuba le film - Legend of Crimson', originalTitle: "KONOSUBA -God's blessing on this wonderful world!- Legend of Crimson" }), 'konosuba', 'la plus courte des deux');
+    assert.equal(C.licenceBaseOf({ title: 'Boruto : Naruto Next Generations', originalTitle: 'BORUTO-ボルト- NARUTO NEXT GENERATIONS' }), 'boruto');
     assert.equal(C.licenceBase('The: Show'), '');
     assert.equal(C.inLicence('naruto', { title: 'Naruto Shippuden' }), true);
     assert.equal(C.inLicence('naruto', { title: 'Narutoverse' }), false, 'mot entier seulement');

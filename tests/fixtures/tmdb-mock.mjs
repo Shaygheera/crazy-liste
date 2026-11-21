@@ -43,6 +43,7 @@ SHOWS[211] = { base: show(211, 'Anime Sigma', { original_language: 'ja', genre_i
 SHOWS[212] = { base: show(212, 'Dessin animé Kappa', { original_language: 'en', genre_ids: [16, 35], first_air_date: '2012-01-01', vote_average: 8.2 }), status: 'Ended', seasons: [[1, range(1, 10)]] };
 // Diffusion relative au jour du test : 210 en cours (épisode dans 3 jours), 213 saison annoncée dans 60 jours, 214 dans 300 jours, 215 saison annoncée sans date.
 SHOWS[210].next = { season_number: 1, episode_number: 12, name: 'Épisode 12', air_date: daysAgo(-3) };
+SHOWS[210].last = { season_number: 1, episode_number: 11, name: 'Épisode 11', air_date: daysAgo(4) };
 SHOWS[213] = { base: show(213, 'Anime Bientôt', { original_language: 'ja', genre_ids: [16, 10759], origin_country: ['JP'], first_air_date: '2020-01-10', vote_average: 8.1 }), status: 'Returning Series', seasons: [[1, range(1, 12)], [2, range(1, 12)]],
   next: { season_number: 3, episode_number: 1, name: 'Épisode 1', air_date: daysAgo(-60) } };
 SHOWS[214] = { base: show(214, 'Anime Patience', { original_language: 'ja', genre_ids: [16, 18], origin_country: ['JP'], first_air_date: '2018-04-01', vote_average: 8.4 }), status: 'Returning Series', seasons: [[1, range(1, 24)]],
@@ -97,8 +98,11 @@ function seasonDetail(id, n) {
   const s = SHOWS[id];
   const entry = s.seasons.find(([x]) => x === n);
   if (!entry || !entry[1]) return null;
+  // saison du prochain épisode annoncé : un épisode par semaine à partir de sa date
+  const nx = s.next && s.next.season_number === n ? s.next : null;
+  const weekly = (e) => new Date(Date.parse(nx.air_date + 'T00:00:00Z') + 7 * 86400000 * (e - nx.episode_number)).toISOString().slice(0, 10);
   return { season_number: n, name: n === 0 ? 'Épisodes spéciaux' : 'Saison ' + n, air_date: '2019-07-25', episodes: entry[1].map((e, i) => ({
-    episode_number: e, season_number: n, name: e === 2 && n === 1 ? `L'épisode "piège" <i>n°2</i>` : 'Épisode ' + e, air_date: '2019-08-' + String(1 + (i % 27)).padStart(2, '0'),
+    episode_number: e, season_number: n, name: e === 2 && n === 1 ? `L'épisode "piège" <i>n°2</i>` : 'Épisode ' + e, air_date: nx && e >= nx.episode_number ? weekly(e) : '2019-08-' + String(1 + (i % 27)).padStart(2, '0'),
     runtime: 42, vote_average: 7 + (e % 3) * 0.5, vote_count: 10, overview: '', still_path: null, crew: [], guest_stars: [] })) };
 }
 function movieDetail(id) {

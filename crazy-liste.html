@@ -630,6 +630,24 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const sum = (Array.isArray(info.seasons) ? info.seasons : []).find((x) => x.number > 0 && (isDate(x.airDate) ? x.airDate >= today : x.episodeCount === 0));
     return sum ? { date: isDate(sum.airDate) ? sum.airDate : '', season: sum.number } : null;
   }
+  /* Saison du prochain épisode annoncé : nombre d'épisodes prévus (liste des épisodes si chargée, sinon nombre annoncé par TMDB),
+     épisodes déjà diffusés, dernier épisode prévu et sa date (vide si TMDB ne l'a pas encore). season : saison chargée ou null. */
+  function airingSeasonInfo(d, season, today) {
+    if (!d || !d.nextEpisode) return null;
+    const n = d.nextEpisode.season;
+    const sum = (Array.isArray(d.seasonSummaries) ? d.seasonSummaries : []).find((x) => x.number === n);
+    const eps = season && season.number === n && season.episodes.length ? season.episodes : null;
+    const isDate = (x) => /^\d{4}-\d{2}-\d{2}$/.test(x || '');
+    const total = eps ? eps.length : sum ? sum.episodeCount : 0;
+    let aired;
+    if (eps) aired = eps.filter((e) => isDate(e.airDate) && e.airDate < today).length;
+    else aired = d.lastEpisode && d.lastEpisode.season === n ? Math.max(0, d.lastEpisode.episode) : 0; // estimation avant chargement de la saison
+    const last = eps ? eps[eps.length - 1] : null;
+    const datedUntil = eps ? eps.filter((e) => isDate(e.airDate)).pop() : null;
+    return { season: n, total, aired: Math.min(aired, total), remaining: Math.max(0, total - aired), exact: !!eps, listed: !!sum,
+      started: aired > 0, lastNumber: last ? last.number : null, lastDate: last && isDate(last.airDate) ? last.airDate : '',
+      datedUntil: datedUntil && datedUntil !== last ? { number: datedUntil.number, date: datedUntil.airDate } : null };
+  }
   function productionLabel(s, nextEpisode, today) {
     if (nextEpisode && today && !ENDED_STATUSES.includes(s) && !isAiringSoon(nextEpisode, today)) {
       return nextEpisode.airDate ? 'Suite annoncée · reprise le ' + formatDate(nextEpisode.airDate) : 'Suite annoncée · date non communiquée';
@@ -1367,7 +1385,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   root.CrazyCore = Object.freeze({
     SAGAS, sagaKey, findSaga, sagaKeys, parseSagaParams, sagaParamsToQuery, sagaSections,
     availabilityOf, digitalReleased, isAvailable,
-    pickTrailer, pickGallery, pickProviders, isAiringSoon, announcedSeason, ANNOUNCE_SPLIT_DAYS, NEEDS_DETAIL_STATUSES, genresFor, genreIdFor, addDays, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
+    pickTrailer, pickGallery, pickProviders, isAiringSoon, airingSeasonInfo, announcedSeason, ANNOUNCE_SPLIT_DAYS, NEEDS_DETAIL_STATUSES, genresFor, genreIdFor, addDays, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
     normalizeSummary, normalizeDetail, normalizeSeason, isAnime, filterUpcoming,
@@ -2527,7 +2545,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   function afterDetailReady(key) {
     const d = state.cache.details.get(key);
-    if (d.type === 'tv') { for (const n of expandedSeasons(key)) ensureSeason(key, n).catch(noop); }
+    if (d.type === 'tv') {
+      for (const n of expandedSeasons(key)) ensureSeason(key, n).catch(noop);
+      const ns = d.nextEpisode && d.seasonSummaries.some((x) => x.number === d.nextEpisode.season) ? d.nextEpisode.season : null; // saison parfois pas encore listée par TMDB
+      if (ns != null) ensureSeason(key, ns).then(() => refreshAiringInfo(key), noop); // dernier épisode prévu de la saison en cours
+    }
     else if (d.collection) ensureCollection(d.collection.id);
   }
   /* Saisons ouvertes : choix de l'utilisateur, sinon la première saison régulière non terminée. */
@@ -2560,6 +2582,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       }
       patchSeason(key, n);
       patchTrackBox(key);
+      refreshAiringInfo(key);
       return season;
     }, (err) => {
       state.ui.seasonLoad[id] = { status: 'error', error: err };
@@ -3424,6 +3447,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (d && d.runtime) facts.push([isTv ? 'Durée d’un épisode' : 'Durée', formatRuntime(d.runtime)]);
     if (isTv && d) facts.push(['Saisons', String(d.seasonSummaries.filter((s) => s.number > 0).length)], ['Épisodes', d.numberOfEpisodes ? String(d.numberOfEpisodes) : '—']);
     if (prod) facts.push(['Statut TMDB', C.productionLabel(prod, d ? d.nextEpisode : null, state.today)]);
+    const si = isTv ? airingInfo(key) : null;
+    if (si) facts.push(['Saison ' + si.season + (si.started ? ' en cours' : ' à venir'), seasonFact(si), 'airing-fact']);
     const notice = d ? '' : ui.status === 'error'
       ? '<div class="error-box" role="alert" style="margin-bottom:14px"><p>Affichage hors ligne à partir de tes données enregistrées. ' + esc(ui.error.message) + '</p><button type="button" class="btn btn-sm" data-action="retry-detail">Réessayer</button></div>'
       : '<p class="hint" role="status">Mise à jour depuis TMDB…</p>';
@@ -3441,7 +3466,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         (d && d.tagline ? '<p class="detail-tagline">' + esc(d.tagline) + '</p>' : '') +
         '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p>' +
         (d && d.trailer ? '<div class="detail-cta"><button type="button" class="btn btn-primary" data-action="trailer-open" data-key="' + key + '"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Bande-annonce' + (d.trailer.lang === 'fr' ? '' : ' (VO)') + '</button></div>' : '') +
-        '<dl class="facts">' + facts.map(([k, v]) => '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>').join('') + '</dl>' +
+        '<dl class="facts">' + facts.map(([k, v, id]) => '<div><dt>' + esc(k) + '</dt><dd' + (id ? ' id="' + id + '"' : '') + '>' + esc(v) + '</dd></div>').join('') + '</dl>' +
         providersHtml(d) +
         '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div>' +
       '</div></div></section>' +
@@ -3571,6 +3596,38 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return '<a class="related-link" href="' + C.detailHash(item.type, item.id) + '"><span class="resume-thumb">' + posterHtml(item, 'w92') + '</span>' +
       '<span class="resume-text"><span class="resume-title">' + esc(item.title) + '</span><span class="resume-sub">' + esc(sub || '') + '</span></span></a>';
   }
+  function airingInfo(key) {
+    const d = state.cache.details.get(key);
+    if (!d || !d.nextEpisode) return null;
+    const si = C.airingSeasonInfo(d, state.cache.seasons.get(key + '#' + d.nextEpisode.season) || null, state.today);
+    const load = state.ui.seasonLoad[key + '#' + d.nextEpisode.season];
+    if (si) si.loadError = !!load && load.status === 'error';
+    return si;
+  }
+  function seasonInfoHtml(si) {
+    const pct = si.total ? Math.round((si.aired / si.total) * 100) : 0;
+    const count = si.total ? '<p><strong>' + si.total + ' épisode' + (si.total > 1 ? 's' : '') + '</strong> prévus selon TMDB' +
+      (si.started ? ' · ' + si.aired + ' diffusé' + (si.aired > 1 ? 's' : '') + ', ' + si.remaining + ' restant' + (si.remaining > 1 ? 's' : '') : '') + '</p>'
+      : '<p>Nombre d’épisodes pas encore communiqué.</p>';
+    const bar = si.total && si.started ? '<div class="progress-bar" role="progressbar" aria-label="Épisodes diffusés" aria-valuemin="0" aria-valuemax="' + si.total + '" aria-valuenow="' + si.aired + '"><span style="width:' + pct + '%"></span></div>' : '';
+    const end = !si.exact ? '<p class="muted">' + (!si.listed ? 'Saison pas encore détaillée par TMDB : date du dernier épisode inconnue.' : si.loadError ? 'Date du dernier épisode indisponible (TMDB n’a pas répondu).' : 'Chargement de la date du dernier épisode…') + '</p>'
+      : si.lastDate ? '<p class="muted">Dernier épisode prévu (É' + si.lastNumber + ') : le ' + C.formatDate(si.lastDate) + ' · ' + esc(C.relativeDay(si.lastDate, state.today)) + '</p>'
+      : '<p class="muted">Date du dernier épisode (É' + si.lastNumber + ') pas encore communiquée' + (si.datedUntil ? ' ; dates connues jusqu’à l’É' + si.datedUntil.number + ' (' + C.formatDate(si.datedUntil.date) + ')' : '') + '.</p>';
+    return count + bar + end;
+  }
+  function seasonFact(si) {
+    const parts = [si.total ? (si.started ? si.aired + ' / ' + si.total + ' épisodes diffusés' : si.total + ' épisodes prévus') : 'nombre d’épisodes inconnu'];
+    if (si.lastDate) parts.push('dernier le ' + C.formatDate(si.lastDate));
+    else if (si.exact) parts.push('date du dernier épisode inconnue');
+    return parts.join(' · ');
+  }
+  function refreshAiringInfo(key) {
+    if (state.route.name !== 'detail' || state.route.key !== key) return;
+    const si = airingInfo(key);
+    const el = document.getElementById('airing-fact');
+    if (el && si) el.textContent = seasonFact(si);
+    renderRelated();
+  }
   function relatedHtml() {
     const r = state.route;
     if (r.name !== 'detail') return '<p class="related-note">Ouvre une fiche pour voir ici le prochain épisode annoncé, la suite d’un film ou des recommandations.</p>';
@@ -3585,6 +3642,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       parts.push(box('Prochain épisode annoncé', ne
         ? '<p><strong>' + C.episodeLabel(ne.season, ne.episode) + '</strong>' + (ne.name ? ' — ' + esc(ne.name) : '') + '</p><p class="muted">' + (ne.airDate ? 'Diffusion prévue le ' + C.formatDate(ne.airDate) : 'Date de diffusion non communiquée') + '</p>'
         : '<p>Aucun prochain épisode annoncé par TMDB.</p><p class="muted">Statut TMDB : ' + esc(C.productionLabel(d.productionStatus, d.nextEpisode, state.today) || 'inconnu') + '</p>'));
+      const si = airingInfo(r.key);
+      if (si) parts.push(box('Saison ' + si.season + (si.started ? ' en cours de diffusion' : ' à venir'), seasonInfoHtml(si)));
       const le = d.lastEpisode;
       if (le) parts.push(box('Dernier épisode diffusé', '<p>' + C.episodeLabel(le.season, le.episode) + (le.name ? ' — ' + esc(le.name) : '') + '</p>' + (le.airDate ? '<p class="muted">' + C.formatDate(le.airDate) + '</p>' : '')));
       const t = getTrack(r.key);

@@ -56,7 +56,7 @@ Chaque envoi sur la branche `main` du dépôt GitHub lance `.github/workflows/pu
 - **Bande-annonce** : bouton sur la fiche quand TMDB en propose une (VF en priorité, sinon VO signalée), lue dans un lecteur YouTube intégré qui s'arrête à la fermeture. Depuis le fichier local, YouTube refuse la lecture intégrée : utilise le lien « Ouvrir sur YouTube » ou la version en ligne.
 - **Suivi** : boutons À voir / En cours / Vu par épisode et par saison, « Vu jusqu'ici », « Commencer le suivi », « Tout marquer comme vu », « Tout remettre à À voir ». La plupart des actions en masse s'annulent depuis la notification.
 - **Reprendre** : les 5 contenus « En cours » modifiés le plus récemment, sur la page Reprendre et dans le panneau de droite (même liste).
-- **Prochain contenu lié** (panneau de droite) : prochain épisode annoncé, dernier épisode diffusé, prochain épisode à regarder, film suivant d'une collection, recommandations TMDB signalées comme telles.
+- **Prochain contenu lié** (panneau de droite) : prochain épisode annoncé, saison en cours (épisodes prévus, diffusés, restants, date du dernier épisode prévu ; aussi dans les infos de la fiche), dernier épisode diffusé, prochain épisode à regarder, film suivant d'une collection, recommandations TMDB signalées comme telles.
 - **Bibliothèque / Favoris / Watchlist** : filtres Tous / Vu / En cours / À voir, type, tri.
 - **À venir** : prochains épisodes des séries et anime de ta liste (suivis, favoris, watchlist), saisons annoncées et sorties des films pas encore vus, regroupés (aujourd'hui, cette semaine, dans le mois, plus tard, date non annoncée) avec « dans 3 jours », « dans 2 mois »… Les fiches sont relues sur TMDB à chaque visite de la page (bouton Actualiser).
 - **Statistiques** : dans le panneau de droite, Vu, En cours, Favoris, Total personnel. Page détaillée (onglet de Ma liste) : temps passé devant l'écran (films vus + épisodes vus × durée d'un épisode ; durées manquantes récupérées sur TMDB), films vus, épisodes vus, séries terminées, genres préférés, titres terminés par mois sur 12 mois. La date de fin est enregistrée au passage à « Vu » ; pour les titres vus avant cette fonctionnalité, c'est la date de dernière activité.
@@ -91,7 +91,7 @@ Prérequis : Node.js 18+ et Google Chrome installé.
 
 ```
 npm install
-npm test                      # 116 tests : logique (Node) + scénarios dans Chrome avec TMDB et Firebase simulés
+npm test                      # 119 tests : logique (Node) + scénarios dans Chrome avec TMDB et Firebase simulés
 npm run test:core             # logique seule, sans navigateur
 TMDB_KEY=ta-clé node tests/live-smoke.mjs   # contrôle contre la vraie API TMDB (Internet requis)
 node tests/check-legacy-file.mjs chemin/vers/ancien-export.json   # aperçu d'une migration (lecture seule)

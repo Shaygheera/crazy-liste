@@ -57,6 +57,28 @@ describe('Règles : plateformes, genres, diffusion', () => {
   });
 });
 
+describe('Règles : saison en cours de diffusion', () => {
+  const ep = (number, airDate) => ({ number, airDate });
+  const d = { nextEpisode: { season: 2, episode: 8, airDate: '2026-11-27' }, lastEpisode: { season: 2, episode: 7, airDate: '2026-11-20' },
+    seasonSummaries: [{ number: 1, episodeCount: 10 }, { number: 2, episodeCount: 12 }] };
+  it('avant chargement de la saison : nombre annoncé par TMDB, diffusés d’après le dernier épisode', () => {
+    assert.deepEqual(C.airingSeasonInfo(d, null, TODAY), { season: 2, total: 12, aired: 7, remaining: 5, exact: false, listed: true, started: true, lastNumber: null, lastDate: '', datedUntil: null });
+    assert.equal(C.airingSeasonInfo({ nextEpisode: null }, null, TODAY), null);
+  });
+  it('saison chargée : liste réelle, date du dernier épisode ou dates connues jusqu’où', () => {
+    const eps = [1, 2, 3, 4, 5, 6, 7].map((n) => ep(n, '2026-10-' + String(n + 1).padStart(2, '0'))).concat([ep(8, '2026-11-27'), ep(9, '2026-12-04'), ep(10, '2026-12-11')]);
+    const si = C.airingSeasonInfo(d, { number: 2, episodes: eps }, TODAY);
+    assert.equal(si.total, 10, 'la liste des épisodes l’emporte sur le nombre annoncé');
+    assert.equal(si.aired, 7);
+    assert.equal(si.lastNumber, 10);
+    assert.equal(si.lastDate, '2026-12-11');
+    const undated = C.airingSeasonInfo(d, { number: 2, episodes: eps.slice(0, 9).concat([ep(10, ''), ep(11, '')]) }, TODAY);
+    assert.equal(undated.lastDate, '');
+    assert.deepEqual(undated.datedUntil, { number: 9, date: '2026-12-04' });
+    assert.equal(C.airingSeasonInfo(d, { number: 1, episodes: eps }, TODAY).exact, false, 'une autre saison chargée ne compte pas');
+  });
+});
+
 describe('Règles : calendrier et statistiques', () => {
   const track = (type, id, extra) => Object.assign(C.emptyTrack(type, id), { inLibrary: true, addedAt: 1, lastActivityAt: 2 }, extra);
   const meta = (type, id, extra) => Object.assign(C.placeholderMeta(type + '-' + id), { placeholder: undefined, title: 'T' + id }, extra);
@@ -142,6 +164,23 @@ describe('Dans Chrome', () => {
     await context.close();
   });
 
+  it('fiche d’une série en cours : épisodes prévus, diffusés et date du dernier épisode (panneau et infos)', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/210' });
+    const last = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+    await page.waitForFunction(() => /dernier le/.test((document.getElementById('airing-fact') || {}).textContent || ''));
+    const fact = await page.locator('#airing-fact').textContent();
+    assert.match(fact, /^11 \/ 12 épisodes diffusés · dernier le /);
+    assert.equal(fact.endsWith(C.formatDate(last)), true);
+    const box = page.locator('.related-box', { hasText: 'Saison 1 en cours de diffusion' });
+    await box.waitFor();
+    assert.match(await box.textContent(), /12 épisodes prévus selon TMDB · 11 diffusés, 1 restant/);
+    assert.match(await box.textContent(), new RegExp('Dernier épisode prévu \\(É12\\) : le ' + C.formatDate(last) + ' · dans 3 jours'));
+    assert.equal(await box.locator('[role="progressbar"]').getAttribute('aria-valuenow'), '11');
+    assert.deepEqual(await duplicateIds(page), []);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
   it('recherche : genre en « Tout » ; anime en cours de diffusion, saison annoncée à moins / plus de 6 mois', T, async () => {
     const { page, errors, context, mock } = await openApp(browser, { hash: '#search?genre=878' });
     await page.waitForSelector('#search-filters select[data-filter="genre"]');
@@ -185,6 +224,7 @@ describe('Dans Chrome', () => {
     await page.locator('[data-item-key="tv-214"] a').click();
     await page.waitForFunction(() => location.hash === '#detail/tv/214');
     await page.waitForFunction(() => /Suite annoncée · reprise le/.test(document.querySelector('.facts').textContent));
+    assert.match(await page.locator('.related-box', { hasText: 'Saison 2 à venir' }).textContent(), /Saison pas encore détaillée par TMDB/, 'saison annoncée mais pas encore listée par TMDB');
     assert.deepEqual(await duplicateIds(page), []);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();

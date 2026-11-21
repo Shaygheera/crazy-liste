@@ -25,6 +25,10 @@ describe('Licence : règles', () => {
     assert.equal(C.licenceBaseOf({ title: 'Konosuba le film - Legend of Crimson', originalTitle: "KONOSUBA -God's blessing on this wonderful world!- Legend of Crimson" }), 'konosuba', 'la plus courte des deux');
     assert.equal(C.licenceBaseOf({ title: 'Boruto : Naruto Next Generations', originalTitle: 'BORUTO-ボルト- NARUTO NEXT GENERATIONS' }), 'boruto');
     assert.equal(C.licenceBaseOf({ title: 'My Hero Academia', originalTitle: '僕のヒーローアカデミア' }), 'my hero academia', 'alphabet latin d’abord');
+    const res = [{ id: 1, format: 'TV', startDate: { year: 2014 }, title: { native: '僕のヒーローアカデミア' } }, { id: 2, format: 'TV', startDate: { year: 2016 }, title: { native: '僕のヒーローアカデミア' } }, { id: 3, format: 'MOVIE', startDate: { year: 2016 }, title: { native: '僕のヒーローアカデミア' } }];
+    assert.equal(C.pickAnilistMatch(res, { type: 'tv', year: '2016', title: 'My Hero Academia', originalTitle: '僕のヒーローアカデミア' }), 2, 'titre original et année exacts');
+    assert.equal(C.pickAnilistMatch(res, { type: 'tv', year: '2017', title: 'My Hero Academia', originalTitle: '僕のヒーローアカデミア' }), 0, 'année différente : rien plutôt qu’une erreur');
+    assert.match(C.anilistSearchQuery('A "B" \\ C'), /search: "A \\"B\\" \\\\ C"/, 'titre échappé');
     assert.equal(C.licenceBase('The: Show'), '');
     assert.equal(C.inLicence('naruto', { title: 'Naruto Shippuden' }), true);
     assert.equal(C.inLicence('naruto', { title: 'Narutoverse' }), false, 'mot entier seulement');
@@ -287,6 +291,16 @@ describe('Licence : carte Diffusion', () => {
     assert.equal(refused, 1);
     await openLicence(page);
     assert.deepEqual(await eras(page), ['tv-220', 'tv-221', 'tv-222']);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('anime absent de Wikidata : retrouvé sur AniList par titre original et année (OVA et suite annoncée)', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/224' });
+    await page.waitForSelector('#detail-cards [data-col="suite"]', { timeout: 15000 });
+    assert.match(await col(page, 'suite'), /^Suite annoncéeSearch Test 2/);
+    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /2 séries · 0 film · 1 OVA \/ spécial$/);
+    assert.deepEqual(await page.$$eval('#detail-films .film-row', (els) => els.map((e) => e.dataset.kind)), ['OVA']);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

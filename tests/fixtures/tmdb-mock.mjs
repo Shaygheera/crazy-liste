@@ -89,15 +89,21 @@ export async function handleWikidata(route) {
 }
 // AniList simulé (GraphQL) : 13 a aussi un spécial « suite », qui doit être ignoré.
 const al = (id, title, year, status = 'FINISHED', format = 'TV') => ({ id, type: 'ANIME', format, status, title: { romaji: title, english: null }, startDate: { year, month: 1, day: 1 } });
-const AL_NODES = { 60: al(60, 'Chaine Movie', 2012, 'FINISHED', 'MOVIE'), 11: al(11, 'Chaine Ichi', 2005), 12: al(12, 'Chaine Ni', 2010), 13: al(13, 'Chaine San', 2015), 14: al(14, 'Chaine Yon : le retour', null, 'NOT_YET_RELEASED'), 99: al(99, 'Spécial', 2016, 'FINISHED', 'SPECIAL') };
-const AL_REL = { 60: [['PARENT', 12]], 11: [['SEQUEL', 12]], 12: [['PREQUEL', 11], ['SEQUEL', 13], ['SIDE_STORY', 60]], 13: [['PREQUEL', 12], ['SEQUEL', 99], ['SEQUEL', 14]], 14: [['PREQUEL', 13]] };
+// Anime absent de Wikidata (série 224), retrouvé par la recherche AniList (titre original + année) : OVA et suite annoncée
+SHOWS[224] = { base: show(224, 'Recherche Test', { first_air_date: '2016-04-03', original_name: 'テスト検索', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+const AL_SEARCH = { 'テスト検索': [{ id: 33, format: 'TV', startDate: { year: 2014 }, title: { romaji: 'Tesuto Kensaku', english: null, native: 'テスト検索' } }, { id: 30, format: 'TV', startDate: { year: 2016 }, title: { romaji: 'Tesuto Kensaku', english: 'Search Test', native: 'テスト検索' } }] };
+const AL_NODES = { 30: al(30, 'Search Test', 2016), 31: al(31, 'Search Test 2', null, 'NOT_YET_RELEASED'), 32: al(32, 'Search Test OVA', 2017, 'FINISHED', 'OVA'), 60: al(60, 'Chaine Movie', 2012, 'FINISHED', 'MOVIE'), 11: al(11, 'Chaine Ichi', 2005), 12: al(12, 'Chaine Ni', 2010), 13: al(13, 'Chaine San', 2015), 14: al(14, 'Chaine Yon : le retour', null, 'NOT_YET_RELEASED'), 99: al(99, 'Spécial', 2016, 'FINISHED', 'SPECIAL') };
+const AL_REL = { 30: [['SEQUEL', 31], ['SIDE_STORY', 32]], 31: [['PREQUEL', 30]], 60: [['PARENT', 12]], 11: [['SEQUEL', 12]], 12: [['PREQUEL', 11], ['SEQUEL', 13], ['SIDE_STORY', 60]], 13: [['PREQUEL', 12], ['SEQUEL', 99], ['SEQUEL', 14]], 14: [['PREQUEL', 13]] };
 export const anilistState = { calls: 0 };
 export async function handleAnilist(route) {
   const req = route.request();
   const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
   if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors, body: '' });
   anilistState.calls++;
-  const m = /Media\(id: (\d+)/.exec(JSON.parse(req.postData() || '{}').query || '');
+  const query = JSON.parse(req.postData() || '{}').query || '';
+  const search = /media\(search: ("(?:[^"\\]|\\.)*")/.exec(query);
+  if (search) return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ data: { Page: { media: AL_SEARCH[JSON.parse(search[1])] || [] } } }) });
+  const m = /Media\(id: (\d+)/.exec(query);
   const id = m ? Number(m[1]) : 0;
   const media = AL_NODES[id] ? { ...AL_NODES[id], relations: { edges: (AL_REL[id] || []).map(([t, n]) => ({ relationType: t, node: AL_NODES[n] })) } } : null;
   return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ data: { Media: media } }) });

@@ -1402,6 +1402,19 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     return null;
   }
+  /* Secours quand Wikidata n'a pas le numéro AniList : recherche par titre original, retenue seulement si le titre original
+     (ou anglais) ET l'année de début correspondent exactement à la fiche TMDB. */
+  function anilistSearchQuery(title) {
+    return '{ Page(perPage: 10) { media(search: ' + JSON.stringify(str(title, 150)) + ', type: ANIME) { id format startDate { year } title { romaji english native } } } }';
+  }
+  function pickAnilistMatch(results, item) {
+    if (!item || !item.year) return 0;
+    const wanted = new Set([normTitle(item.originalTitle), normTitle(item.title)].filter(Boolean));
+    const formats = item.type === 'movie' ? ['MOVIE'] : ['TV', 'TV_SHORT', 'ONA'];
+    const hit = (Array.isArray(results) ? results : []).find((m) => isObj(m) && isPosInt(m.id) && formats.includes(m.format) && m.startDate && String(m.startDate.year) === String(item.year) &&
+      isObj(m.title) && [m.title.native, m.title.romaji, m.title.english].some((t) => t && wanted.has(normTitle(t))));
+    return hit ? hit.id : 0;
+  }
   function anilistTitle(node) { return str((node && node.title && (node.title.english || node.title.romaji)) || '', 200); }
   /* Numéros AniList → fiches TMDB, par Wikidata (correspondance exacte, aucune recherche par titre). */
   function wikidataAnilistQuery(ids) {
@@ -1693,7 +1706,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
     normTitle, licenceBase, licenceBaseOf, inLicence, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
-    anilistQuery, anilistStep, anilistParent, anilistTitle, wikidataAnilistQuery, parseWikidataAnilistMap, anilistExtras, attachExtras, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
+    anilistQuery, anilistStep, anilistParent, anilistTitle, anilistSearchQuery, pickAnilistMatch, wikidataAnilistQuery, parseWikidataAnilistMap, anilistExtras, attachExtras, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2801,12 +2814,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function loadLicenceStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(LICENCE_STORE) || 'null');
-      if (!C.isObj(raw) || raw.v !== 2 || !Array.isArray(raw.list)) return; // version 1 : licences calculées avec l'ancienne règle, ignorées
+      if (!C.isObj(raw) || raw.v !== 3 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
       for (const L of raw.list) { const c = cleanStoredLicence(L); if (c && Date.now() - c.at < LICENCE_TTL) registerLicence(c); }
     } catch (e) { /* stockage indisponible ou illisible : la licence sera recalculée */ }
   }
   function saveLicenceStore() {
-    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 2, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
+    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 3, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
   }
   function wikiRelations(d) {
     if (!wikiCache.has(d.key)) {
@@ -2820,8 +2833,14 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   async function computeLicence(key, d, w) {
     // 1. Série de départ : la série AniList elle-même, ou la série parente d'un film / OVA
     let chain = [];
-    if (w.anilist[0]) {
-      let startNode = await anilistMedia(w.anilist[0]);
+    let alId = w.anilist[0] || 0;
+    const current0 = state.cache.summaries.get(key) || d;
+    if (!alId && current0.originalLanguage === 'ja' && Array.isArray(current0.genreIds) && current0.genreIds.includes(16)) {
+      alId = await fetch(ANILIST_API, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ query: C.anilistSearchQuery(current0.originalTitle || current0.title) }) })
+        .then((r) => (r.ok ? r.json() : null)).then((j) => C.pickAnilistMatch(j && j.data && j.data.Page && j.data.Page.media, current0)).catch(() => 0);
+    }
+    if (alId) {
+      let startNode = await anilistMedia(alId);
       if (startNode && !['TV', 'TV_SHORT', 'ONA'].includes(startNode.format)) { const p = C.anilistParent(startNode); if (p) startNode = (await anilistMedia(p.id)) || startNode; }
       if (startNode) chain = await anilistChain(startNode.id).catch(() => []);
     }
@@ -2835,7 +2854,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const alIds = chain.map((n) => n.id).concat(extras.map((e) => e.al));
     const alMap = alIds.length ? await fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataAnilistQuery(alIds)), { headers: { Accept: 'application/sparql-results+json' } })
       .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataAnilistMap(j)).catch(() => ({})) : {};
-    if (w.anilist[0] && !alMap[w.anilist[0]]) alMap[w.anilist[0]] = key; // la fiche ouverte correspond à son numéro AniList
+    if (alId && !alMap[alId]) alMap[alId] = key; // la fiche ouverte correspond à son numéro AniList
     const chainInfo = chain.map((n) => ({ al: n.id, key: alMap[n.id] || null, status: n.status || '', title: C.anilistTitle(n) }));
     for (const e of extras) { e.key = alMap[e.al] && alMap[e.al].startsWith('movie-') ? alMap[e.al] : null; e.seriesKey = alMap[e.seriesAl] && alMap[e.seriesAl].startsWith('tv-') ? alMap[e.seriesAl] : null; }
     // 3. Débuts de titre : ceux de toute la chaîne (identiques quelle que soit la fiche ouverte), sinon celui de la fiche
@@ -2856,7 +2875,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     // 5. Nom : la première série de la chaîne, sinon la série au nom le plus général
     const root = chainInfo.length && chainInfo[0].key ? items.find((x) => x.key === chainInfo[0].key) : null;
     const named = root || items.filter((x) => x.type === 'tv' && C.licenceBaseOf(x)).sort((p, q) => (C.licenceBaseOf(p).length - C.licenceBaseOf(q).length) || ((p.date || '9999') < (q.date || '9999') ? -1 : 1))[0] || current;
-    return { partial: !!w.anilist[0] && !chain.length, id: chain.length ? 'al:' + chain[0].id : 'base:' + (bases[0] || key), at: Date.now(), label: named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
+    return { partial: !!alId && !chain.length, id: chain.length ? 'al:' + chain[0].id : 'base:' + (bases[0] || key), at: Date.now(), label: named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
       items: items.slice(0, 80), extras: extras.filter((e) => e.seriesKey).map(({ seriesAl, ...e }) => e), chain: chainInfo };
   }
   /* Ce que la fiche ouverte affiche, d'après la licence partagée : suite (Wikidata, puis chaîne AniList, sinon suite probable), suite annoncée. */

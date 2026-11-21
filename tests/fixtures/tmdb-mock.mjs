@@ -115,6 +115,11 @@ export const IMAGES = {
 };
 export const INVALID_KEY = 'cle-invalide-000000000000';
 
+/* Titres génériques (sagas) : tout identifiant inconnu répond avec un titre fictif daté selon son numéro.
+   Les identifiants ≥ 1 000 000 sont « à venir » (2030). */
+function genericMovie(id) { return movie(id, 'Film saga ' + id, { release_date: id >= 1000000 ? '2030-01-01' : String(1980 + (id % 40)) + '-06-15' }); }
+function genericShow(id) { return { ...show(id, 'Série saga ' + id, { first_air_date: id >= 1000000 ? '2030-01-01' : String(1980 + (id % 40)) + '-09-15' }), status: 'Ended', seasons: [], number_of_seasons: 0, number_of_episodes: 0 }; }
+
 export function createMock(options = {}) {
   const st = { requests: [], fail: new Set(options.fail || []) };
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json; charset=utf-8', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
@@ -154,6 +159,8 @@ export function createMock(options = {}) {
       if (append.includes('images')) out.images = IMAGES[key] || { backdrops: [], posters: [], logos: [] };
       return out;
     };
+    if (options.generic && (m = /^\/tv\/(\d+)$/.exec(path)) && !SHOWS[m[1]]) return json(route, 200, genericShow(Number(m[1])));
+    if (options.generic && (m = /^\/movie\/(\d+)$/.exec(path)) && !MOVIES[m[1]]) return json(route, 200, genericMovie(Number(m[1])));
     if ((m = /^\/tv\/(\d+)$/.exec(path))) return SHOWS[m[1]] ? json(route, 200, withVideos(showDetail(Number(m[1])), 'tv-' + m[1])) : json(route, 404, { status_message: 'Not found' });
     if ((m = /^\/movie\/(\d+)$/.exec(path))) return MOVIES[m[1]] ? json(route, 200, withVideos(movieDetail(Number(m[1])), 'movie-' + m[1])) : json(route, 404, { status_message: 'Not found' });
     if ((m = /^\/collection\/(\d+)$/.exec(path))) return COLLECTIONS[m[1]] ? json(route, 200, COLLECTIONS[m[1]]) : json(route, 404, { status_message: 'Not found' });

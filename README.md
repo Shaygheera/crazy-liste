@@ -50,6 +50,7 @@ Chaque envoi sur la branche `main` du dépôt GitHub lance `.github/workflows/pu
 - **Cartes** : affiche, titre, année, type, note colorée, statut personnel, synopsis, et uniquement les boutons Favori et Watchlist. Un clic sur la carte ouvre la fiche.
 - **Recherche et découverte** : par titre (saisie temporisée, Entrée, réponses obsolètes ignorées), ou sans titre pour explorer tout TMDB. Filtres : Tout / Films / Séries / Anime, statut (terminés ou non, pour les séries et anime), années, genre, note TMDB minimale ; tri par popularité, note, plus récents ou plus anciens. Les filtres restent dans l'adresse (rechargement, partage). Avec un titre, TMDB n'accepte pas ces filtres : ils sont appliqués aux résultats reçus, page par page. Le tri « Mieux notés » écarte les titres avec trop peu de votes.
 - **Fiche** : synopsis, dates, note TMDB, statut de production TMDB (distinct de ton suivi ; « En cours de diffusion » seulement si un prochain épisode est annoncé, sinon « Pas terminée selon TMDB · aucun épisode annoncé »), favori, watchlist, saisons et épisodes.
+- **Sagas** : MCU (phases 1 à 6, Saga de l'Infini et du Multivers, Marvel Television en option), DC (DCEU puis DCU), Star Wars et MonsterVerse, en frise « serpent » (en colonne sur téléphone). Ordre de sortie ou ordre de l'histoire, filtre Films / Séries, progression, prochain titre à voir, titres à venir. Phases et ordre de l'histoire sont définis dans le code (TMDB ne les fournit pas) ; titres, dates et affiches viennent de TMDB.
 - **Images** : sur la fiche, jusqu'à 10 visuels officiels du titre (pas d'images d'épisodes, pour éviter les spoilers ; sans texte en priorité), en vignettes défilantes. Un clic ouvre la visionneuse plein écran (flèches, clavier ← →, balayage sur téléphone, Échap). Un clic sur l'affiche l'affiche en grand.
 - **Bande-annonce** : bouton sur la fiche quand TMDB en propose une (VF en priorité, sinon VO signalée), lue dans un lecteur YouTube intégré qui s'arrête à la fermeture. Depuis le fichier local, YouTube refuse la lecture intégrée : utilise le lien « Ouvrir sur YouTube » ou la version en ligne.
 - **Suivi** : boutons À voir / En cours / Vu par épisode et par saison, « Vu jusqu'ici », « Commencer le suivi », « Tout marquer comme vu », « Tout remettre à À voir ». La plupart des actions en masse s'annulent depuis la notification.
@@ -88,7 +89,7 @@ Prérequis : Node.js 18+ et Google Chrome installé.
 
 ```
 npm install
-npm test                      # 94 tests : logique (Node) + scénarios dans Chrome avec TMDB et Firebase simulés
+npm test                      # 99 tests : logique (Node) + scénarios dans Chrome avec TMDB et Firebase simulés
 npm run test:core             # logique seule, sans navigateur
 TMDB_KEY=ta-clé node tests/live-smoke.mjs   # contrôle contre la vraie API TMDB (Internet requis)
 node tests/check-legacy-file.mjs chemin/vers/ancien-export.json   # aperçu d'une migration (lecture seule)

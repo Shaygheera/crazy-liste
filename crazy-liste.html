@@ -213,6 +213,64 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .detail-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .detail-overview { margin: 0; color: var(--text-2); max-width: 75ch; }
 .detail-cta { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Sagas */
+.saga-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.saga-tile { display: flex; gap: 14px; padding: 16px; border-radius: var(--radius-lg, 14px); border: 1px solid var(--border); background: linear-gradient(135deg, color-mix(in srgb, var(--saga) 18%, var(--surface)), var(--surface)); text-decoration: none; color: inherit; transition: transform .15s, border-color .15s; }
+.saga-tile:hover { transform: translateY(-2px); border-color: var(--saga); }
+.saga-badge { flex: none; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--saga); color: #fff; font-weight: 900; letter-spacing: -.02em; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.saga-tile-body { display: grid; gap: 6px; min-width: 0; }
+.saga-tile-body strong { font-size: 1.05rem; }
+.saga-tile-body > span:nth-child(2) { color: var(--text-2); font-size: .85rem; }
+.saga-meta { color: var(--muted); font-size: .78rem; font-weight: 600; }
+.saga-bar { display: block; height: 6px; border-radius: 99px; background: var(--surface-3, var(--surface-2)); overflow: hidden; }
+.saga-bar > span { display: block; height: 100%; background: var(--saga, var(--accent)); border-radius: 99px; }
+.saga-crumb { margin: 0 0 2px; font-size: .82rem; } .saga-crumb a { color: var(--muted); }
+.saga-head h1 { background: linear-gradient(90deg, var(--saga), var(--text)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.saga-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 10px; }
+.saga-controls a.chip { text-decoration: none; }
+.saga-controls .seg a { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 6px 14px; font-size: .86rem; font-weight: 650; color: var(--text-2); text-decoration: none; white-space: nowrap; }
+.saga-controls .seg a + a { border-left: 1px solid var(--border-strong); }
+.saga-controls .seg a:hover { background: var(--surface-3); color: var(--text); }
+.saga-controls .seg a[aria-pressed="true"] { background: var(--saga); color: #fff; font-weight: 800; }
+.saga-note { margin: 0 0 12px; }
+.saga-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; margin: 6px 0 18px; border-radius: var(--radius-lg, 14px); border: 1px solid var(--border); background: var(--surface); }
+.saga-summary > div { display: grid; gap: 8px; min-width: 220px; flex: 1; max-width: 520px; }
+.saga-group { margin-bottom: 26px; }
+.saga-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 6px; }
+.saga-group-head h2 { margin: 0; font-size: 1.25rem; }
+.saga-era { width: 100%; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--saga); }
+/* Frise en serpent : les titres alternent au-dessus et au-dessous d'une ligne, en se chevauchant d'une demi-carte. */
+.snake { --snake-col: 112px; list-style: none; margin: 0; padding: 6px 2px 14px; display: grid; grid-template-rows: auto 34px auto; overflow-x: auto; scroll-snap-type: x proximity; }
+.snake-line { grid-row: 2; align-self: center; height: 4px; border-radius: 99px; background: linear-gradient(90deg, var(--saga), color-mix(in srgb, var(--saga) 35%, var(--border))); }
+.snake-item { position: relative; display: flex; padding: 0 6px; scroll-snap-align: start; min-width: 0; }
+.snake-item.up { grid-row: 1; align-items: flex-end; }
+.snake-item.down { grid-row: 3; align-items: flex-start; }
+.snake-item::before { content: ""; position: absolute; left: 50%; width: 2px; height: 17px; background: var(--saga); transform: translateX(-1px); }
+.snake-item::after { content: ""; position: absolute; left: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 3px solid var(--saga); transform: translateX(-6px); }
+.snake-item.up::before { bottom: -17px; } .snake-item.up::after { bottom: -23px; }
+.snake-item.down::before { top: -17px; } .snake-item.down::after { top: -23px; }
+.snake-item.seen::after { background: var(--seen); border-color: var(--seen); }
+.snake-card { position: relative; display: flex; gap: 10px; width: 100%; padding: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
+.snake-card:hover { border-color: var(--saga); transform: translateY(-1px); }
+.snake-poster { flex: none; width: 50px; aspect-ratio: 2 / 3; border-radius: 6px; overflow: hidden; background: var(--surface-2); }
+.snake-poster img { width: 100%; height: 100%; object-fit: cover; }
+.snake-text { display: grid; align-content: start; gap: 3px; min-width: 0; font-size: .78rem; }
+.snake-text strong { font-size: .84rem; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.snake-num { color: var(--saga); font-weight: 800; font-size: .7rem; }
+.snake-date { color: var(--muted); }
+.snake-text .status { justify-self: start; }
+.snake-flag { justify-self: start; padding: 1px 7px; border-radius: 99px; font-size: .68rem; font-weight: 800; background: var(--saga); color: #fff; }
+.snake-flag.soon { background: transparent; color: var(--muted); border: 1px dashed var(--border-strong); }
+.snake-item.upcoming .snake-card { border-style: dashed; opacity: .78; }
+.snake-item.is-next .snake-card { border-color: var(--saga); box-shadow: 0 0 0 2px color-mix(in srgb, var(--saga) 45%, transparent); }
+.snake-item.seen .snake-card { border-color: color-mix(in srgb, var(--seen) 55%, var(--border)); }
+@media (max-width: 699px) {
+  .snake { display: block; padding: 0 0 0 26px; position: relative; overflow: visible; grid-template-columns: none !important; }
+  .snake-line { position: absolute; left: 9px; top: 0; bottom: 0; width: 4px; height: auto; background: linear-gradient(180deg, var(--saga), color-mix(in srgb, var(--saga) 35%, var(--border))); }
+  .snake-item { padding: 0 0 10px; }
+  .snake-item::before { left: -17px; top: 26px !important; bottom: auto !important; width: 17px; height: 2px; transform: none; }
+  .snake-item::after { left: -23px; top: 20px !important; bottom: auto !important; transform: none; }
+}
 .poster-zoom { display: block; width: 100%; padding: 0; border: 0; cursor: zoom-in; color: inherit; font: inherit; }
 .poster-zoom .zoom-hint { position: absolute; right: 8px; bottom: 8px; z-index: 2; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: rgba(0,0,0,.6); color: #fff; font-size: 1rem; opacity: 0; transition: opacity .15s; }
 .poster-zoom:hover .zoom-hint, .poster-zoom:focus-visible .zoom-hint { opacity: 1; }
@@ -378,6 +436,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       <a href="#resume" data-nav="resume"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></svg>Reprendre<span class="count" data-count="progress"></span></a>
       <a href="#library" data-nav="library"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Bibliothèque<span class="count" data-count="total"></span></a>
       <a href="#favorites" data-nav="favorites"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></svg>Favoris<span class="count" data-count="favorites"></span></a>
+      <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Sagas</a>
       <a href="#watchlist" data-nav="watchlist"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>Watchlist<span class="count" data-count="watchlist"></span></a>
       <a href="#settings" data-nav="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Réglages</a>
     </nav>
@@ -423,6 +482,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   <a href="#search" data-nav="search"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>Recherche</a>
   <a href="#resume" data-nav="resume"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></svg>Reprendre</a>
   <a href="#library" data-nav="library" data-nav-group="favorites watchlist"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Ma liste</a>
+  <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Sagas</a>
   <a href="#settings" data-nav="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Réglages</a>
 </nav>
 
@@ -833,7 +893,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
 
   /* ---------- Navigation par hash ---------- */
-  const SIMPLE_ROUTES = ['home', 'search', 'resume', 'library', 'favorites', 'watchlist', 'settings'];
+  const SIMPLE_ROUTES = ['home', 'search', 'resume', 'library', 'favorites', 'watchlist', 'settings', 'sagas'];
   function parseRoute(hash) {
     let h = String(hash || '');
     if (h.startsWith('#')) h = h.slice(1);
@@ -844,6 +904,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (qi >= 0) new URLSearchParams(h.slice(qi + 1)).forEach((v, k) => { params[k] = v; });
     const parts = path.split('/').filter(Boolean);
     if (!parts.length) return { name: 'home', params };
+    if (parts[0] === 'saga') {
+      if (parts.length === 2 && /^[a-z0-9-]{1,30}$/.test(parts[1])) return { name: 'saga', sagaId: parts[1], params };
+      return { name: 'notfound', params, path };
+    }
     if (parts[0] === 'detail') {
       if (parts.length === 3 && (parts[1] === 'movie' || parts[1] === 'tv') && /^\d{1,10}$/.test(parts[2]) && Number(parts[2]) > 0) {
         const id = Number(parts[2]);
@@ -861,6 +925,101 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return '#' + name + (qs ? '?' + qs : '');
   }
   function detailHash(type, id) { return '#detail/' + type + '/' + id; }
+
+  /* ---------- Sagas ----------
+     TMDB ne connaît ni les phases ni l'ordre de l'histoire : ils sont définis ici, titre par titre (identifiants TMDB vérifiés).
+     Les titres, dates et affiches viennent ensuite de TMDB. « m » = film, « t » = série.
+     Ordre de sortie : les groupes ci-dessous, chacun trié par date. Ordre de l'histoire : la liste « story ». */
+  const SAGAS = [
+    { id: 'mcu', name: 'Marvel Cinematic Universe', short: 'MCU', accent: '#e23636',
+      intro: 'Les films et séries Marvel Studios, phase par phase, de Iron Man (2008) à Avengers: Secret Wars et au-delà.',
+      groups: [
+        { id: 'p1', era: 'Saga de l’Infini', label: 'Phase 1', items: ['m1726', 'm1724', 'm10138', 'm10195', 'm1771', 'm24428'] },
+        { id: 'p2', era: 'Saga de l’Infini', label: 'Phase 2', items: ['m68721', 'm76338', 'm100402', 'm118340', 'm99861', 'm102899'] },
+        { id: 'p3', era: 'Saga de l’Infini', label: 'Phase 3', items: ['m271110', 'm284052', 'm283995', 'm315635', 'm284053', 'm284054', 'm299536', 'm363088', 'm299537', 'm299534', 'm429617'] },
+        { id: 'p4', era: 'Saga du Multivers', label: 'Phase 4', items: ['t85271', 't88396', 't84958', 'm497698', 't91363', 'm566525', 'm524434', 't88329', 'm634649', 't92749', 'm453395', 't92782', 'm616037', 't232125', 't92783', 'm894205', 'm505642', 'm774752'] },
+        { id: 'p5', era: 'Saga du Multivers', label: 'Phase 5', items: ['m640146', 'm447365', 't114472', 'm609681', 't122226', 't138502', 'm533535', 't138501', 't138503', 'm822119', 't202555', 'm986056', 't114471', 't241388', 't138505'] },
+        { id: 'p6', era: 'Saga du Multivers', label: 'Phase 6', items: ['m617126', 't198178', 'm1439930', 'm969681', 't213375', 'm1003596', 'm1003598'] },
+        { id: 'next', era: 'Après la Saga du Multivers', label: 'Annoncés', items: ['m1293690', 'm1738010', 'm1386618', 'm1737233', 'm1731190'] },
+        { id: 'tv', era: 'Hors phases', label: 'Marvel Television (Netflix, ABC)', optional: true, items: ['t1403', 't61550', 't61889', 't38472', 't62126', 't62127', 't62285', 't68716', 't67178', 't67466', 't66190', 't88987'] }
+      ],
+      storyNote: 'D’après la chronologie officielle de Disney+. Les séries sont placées à leur première saison ; les titres à venir suivent leur date de sortie.',
+      story: [
+        { label: 'Des origines aux Avengers', items: ['t241388', 'm1771', 't61550', 'm299537', 'm1726', 'm10138', 'm1724', 'm10195', 'm24428'] },
+        { label: 'Vers Infinity War', items: ['t1403', 'm76338', 'm68721', 'm100402', 'm118340', 't232125', 'm283995', 't61889', 't38472', 'm99861', 'm102899', 't62126', 't62127', 't62285', 'm271110', 'm497698', 'm284054', 'm315635', 'm284052', 't67178', 't68716', 't67466', 't66190', 't88987', 'm284053', 'm363088', 'm299536', 'm299534'] },
+        { label: 'Après l’Éclipse', items: ['t84958', 't91363', 't85271', 't88396', 'm566525', 'm524434', 'm429617', 'm634649', 'm453395', 't88329', 't92749', 'm505642', 't122226', 't92783', 't92782', 'm616037', 'm894205', 'm774752', 'm640146', 'm447365', 't114472', 'm609681', 'm533535', 't138501', 't202555', 'm822119', 'm986056', 't114471', 't198178'] },
+        { label: 'Nouvelle ère et univers parallèles', items: ['m617126', 't138502', 't138503', 't138505', 'm1439930', 'm969681', 't213375', 'm1003596', 'm1003598', 'm1293690', 'm1738010', 'm1386618', 'm1737233', 'm1731190'] }
+      ] },
+    { id: 'dc', name: 'DC : DCEU et DCU', short: 'DC', accent: '#2f6fe4',
+      intro: 'L’univers DC au cinéma et en séries : le DC Extended Universe (2013-2023), puis le nouveau DCU de DC Studios.',
+      groups: [
+        { id: 'dceu', era: 'DC Extended Universe', label: 'DCEU (2013 – 2023)', items: ['m49521', 'm209112', 'm297761', 'm297762', 'm141052', 'm297802', 'm287947', 'm495764', 'm464052', 'm791373', 'm436969', 't110492', 'm436270', 'm594767', 'm298618', 'm565770', 'm572802'] },
+        { id: 'ch1', era: 'DC Universe (DC Studios)', label: 'Chapitre 1 : Dieux et Monstres', items: ['t219543', 'm1061474', 'm1081003', 't95350', 'm1400940', 'm1523140'] },
+        { id: 'next', era: 'DC Universe (DC Studios)', label: 'Annoncés', items: ['m1081004', 'm1495964', 'm1817646'] }
+      ],
+      storyNote: 'Deux continuités distinctes : le DCEU, puis le DCU, qui repart de zéro (Peacemaker fait le lien). Les titres à venir suivent leur date de sortie.',
+      story: [
+        { label: 'DCEU', items: ['m297762', 'm464052', 'm49521', 'm209112', 'm297761', 'm141052', 'm791373', 'm297802', 'm287947', 'm495764', 'm436969', 't110492', 'm436270', 'm594767', 'm298618', 'm565770', 'm572802'] },
+        { label: 'DCU', items: ['t219543', 'm1061474', 'm1081003', 't95350', 'm1400940', 'm1523140', 'm1081004', 'm1495964', 'm1817646'] }
+      ] },
+    { id: 'star-wars', name: 'Star Wars', short: 'SW', accent: '#f2c230',
+      intro: 'La saga Skywalker, les films dérivés et les séries, de 1977 à aujourd’hui.',
+      groups: [
+        { id: 'ot', era: 'Ère Lucasfilm', label: 'Trilogie originale', items: ['m11', 'm1891', 'm1892'] },
+        { id: 'pt', era: 'Ère Lucasfilm', label: 'Prélogie et Clone Wars', items: ['m1893', 'm1894', 'm1895', 't4194'] },
+        { id: 'st', era: 'Ère Disney', label: 'Postlogie et films dérivés', items: ['t60554', 'm140607', 'm330459', 'm181808', 'm348350', 't79093', 'm181812'] },
+        { id: 'dp', era: 'Ère Disney', label: 'Séries Disney+', items: ['t82856', 't105971', 't115036', 't92830', 't83867', 't203085', 't114461', 't251091', 't114479', 't202879', 't288055', 't289219'] },
+        { id: 'next', era: 'Ère Disney', label: 'Retour au cinéma', items: ['m1228710', 'm1417668'] }
+      ],
+      storyNote: 'Ordre de l’histoire dans la galaxie, de la Haute République à la Nouvelle République. Les séries sont placées au début de leur récit.',
+      story: [
+        { label: 'Haute République et chute des Jedi', items: ['t114479', 't203085', 'm1893', 'm1894', 't4194', 't288055', 'm1895'] },
+        { label: 'Règne de l’Empire', items: ['t251091', 't105971', 't289219', 'm348350', 't92830', 't83867', 't60554', 'm330459'] },
+        { label: 'Âge de la Rébellion', items: ['m11', 'm1891', 'm1892'] },
+        { label: 'Nouvelle République', items: ['t82856', 't115036', 't202879', 't114461', 'm1228710'] },
+        { label: 'Ascension du Premier Ordre', items: ['t79093', 'm140607', 'm181808', 'm181812', 'm1417668'] }
+      ] },
+    { id: 'monsterverse', name: 'MonsterVerse', short: 'MV', accent: '#2fbf8f',
+      intro: 'Godzilla, Kong et les Titans de Monarch, au cinéma et en séries.',
+      groups: [
+        { id: 'films', era: 'MonsterVerse', label: 'Films et séries', items: ['m124905', 'm293167', 'm373571', 'm399566', 't117678', 't202411', 'm823464', 'm1288438'] }
+      ],
+      storyNote: 'Ordre de l’histoire : de la découverte de Skull Island (1973) à l’ère des Titans.',
+      story: [
+        { label: 'L’ère des Titans', items: ['m293167', 't117678', 'm124905', 't202411', 'm373571', 'm399566', 'm823464', 'm1288438'] }
+      ] }
+  ];
+  function sagaKey(code) { const m = /^([mt])(\d{1,10})$/.exec(String(code)); return m ? itemKey(m[1] === 'm' ? 'movie' : 'tv', Number(m[2])) : null; }
+  function findSaga(id) { return SAGAS.find((x) => x.id === id) || null; }
+  function sagaKeys(saga, withOptional) {
+    const keys = [];
+    for (const g of saga.groups) if (withOptional || !g.optional) for (const c of g.items) { const k = sagaKey(c); if (k && !keys.includes(k)) keys.push(k); }
+    return keys;
+  }
+  function parseSagaParams(params) {
+    const p = isObj(params) ? params : {};
+    return { order: p.ordre === 'histoire' ? 'story' : 'release', type: p.type === 'movie' || p.type === 'tv' ? p.type : 'all', extra: p.extra === '1' };
+  }
+  function sagaParamsToQuery(o) {
+    const q = {};
+    if (o.order === 'story') q.ordre = 'histoire';
+    if (o.type !== 'all') q.type = o.type;
+    if (o.extra) q.extra = '1';
+    return q;
+  }
+  /* Sections affichées. dateOf(key) donne la date TMDB connue (ou '').
+     Sortie : groupes dans leur ordre, chacun trié par date (titres sans date en dernier). Histoire : sections « story » telles quelles. */
+  function sagaSections(saga, opts, dateOf) {
+    const o = Object.assign({ order: 'release', type: 'all', extra: false }, opts || {});
+    const visible = new Set(sagaKeys(saga, o.extra));
+    const keep = (k) => k && visible.has(k) && (o.type === 'all' || parseKey(k).type === o.type);
+    const date = (k) => (dateOf && dateOf(k)) || '9999';
+    if (o.order === 'story') {
+      return saga.story.map((sec, i) => ({ id: 's' + i, era: '', label: sec.label, keys: sec.items.map(sagaKey).filter(keep) })).filter((x) => x.keys.length);
+    }
+    return saga.groups.filter((g) => o.extra || !g.optional).map((g) => ({ id: g.id, era: g.era, label: g.label,
+      keys: g.items.map(sagaKey).filter(keep).map((k, i) => ({ k, i })).sort((a, b) => date(a.k).localeCompare(date(b.k)) || a.i - b.i).map((x) => x.k) })).filter((x) => x.keys.length);
+  }
 
   /* ---------- Recherche ciblée et découverte ----------
      Sans titre : /discover de TMDB, qui applique lui-même tous les filtres sur tout le catalogue.
@@ -963,6 +1122,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
 
   root.CrazyCore = Object.freeze({
+    SAGAS, sagaKey, findSaga, sagaKeys, parseSagaParams, sagaParamsToQuery, sagaSections,
     pickTrailer, pickGallery, genresFor, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
@@ -1440,7 +1600,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       seasonLoad: {},             // "clé#n" -> { status, error }
       busy: {}                    // opérations longues en cours
     },
-    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map() }
+    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map(), sagas: {} }
   };
   let lastStamp = 0;
   function activityStamp() { const n = Date.now(); lastStamp = n > lastStamp ? n : lastStamp + 1; return lastStamp; }
@@ -1945,6 +2105,35 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     const items = all.filter((i) => C.matchesFilters(i, f, statuses[i.key]));
     return { items, totalPages: C.num(json.total_pages), hidden: all.length - items.length };
+  }
+
+  /* Sagas : un résumé TMDB par titre (6 requêtes à la fois, mises en cache). Les échecs sont comptés, pas bloquants. */
+  async function loadSaga(saga, withOptional) {
+    const keys = C.sagaKeys(saga, withOptional);
+    const st = state.cache.sagas[saga.id] || (state.cache.sagas[saga.id] = { status: 'idle', failed: [], loaded: 0, total: 0, key: '' });
+    const todo = keys.filter((k) => !state.cache.summaries.has(k));
+    const sig = keys.join(',');
+    if (st.status === 'loading' && st.key === sig) return;
+    if (!todo.length) { Object.assign(st, { status: 'ready', key: sig, total: keys.length, loaded: keys.length }); renderSagaBody(saga.id); return; }
+    Object.assign(st, { status: 'loading', key: sig, failed: [], total: keys.length, loaded: keys.length - todo.length });
+    renderSagaBody(saga.id);
+    let next = 0;
+    const worker = async () => {
+      while (next < todo.length) {
+        const k = todo[next++];
+        const pk = C.parseKey(k);
+        try {
+          const raw = await tmdb('/' + pk.type + '/' + pk.id, {});
+          const sum = C.normalizeSummary(Object.assign({}, raw, { media_type: pk.type }), pk.type);
+          if (sum) state.cache.summaries.set(k, sum); else st.failed.push(k);
+        } catch (err) { st.failed.push(k); }
+        st.loaded++;
+        if (st.loaded % 8 === 0) renderSagaProgress(saga.id);
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker(), worker(), worker()]);
+    st.status = 'ready';
+    renderSagaBody(saga.id);
   }
 
   let detailToken = 0;
@@ -2627,6 +2816,105 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
   }
 
+  /* ----- Sagas ----- */
+  function sagaItem(k) { return state.cache.summaries.get(k) || state.data.metadata[k] || null; }
+  function sagaStats(saga, opts) {
+    const today = state.today;
+    const keys = C.sagaSections(saga, Object.assign({}, opts, { order: 'release' }), sagaDate).flatMap((s) => s.keys);
+    const released = keys.filter((k) => { const d = sagaDate(k); return d && d <= today; });
+    const seen = keys.filter((k) => itemState(k).status === 'seen');
+    return { total: keys.length, released: released.length, seen: seen.length };
+  }
+  function sagaDate(k) { const it = sagaItem(k); return it && it.date ? it.date : ''; }
+  function sagaNext(saga, opts) {
+    const today = state.today;
+    for (const sec of C.sagaSections(saga, opts, sagaDate)) for (const k of sec.keys) {
+      const d = sagaDate(k);
+      if (d && d <= today && itemState(k).status !== 'seen') return k;
+    }
+    return null;
+  }
+  function sagasHtml() {
+    return '<div class="page-head"><div><h1>Sagas</h1><p>Revois les grands univers dans l’ordre, phase par phase, et suis où tu en es.</p></div></div>' +
+      '<div class="saga-list">' + C.SAGAS.map((sg) => {
+        const all = C.sagaKeys(sg, false);
+        const seen = all.filter((k) => itemState(k).status === 'seen').length;
+        const pct = all.length ? Math.round((seen / all.length) * 100) : 0;
+        return '<a class="saga-tile" href="#saga/' + sg.id + '" style="--saga:' + sg.accent + '"><span class="saga-badge" aria-hidden="true">' + esc(sg.short) + '</span>' +
+          '<span class="saga-tile-body"><strong>' + esc(sg.name) + '</strong><span>' + esc(sg.intro) + '</span>' +
+          '<span class="saga-meta">' + all.length + ' titres · ' + sg.groups.filter((g) => !g.optional).length + ' étapes · ' + seen + ' vu' + (seen > 1 ? 's' : '') + '</span>' +
+          '<span class="saga-bar" aria-hidden="true"><span style="width:' + pct + '%"></span></span></span></a>';
+      }).join('') + '</div>' +
+      '<p class="hint" style="margin-top:14px">Phases et ordre de l’histoire établis pour Crazy Liste (TMDB ne les fournit pas) ; titres, dates et affiches viennent de TMDB.</p>';
+  }
+  function sagaHtml() {
+    const r = state.route;
+    const saga = C.findSaga(r.sagaId);
+    if (!saga) return notFoundHtml('Saga introuvable', 'Cette saga n’existe pas (encore) dans Crazy Liste.');
+    const o = C.parseSagaParams(r.params);
+    const link = (patch) => '#saga/' + saga.id + (() => { const q = new URLSearchParams(C.sagaParamsToQuery(Object.assign({}, o, patch))).toString(); return q ? '?' + q : ''; })();
+    const chip = (on, href, label) => '<a class="chip chip-btn" href="' + href + '" aria-pressed="' + on + '">' + label + '</a>';
+    const hasOptional = saga.groups.some((g) => g.optional);
+    return '<div class="saga-page" style="--saga:' + saga.accent + '"><div class="page-head saga-head"><div><p class="saga-crumb"><a href="#sagas">Sagas</a> ›</p><h1>' + esc(saga.name) + '</h1><p>' + esc(saga.intro) + '</p></div></div>' +
+      '<div class="saga-controls"><div class="seg seg-lg" role="group" aria-label="Ordre">' +
+        '<a href="' + link({ order: 'release' }) + '" role="button" aria-pressed="' + (o.order === 'release') + '">Ordre de sortie</a>' +
+        '<a href="' + link({ order: 'story' }) + '" role="button" aria-pressed="' + (o.order === 'story') + '">Ordre de l’histoire</a></div>' +
+        '<div class="toolbar" role="group" aria-label="Type">' + chip(o.type === 'all', link({ type: 'all' }), 'Tout') + chip(o.type === 'movie', link({ type: 'movie' }), 'Films') + chip(o.type === 'tv', link({ type: 'tv' }), 'Séries') + '</div>' +
+        (hasOptional ? '<a class="chip chip-btn" href="' + link({ extra: !o.extra }) + '" aria-pressed="' + o.extra + '">' + (o.extra ? '✓ ' : '＋ ') + esc(saga.groups.find((g) => g.optional).label) + '</a>' : '') + '</div>' +
+      (o.order === 'story' ? '<p class="hint saga-note">' + esc(saga.storyNote) + '</p>' : '') +
+      '<div id="saga-body">' + sagaBodyHtml(saga, o) + '</div></div>';
+  }
+  function sagaBodyHtml(saga, o) {
+    const st = state.cache.sagas[saga.id];
+    if (!st || st.status === 'idle' || (st.status === 'loading' && st.loaded < st.total)) {
+      if (st && st.status === 'loading') return '<p class="hint" role="status" id="saga-progress">Chargement des titres depuis TMDB… ' + st.loaded + ' / ' + st.total + '</p><div class="skeleton" style="height:240px;border-radius:16px" aria-busy="true"></div>';
+    }
+    const sections = C.sagaSections(saga, o, sagaDate);
+    if (!sections.length) return emptyHtml('Aucun titre', 'Aucun titre de ce type dans cette saga.');
+    const stats = sagaStats(saga, o);
+    const next = sagaNext(saga, o);
+    const nextItem = next ? sagaItem(next) : null;
+    const pk = next ? C.parseKey(next) : null;
+    const failed = st && st.failed.length ? '<p class="hint err-text">' + st.failed.length + ' titre(s) n’ont pas pu être chargés depuis TMDB.</p>' : '';
+    let n = 0;
+    return '<div class="saga-summary"><div><span><strong>' + stats.seen + ' / ' + stats.released + '</strong> titres sortis vus' + (stats.total > stats.released ? ' · ' + (stats.total - stats.released) + ' à venir' : '') + '</span>' +
+        '<span class="saga-bar" aria-hidden="true"><span style="width:' + (stats.released ? Math.round((stats.seen / stats.released) * 100) : 0) + '%"></span></span></div>' +
+        (nextItem ? '<a class="btn btn-primary" href="' + C.detailHash(pk.type, pk.id) + '">Prochain à voir : ' + esc(nextItem.title) + '</a>' : stats.released ? '<span class="ok-text">Tout est vu, bravo !</span>' : '') + '</div>' + failed +
+      sections.map((sec) => {
+        const seen = sec.keys.filter((k) => itemState(k).status === 'seen').length;
+        const cols = sec.keys.length + 1;
+        return '<section class="saga-group" aria-labelledby="sg-' + sec.id + '"><header class="saga-group-head">' + (sec.era ? '<span class="saga-era">' + esc(sec.era) + '</span>' : '') +
+          '<h2 id="sg-' + sec.id + '">' + esc(sec.label) + '</h2><span class="hint">' + seen + ' / ' + sec.keys.length + ' vus</span></header>' +
+          '<ol class="snake" style="grid-template-columns:repeat(' + cols + ',var(--snake-col))"><li class="snake-line" aria-hidden="true" style="grid-column:1 / -1"></li>' +
+          sec.keys.map((k, i) => sagaCardHtml(k, i, next, ++n)).join('') + '</ol></section>';
+      }).join('');
+  }
+  function sagaCardHtml(k, i, next, n) {
+    const it = sagaItem(k);
+    const pk = C.parseKey(k);
+    const st = itemState(k).status;
+    const d = it && it.date ? it.date : '';
+    const upcoming = !d || d > state.today;
+    const poster = it && it.posterPath ? img(it.posterPath, 'w154') : null;
+    const cls = 'snake-item ' + (i % 2 ? 'down' : 'up') + (upcoming ? ' upcoming' : '') + (st === 'seen' ? ' seen' : '') + (k === next ? ' is-next' : '');
+    return '<li class="' + cls + '" style="grid-column:' + (i + 1) + ' / span 2" data-item-key="' + k + '"><a class="snake-card" href="' + C.detailHash(pk.type, pk.id) + '">' +
+      '<span class="snake-poster">' + (poster ? '<img src="' + esc(poster) + '" alt="" loading="lazy" decoding="async">' : '') + '</span>' +
+      '<span class="snake-text"><span class="snake-num">' + n + '</span><strong>' + esc(it ? it.title : 'Titre TMDB n°' + pk.id) + '</strong>' +
+      '<span class="snake-date">' + (d ? C.formatDate(d) : 'Date à venir') + ' · ' + (pk.type === 'movie' ? 'Film' : 'Série') + '</span>' +
+      (k === next ? '<span class="snake-flag">Prochain à voir</span>' : upcoming ? '<span class="snake-flag soon">À venir</span>' : statusBadge(st, k)) + '</span></a></li>';
+  }
+  function renderSagaBody(id) {
+    if (state.renderedView !== 'saga' || state.route.sagaId !== id) return;
+    const saga = C.findSaga(id);
+    byId('saga-body').innerHTML = sagaBodyHtml(saga, C.parseSagaParams(state.route.params));
+  }
+  function renderSagaProgress(id) {
+    if (state.renderedView !== 'saga' || state.route.sagaId !== id) return;
+    const el = document.getElementById('saga-progress');
+    const st = state.cache.sagas[id];
+    if (el && st) el.textContent = 'Chargement des titres depuis TMDB… ' + st.loaded + ' / ' + st.total; // l'indicateur peut déjà être remplacé par la frise
+  }
+
   /* ----- Réglages ----- */
   function settingsHtml() {
     const p = state.data.preferences;
@@ -2956,6 +3244,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     pendingTop = false;
     if (route.name === 'home' && currentKey()) HOME_SECTIONS.forEach((sec) => loadHomeSection(sec, false));
     else if (route.name === 'detail') loadDetail(route, false);
+    else if (route.name === 'saga' && C.findSaga(route.sagaId) && currentKey()) loadSaga(C.findSaga(route.sagaId), C.parseSagaParams(route.params).extra);
   }
   function renderView() {
     const r = state.route;
@@ -2967,6 +3256,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       case 'resume': html = resumePageHtml(); title = 'Reprendre'; break;
       case 'library': case 'favorites': case 'watchlist': html = listPageHtml(r.name); title = LIST_TITLES[r.name][0]; break;
       case 'settings': html = settingsHtml(); title = 'Réglages'; break;
+      case 'sagas': html = sagasHtml(); title = 'Sagas'; break;
+      case 'saga': { const sg = C.findSaga(r.sagaId); html = sagaHtml(); title = sg ? sg.name : 'Saga introuvable'; break; }
       case 'invalid': html = notFoundHtml('Lien de fiche invalide', 'Le type ou l’identifiant de ce lien n’est pas reconnu (attendu : #detail/movie/123 ou #detail/tv/123).'); title = 'Lien invalide'; break;
       default: html = notFoundHtml('Page introuvable', 'Cette adresse ne correspond à aucune page de Crazy Liste.'); title = 'Page introuvable';
     }

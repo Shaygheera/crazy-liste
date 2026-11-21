@@ -2827,12 +2827,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function loadLicenceStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(LICENCE_STORE) || 'null');
-      if (!C.isObj(raw) || raw.v !== 6 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
+      if (!C.isObj(raw) || raw.v !== 7 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
       for (const L of raw.list) { const c = cleanStoredLicence(L); if (c && Date.now() - c.at < LICENCE_TTL) registerLicence(c); }
     } catch (e) { /* stockage indisponible ou illisible : la licence sera recalculée */ }
   }
   function saveLicenceStore() {
-    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 6, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
+    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 7, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
   }
   function wikiRelations(d) {
     if (!wikiCache.has(d.key)) {
@@ -2904,7 +2904,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     (await Promise.all(missing.map((e) => summaryOf(e.key).catch(() => null)))).forEach(add);
     // 5. Nom : la première série de la chaîne, sinon la série au nom le plus général
     const root = chainInfo.length && chainInfo[0].key ? items.find((x) => x.key === chainInfo[0].key) : null;
-    const colName = collection && collection.name ? String(collection.name).replace(/\s*[-–—:]\s*(saga|collection)$/i, '').replace(/^(saga|collection)\s+/i, '').trim() : '';
+    const colName = collection && collection.name ? String(collection.name).replace(/\s*[-–—:]?\s*(saga|collection)$/i, '').replace(/^(saga|collection)\s+/i, '').trim() : '';
     const named = root || items.filter((x) => x.type === 'tv' && C.licenceBaseOf(x)).sort((p, q) => (C.licenceBaseOf(p).length - C.licenceBaseOf(q).length) || ((p.date || '9999') < (q.date || '9999') ? -1 : 1))[0] || current;
     return { partial: (!!alId && !chain.length) || unreadable > 0, id: chain.length ? 'al:' + chain[0].id : collection ? 'col:' + d.collection.id : 'base:' + (bases[0] || key), at: Date.now(), label: (!root && colName) || named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
       items: items.slice(0, 80), extras: extras.filter((e) => e.seriesKey).map(({ seriesAl, ...e }) => e), chain: chainInfo };

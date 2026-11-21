@@ -107,6 +107,12 @@ describe('Licence : OVA et spéciaux', () => {
       ['tv-1', ['movie-8:MOVIE', 'movie-7:SPECIAL']], ['tv-2', ['anilist-71:OVA']]
     ], 'type d’AniList prioritaire sur « OVA » dans le titre ; série inconnue ignorée');
     assert.equal(C.attachExtras([{ series: s1, films: [{ key: 'movie-3', type: 'movie', title: 'Série Un OVA 2' }] }], [], []).groups[0].films[0].kind, 'OVA', '« OVA » dans le titre');
+    const twin = C.attachExtras([{ series: s1, films: [] }, { series: s2, films: [{ key: 'movie-9', type: 'movie', title: 'NARUTO -ナルト- THE CROSS ROADS', date: '2009-12-19' }] }], [],
+      [{ al: 80, format: 'SPECIAL', title: 'NARUTO: THE CROSS ROADS', date: '2009-12-19', seriesKey: 'tv-1', key: null }]);
+    assert.deepEqual(twin.groups.map((g) => g.films.map((x) => x.key + ':' + x.kind)), [['movie-9:SPECIAL'], []], 'même œuvre vue par AniList et TMDB : une seule entrée, sous la série d’AniList');
+    const distinct = C.attachExtras([{ series: s1, films: [{ key: 'movie-9', type: 'movie', title: 'Naruto Shippuden : Les Liens', date: '2008-08-02' }] }], [],
+      [{ al: 81, format: 'SPECIAL', title: 'Naruto Shippuden: Konoha Gakuen', date: '2008-12-01', seriesKey: 'tv-1', key: null }]);
+    assert.equal(distinct.groups[0].films.length, 2, 'dates différentes : deux entrées');
   });
 });
 

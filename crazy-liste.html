@@ -1358,6 +1358,21 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const kinds = {};
     for (const e of extras || []) if (e.key) kinds[e.key] = e.format;
     const kindOf = (f) => kinds[f.key] || (/\bOVA\b/i.test(f.title || '') ? 'OVA' : 'MOVIE');
+    // Même titre vu par AniList (sans fiche TMDB connue) et par TMDB : même mois de sortie et au moins deux mots en commun → une seule entrée
+    const words = (t) => new Set(normTitle(t).split(' ').filter((w) => w.length > 2));
+    const sameWork = (e, f) => {
+      if (!e.date || !f.date || e.date.slice(0, 7) !== f.date.slice(0, 7)) return false;
+      const a = words(e.title), b = new Set([...words(f.title), ...words(f.originalTitle)]);
+      let n = 0; for (const w of a) if (b.has(w)) n++;
+      return n >= 2;
+    };
+    const allFilms = () => groups.flatMap((g) => g.films).concat(orphans);
+    extras = (extras || []).map((e) => {
+      if (e.key) return e;
+      const twin = allFilms().find((f) => f.type === 'movie' && !(extras || []).some((x) => x.key === f.key) && sameWork(e, f));
+      return twin ? Object.assign({}, e, { key: twin.key }) : e;
+    });
+    for (const e of extras) if (e.key) kinds[e.key] = e.format;
     for (const e of extras || []) {
       const target = groups.find((g) => g.series.key === e.seriesKey);
       if (!target) continue;

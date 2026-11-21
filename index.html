@@ -221,7 +221,8 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .filter-reset { margin-left: auto; }
 .ideas { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
 @media (max-width: 899px) { .filters { display: grid; grid-template-columns: 1fr 1fr; } .filter-year .input { width: 100%; } .filter .select { width: 100%; } .filter-reset { margin-left: 0; grid-column: 1 / -1; } }
-dialog.dialog-video { width: min(96vw, 960px); }
+/* Lecteur : aussi grand que possible en 16/9 sans dépasser l'écran (titre et pied compris). Spécificité plus forte que dialog.dialog. */
+dialog.dialog.dialog-video { width: min(96vw, 1400px, calc((100dvh - 150px) * 16 / 9)); max-width: 96vw; }
 .video-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
 .video-head h2 { margin: 0; flex: 1; min-width: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .video-frame { position: relative; aspect-ratio: 16 / 9; background: #000; }

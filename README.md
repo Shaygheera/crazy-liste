@@ -99,7 +99,7 @@ Prérequis : Node.js 18+ et Google Chrome installé.
 
 ```
 npm install
-npm test                      # 150 tests : logique (Node) + scénarios dans Chrome avec TMDB et Firebase simulés
+npm test                      # 151 tests : logique (Node) + scénarios dans Chrome avec TMDB et Firebase simulés
 npm run test:core             # logique seule, sans navigateur
 TMDB_KEY=ta-clé node tests/live-smoke.mjs   # contrôle contre la vraie API TMDB (Internet requis)
 node tests/check-legacy-file.mjs chemin/vers/ancien-export.json   # aperçu d'une migration (lecture seule)

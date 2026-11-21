@@ -24,6 +24,7 @@ describe('Licence : règles', () => {
     assert.deepEqual(C.licenceList({ key: 'movie-1', type: 'movie', title: 'X' }, [{ key: 'tv-2', type: 'tv', title: 'Konosuba', date: '2016-01-01' }, { key: 'tv-3', type: 'tv', title: 'Autre', date: '2017-01-01' }], ['rien', 'konosuba']).map((x) => x.key), ['tv-2', 'movie-1'], 'plusieurs débuts de titre');
     assert.equal(C.licenceBaseOf({ title: 'Konosuba le film - Legend of Crimson', originalTitle: "KONOSUBA -God's blessing on this wonderful world!- Legend of Crimson" }), 'konosuba', 'la plus courte des deux');
     assert.equal(C.licenceBaseOf({ title: 'Boruto : Naruto Next Generations', originalTitle: 'BORUTO-ボルト- NARUTO NEXT GENERATIONS' }), 'boruto');
+    assert.equal(C.licenceBaseOf({ title: 'My Hero Academia', originalTitle: '僕のヒーローアカデミア' }), 'my hero academia', 'alphabet latin d’abord');
     assert.equal(C.licenceBase('The: Show'), '');
     assert.equal(C.inLicence('naruto', { title: 'Naruto Shippuden' }), true);
     assert.equal(C.inLicence('naruto', { title: 'Narutoverse' }), false, 'mot entier seulement');
@@ -286,6 +287,18 @@ describe('Licence : carte Diffusion', () => {
     assert.equal(refused, 1);
     await openLicence(page);
     assert.deepEqual(await eras(page), ['tv-220', 'tv-221', 'tv-222']);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('AniList injoignable : licence affichée sans la chaîne, mais pas gardée (recalculée à la visite suivante)', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#home' });
+    await context.route('https://graphql.anilist.co/**', (r) => r.abort());
+    await page.evaluate(() => { location.hash = '#detail/tv/221'; });
+    await page.waitForFunction(() => { const r = document.querySelector('#detail-licence-btn'); return r && !r.querySelector('[disabled]'); }, null, { timeout: 15000 });
+    await page.waitForTimeout(500);
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('crazy-liste-licences') || '{"list":[]}'));
+    assert.equal(stored.list.length, 0, 'licence incomplète non gardée');
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

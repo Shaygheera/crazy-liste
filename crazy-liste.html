@@ -1240,7 +1240,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* Base d'un titre : la plus courte (donc la plus générale) entre titre français et titre original
      (« Konosuba le film - … » / « KONOSUBA -God's blessing… » → « konosuba »). */
   function licenceBaseOf(item) {
-    const b = [licenceBase(item && item.title), licenceBase(item && item.originalTitle)].filter(Boolean).sort((a, c) => a.length - c.length);
+    const latin = (x) => (/[a-z]/.test(x) ? 0 : 1);
+    const b = [licenceBase(item && item.title), licenceBase(item && item.originalTitle)].filter(Boolean).sort((a, c) => (latin(a) - latin(c)) || (a.length - c.length));
     return b[0] || '';
   }
   function inLicence(base, item) {
@@ -2722,13 +2723,34 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   const ANILIST_API = 'https://graphql.anilist.co';
   const anilistCache = new Map();
   /* AniList limite le nombre de requêtes : un refus ou une coupure est retenté une fois, et un échec n'est pas gardé en mémoire. */
+  const ANILIST_STORE = 'crazy-liste-anilist';
+  let anilistStored = null;
+  function anilistStore() {
+    if (anilistStored) return anilistStored;
+    anilistStored = {};
+    try { const raw = JSON.parse(localStorage.getItem(ANILIST_STORE) || 'null'); if (C.isObj(raw)) anilistStored = raw; } catch (e) { /* illisible : ignoré */ }
+    return anilistStored;
+  }
+  function rememberAnilist(id, m) {
+    const st = anilistStore();
+    st[id] = { at: Date.now(), m };
+    const ids = Object.keys(st).sort((a, b) => st[b].at - st[a].at);
+    for (const old of ids.slice(80)) delete st[old];
+    try { localStorage.setItem(ANILIST_STORE, JSON.stringify(st)); } catch (e) { /* stockage plein : on garde seulement en mémoire */ }
+  }
   function anilistMedia(id) {
     if (anilistCache.has(id)) return anilistCache.get(id);
+    const kept = anilistStore()[id];
+    if (kept && C.isObj(kept.m) && Number.isFinite(kept.at) && Date.now() - kept.at < LICENCE_TTL && kept.m.id === id) {
+      const p = Promise.resolve(kept.m);
+      anilistCache.set(id, p);
+      return p;
+    }
     const once = () => fetch(ANILIST_API, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ query: C.anilistQuery(id) }) })
       .then((r) => { if (!r.ok) throw new Error('anilist ' + r.status); return r.json(); }).then((j) => (j && j.data && j.data.Media) || null);
     const p = once().catch(() => new Promise((res) => setTimeout(res, 1500)).then(once)).catch(() => null);
     anilistCache.set(id, p);
-    p.then((m) => { if (!m) anilistCache.delete(id); });
+    p.then((m) => { if (!m) anilistCache.delete(id); else rememberAnilist(id, m); });
     return p;
   }
   /* Chaîne principale : jusqu'à 6 préquelles et 6 suites (séries, ou film quand c'est la seule suite). Un maillon pas encore sorti termine la chaîne. */
@@ -2779,12 +2801,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function loadLicenceStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(LICENCE_STORE) || 'null');
-      if (!C.isObj(raw) || raw.v !== 1 || !Array.isArray(raw.list)) return;
+      if (!C.isObj(raw) || raw.v !== 2 || !Array.isArray(raw.list)) return; // version 1 : licences calculées avec l'ancienne règle, ignorées
       for (const L of raw.list) { const c = cleanStoredLicence(L); if (c && Date.now() - c.at < LICENCE_TTL) registerLicence(c); }
     } catch (e) { /* stockage indisponible ou illisible : la licence sera recalculée */ }
   }
   function saveLicenceStore() {
-    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 1, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
+    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 2, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
   }
   function wikiRelations(d) {
     if (!wikiCache.has(d.key)) {
@@ -2834,7 +2856,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     // 5. Nom : la première série de la chaîne, sinon la série au nom le plus général
     const root = chainInfo.length && chainInfo[0].key ? items.find((x) => x.key === chainInfo[0].key) : null;
     const named = root || items.filter((x) => x.type === 'tv' && C.licenceBaseOf(x)).sort((p, q) => (C.licenceBaseOf(p).length - C.licenceBaseOf(q).length) || ((p.date || '9999') < (q.date || '9999') ? -1 : 1))[0] || current;
-    return { id: chain.length ? 'al:' + chain[0].id : 'base:' + (bases[0] || key), at: Date.now(), label: named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
+    return { partial: !!w.anilist[0] && !chain.length, id: chain.length ? 'al:' + chain[0].id : 'base:' + (bases[0] || key), at: Date.now(), label: named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
       items: items.slice(0, 80), extras: extras.filter((e) => e.seriesKey).map(({ seriesAl, ...e }) => e), chain: chainInfo };
   }
   /* Ce que la fiche ouverte affiche, d'après la licence partagée : suite (Wikidata, puis chaîne AniList, sinon suite probable), suite annoncée. */
@@ -2867,7 +2889,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const w = await wikiRelations(d);
     if (!L) {
       L = await computeLicence(key, d, w).catch((err) => { console.warn('Licence :', err); return null; });
-      if (L) { registerLicence(L); saveLicenceStore(); }
+      if (L && !L.partial) { registerLicence(L); saveLicenceStore(); }
+      else if (L) L.items.forEach(rememberSummary); // recalculée à la prochaine visite
     }
     state.cache.relations.set(key, L ? deriveRelations(key, d, L, w) : { status: 'ready', list: [], all: [], extras: [], next: null, confirmed: false });
     show();

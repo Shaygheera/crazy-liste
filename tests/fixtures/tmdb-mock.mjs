@@ -17,6 +17,15 @@ export const MOVIES = {
   122: movie(122, 'Saga : Partie 3', { release_date: '2027-05-01', belongs_to_collection: { id: 900, name: 'Saga intégrale' } })
 };
 for (const id of range(102, 110)) MOVIES[id] = movie(id, 'Film Test ' + (id - 100));
+// Films récents (dates relatives au jour du test) : 130 seulement au cinéma, 131 déjà sorti en vidéo aux États-Unis.
+const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+MOVIES[130] = movie(130, 'Film Au Cinéma', { release_date: daysAgo(20) });
+MOVIES[131] = movie(131, 'Film En Vidéo', { release_date: daysAgo(100) });
+const RELEASES = {
+  130: [{ iso_3166_1: 'FR', release_dates: [{ type: 3, release_date: daysAgo(20) + 'T00:00:00.000Z' }] }],
+  131: [{ iso_3166_1: 'FR', release_dates: [{ type: 3, release_date: daysAgo(100) + 'T00:00:00.000Z' }, { type: 4, release_date: daysAgo(-10) + 'T00:00:00.000Z' }] },
+        { iso_3166_1: 'US', release_dates: [{ type: 4, release_date: daysAgo(30) + 'T00:00:00.000Z' }] }]
+};
 MOVIES[109].release_date = '2027-02-01';
 
 // seasons : [numéro, numéros d'épisodes] ; null = la requête de saison échoue (500)
@@ -87,7 +96,8 @@ const SEARCH = {
   alpha: { multi: [asShow(201), PERSON, asMovie(101)], movie: [MOVIES[101]], tv: [SHOWS[201].base] },
   anime: { multi: [asShow(202), asShow(210), asShow(211), asShow(212), asMovie(104)], movie: [MOVIES[104]], tv: [SHOWS[202].base, SHOWS[210].base, SHOWS[211].base, SHOWS[212].base] },
   lent: { multi: [asMovie(102)], movie: [MOVIES[102]], tv: [], delay: 1500 },
-  rapide: { multi: [asMovie(103)], movie: [MOVIES[103]], tv: [] }
+  rapide: { multi: [asMovie(103)], movie: [MOVIES[103]], tv: [] },
+  sortie: { multi: [asMovie(130), asMovie(131), asMovie(122), asMovie(101), asShow(201)], movie: [MOVIES[130], MOVIES[131], MOVIES[122], MOVIES[101]], tv: [SHOWS[201].base] }
 };
 // Vidéos TMDB : film 101 avec VF et VO (la bande-annonce VF doit être choisie), série 201 en VO seulement, autres contenus sans vidéo.
 export const VIDEOS = {
@@ -152,6 +162,7 @@ export function createMock(options = {}) {
       const body = s ? seasonDetail(Number(m[1]), Number(m[2])) : null;
       return body ? json(route, 200, body) : json(route, 404, { status_message: 'Not found' });
     }
+    if ((m = /^\/movie\/(\d+)\/release_dates$/.exec(path))) { st.releaseChecks = (st.releaseChecks || 0) + 1; return json(route, 200, { id: Number(m[1]), results: RELEASES[m[1]] || [] }); }
     const withVideos = (body, key) => {
       const append = url.searchParams.get('append_to_response') || '';
       const out = { ...body };

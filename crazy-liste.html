@@ -213,6 +213,18 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .detail-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .detail-overview { margin: 0; color: var(--text-2); max-width: 75ch; }
 .detail-cta { display: flex; gap: 8px; flex-wrap: wrap; }
+.poster .avail { position: absolute; left: 7px; bottom: 7px; z-index: 1; }
+.avail { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: .68rem; font-weight: 800; white-space: nowrap; }
+.avail:empty { display: none; }
+.avail-upcoming { background: rgba(8,10,16,.82); color: #fff; border: 1px dashed rgba(255,255,255,.45); }
+.avail-cinema { background: #f0a020; color: #1b1205; }
+.avail-available { background: var(--seen); color: var(--seen-ink); }
+.snake-text .avail { justify-self: start; }
+.avail-toggle { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: .84rem; font-weight: 650; cursor: pointer; }
+.avail-toggle input { width: 17px; height: 17px; accent-color: var(--accent); }
+.avail-toggle .hint { font-weight: 500; }
+.filters .avail-toggle { align-self: flex-end; }
+.page-head .avail-toggle { align-self: center; }
 /* Sagas */
 .saga-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
 .saga-tile { display: flex; gap: 14px; padding: 16px; border-radius: var(--radius-lg, 14px); border: 1px solid var(--border); background: linear-gradient(135deg, color-mix(in srgb, var(--saga) 18%, var(--surface)), var(--surface)); text-decoration: none; color: inherit; transition: transform .15s, border-color .15s; }
@@ -653,6 +665,28 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       .slice(0, max || 10)
       .map((b) => b.path);
   }
+  /* Disponibilité d'un titre (pour les miniatures et le filtre « Seulement disponibles »).
+     Film : 'upcoming' (pas encore sorti), 'cinema' (sorti en salle, pas encore en vidéo), 'available' (sorti en vidéo à la demande,
+     streaming, DVD/Blu-ray ou TV en France ou aux États-Unis, d'après les dates de sortie TMDB), ou 'unknown' (à vérifier).
+     Au-delà de AVAIL_GRACE_DAYS après la sortie, un film est considéré comme disponible même si TMDB n'a pas noté sa sortie vidéo.
+     Série : 'upcoming' avant la diffusion du premier épisode, sinon 'available'. */
+  const AVAIL_GRACE_DAYS = 270;
+  function daysBetween(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000); }
+  function digitalReleased(releaseDates, today) {
+    const list = isObj(releaseDates) && Array.isArray(releaseDates.results) ? releaseDates.results : [];
+    return list.some((c) => isObj(c) && (c.iso_3166_1 === 'FR' || c.iso_3166_1 === 'US') && Array.isArray(c.release_dates) &&
+      c.release_dates.some((r) => isObj(r) && [4, 5, 6].includes(r.type) && typeof r.release_date === 'string' && r.release_date.slice(0, 10) <= today));
+  }
+  function availabilityOf(item, today, releaseDates) {
+    if (!item) return 'unknown';
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(item.date || '') ? item.date : '';
+    if (!d || d > today) return 'upcoming';
+    if (item.type !== 'movie') return 'available';
+    if (daysBetween(d, today) > AVAIL_GRACE_DAYS) return 'available';
+    if (releaseDates === undefined) return 'unknown';
+    return digitalReleased(releaseDates, today) ? 'available' : 'cinema';
+  }
+  function isAvailable(state) { return state === 'available' || state === 'unknown'; }
   function normalizeSeason(raw) {
     if (!isObj(raw) || !Number.isInteger(raw.season_number)) return null;
     const seen = new Set();
@@ -1067,7 +1101,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (f.rating) return (movie ? VOTE_LEVELS.filterMovie : VOTE_LEVELS.filterTv)[l];
     return 0;
   }
-  function discoverRequests(f, page, today, level) {
+  function discoverRequests(f, page, today, level, onlyAvailable) {
     const types = f.type === 'all' ? ['movie', 'tv'] : [f.type === 'movie' ? 'movie' : 'tv'];
     return types.map((t) => {
       const movie = t === 'movie';
@@ -1082,6 +1116,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       if (f.to) params[dateKey + '.lte'] = f.to + '-12-31' < today || f.sort !== 'newest' ? f.to + '-12-31' : today;
       else if (f.sort === 'newest') params[dateKey + '.lte'] = today;
       if (f.rating) params['vote_average.gte'] = f.rating;
+      if (onlyAvailable && movie) { params.with_release_type = '4|5|6'; params['release_date.lte'] = today; } // sortie vidéo, physique ou TV déjà passée
+      else if (onlyAvailable && (!params[dateKey + '.lte'] || params[dateKey + '.lte'] > today)) params[dateKey + '.lte'] = today;
       const minVotes = minVotesFor(f, movie, level); // évite les notes gonflées par une poignée de votes
       if (minVotes) params['vote_count.gte'] = String(minVotes);
       if (!movie && f.status !== 'any') params.with_status = f.status === 'ended' ? '3|4' : '0|2';
@@ -1123,6 +1159,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
 
   root.CrazyCore = Object.freeze({
     SAGAS, sagaKey, findSaga, sagaKeys, parseSagaParams, sagaParamsToQuery, sagaSections,
+    availabilityOf, digitalReleased, isAvailable,
     pickTrailer, pickGallery, genresFor, minVotesFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
@@ -1149,7 +1186,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   const THEMES = ['dark', 'light'];
 
   function defaultPreferences() {
-    return { theme: 'dark', apiKey: '', libraryStatus: 'all', libraryType: 'all', librarySort: 'activity' };
+    return { theme: 'dark', apiKey: '', libraryStatus: 'all', libraryType: 'all', librarySort: 'activity', onlyAvailable: false };
   }
   function sanitizePreferences(raw) {
     const p = defaultPreferences();
@@ -1159,6 +1196,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (['all', 'todo', 'progress', 'seen'].includes(raw.libraryStatus)) p.libraryStatus = raw.libraryStatus;
     if (['all', 'movie', 'tv'].includes(raw.libraryType)) p.libraryType = raw.libraryType;
     if (['activity', 'added', 'title', 'rating'].includes(raw.librarySort)) p.librarySort = raw.librarySort;
+    if (raw.onlyAvailable === true) p.onlyAvailable = true;
     return p;
   }
   function emptyData() { return { schemaVersion: C.SCHEMA_VERSION, tracking: {}, metadata: {}, preferences: defaultPreferences() }; }
@@ -1600,7 +1638,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       seasonLoad: {},             // "clé#n" -> { status, error }
       busy: {}                    // opérations longues en cours
     },
-    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map(), sagas: {} }
+    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map(), sagas: {}, availability: new Map() }
   };
   let lastStamp = 0;
   function activityStamp() { const n = Date.now(); lastStamp = n > lastStamp ? n : lastStamp + 1; return lastStamp; }
@@ -2070,7 +2108,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     let level = p === 1 ? 0 : s.voteLevel || 0;
     let reqs, answers;
     for (;;) {
-      reqs = C.discoverRequests(f, p, todayIso(), level);
+      reqs = C.discoverRequests(f, p, todayIso(), level, onlyAvailable());
       answers = await Promise.all(reqs.map((r) => tmdb(r.path, r.params, { signal, noCache: true })));
       const total = answers.reduce((n, j) => n + C.num(j.total_results), 0);
       if (p > 1 || !needsVotes || total >= 10 || level >= 2) break;
@@ -2134,6 +2172,56 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     await Promise.all([worker(), worker(), worker(), worker(), worker(), worker()]);
     st.status = 'ready';
     renderSagaBody(saga.id);
+  }
+
+  /* Disponibilité : les films sortis depuis moins de 9 mois sont vérifiés auprès de TMDB (dates de sortie vidéo), 4 à la fois. */
+  function availability(item) {
+    if (!item) return 'unknown';
+    const cached = state.cache.availability.get(item.key);
+    return cached || C.availabilityOf(item, state.today);
+  }
+  const onlyAvailable = () => state.data.preferences.onlyAvailable === true;
+  function filterAvailable(items) { return onlyAvailable() ? items.filter((it) => C.isAvailable(availability(it))) : items; }
+  const availQueue = new Set();
+  let availRunning = 0;
+  function checkAvailability() { // appelée après chaque rendu : repère les miniatures encore à vérifier
+    document.querySelectorAll('[data-avail="unknown"]').forEach((el) => {
+      const k = el.dataset.availFor;
+      if (!state.cache.availability.has(k)) availQueue.add(k);
+    });
+    while (availRunning < 4 && availQueue.size) {
+      const k = availQueue.values().next().value;
+      availQueue.delete(k);
+      const pk = C.parseKey(k);
+      if (!pk || pk.type !== 'movie') continue;
+      availRunning++;
+      state.cache.availability.set(k, 'unknown'); // évite un second envoi pendant la requête
+      tmdb('/movie/' + pk.id + '/release_dates', {}).then((json) => {
+        const item = state.cache.summaries.get(k) || state.data.metadata[k] || state.cache.details.get(k);
+        state.cache.availability.set(k, C.availabilityOf(item, state.today, json));
+      }).catch(() => { state.cache.availability.delete(k); }).finally(() => {
+        availRunning--;
+        availabilityChanged(k);
+        checkAvailability();
+      });
+    }
+  }
+  let availRerender = 0;
+  function availabilityChanged(k) {
+    const st = state.cache.availability.get(k) || 'unknown';
+    document.querySelectorAll('[data-avail-for="' + k + '"]').forEach((el) => { el.outerHTML = availHtml(st, k, el.dataset.availDate || ''); });
+    if (onlyAvailable() && !C.isAvailable(st)) { clearTimeout(availRerender); availRerender = setTimeout(rerenderListsForAvailability, 120); }
+  }
+  function rerenderListsForAvailability() {
+    if (state.renderedView === 'home') HOME_SECTIONS.forEach((sec) => renderHomeSection(sec.id));
+    else if (state.renderedView === 'search') renderSearchBody();
+    else if (state.renderedView === 'saga') renderSagaBody(state.route.sagaId);
+  }
+  function setOnlyAvailable(on) {
+    state.data.preferences.onlyAvailable = on;
+    persist();
+    if (state.route.name === 'search' && state.ui.search.mode === 'discover') startSearch(state.ui.search.q, state.ui.search.filters, 1);
+    renderView();
   }
 
   let detailToken = 0;
@@ -2614,10 +2702,25 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return '<div class="seg' + (large ? ' seg-lg' : '') + '" role="group" aria-label="' + esc(label) + '">' + C.STATUSES.map((s) =>
       '<button type="button" data-action="' + action + '"' + attrs + ' data-status="' + s + '" aria-pressed="' + (current === s) + '">' + STATUS_LABELS[s] + '</button>').join('') + '</div>';
   }
+  const AVAIL_LABELS = { upcoming: 'À venir', cinema: 'Au cinéma', available: 'Disponible', unknown: '' };
+  const AVAIL_TITLES = {
+    upcoming: 'Pas encore sorti',
+    cinema: 'Sorti au cinéma, pas encore disponible en vidéo à la demande, en streaming ou en DVD/Blu-ray',
+    available: 'Disponible en vidéo à la demande, en streaming ou en DVD/Blu-ray (ou sorti depuis plus de 9 mois)'
+  };
+  function availHtml(st, key, date) {
+    const label = st === 'upcoming' && date ? 'À venir · ' + C.formatDate(date).replace(/ \d{4}$/, (y) => (date.slice(0, 4) === state.today.slice(0, 4) ? '' : y)) : AVAIL_LABELS[st];
+    return '<span class="avail avail-' + st + '" data-avail="' + st + '" data-avail-for="' + key + '" data-avail-date="' + esc(date) + '"' + (AVAIL_TITLES[st] ? ' title="' + AVAIL_TITLES[st] + '"' : '') + '>' + esc(label || '') + '</span>';
+  }
+  function cardAvail(item) {
+    const st = availability(item);
+    if (item.type === 'tv' && st !== 'upcoming') return ''; // séries : seule l'absence de diffusion est signalée
+    return availHtml(st, item.key, item.date || '');
+  }
   function cardHtml(item) {
     const key = item.key;
     return '<article class="card" data-item-key="' + key + '">' +
-      '<div class="poster">' + posterHtml(item, 'w342') + ratingHtml(item.voteAverage) + (C.isAnime(item) ? '<span class="type-tag">Anime</span>' : '') + '</div>' +
+      '<div class="poster">' + posterHtml(item, 'w342') + ratingHtml(item.voteAverage) + (C.isAnime(item) ? '<span class="type-tag">Anime</span>' : '') + cardAvail(item) + '</div>' +
       '<div class="card-body">' +
         '<h3 class="card-title"><a class="card-link" href="' + C.detailHash(item.type, item.id) + '">' + esc(item.title) + '</a></h3>' +
         '<div class="card-meta"><span>' + esc(item.year || 'Date inconnue') + '</span><span aria-hidden="true">·</span><span>' + TYPE_LABELS[item.type] + '</span></div>' +
@@ -2641,7 +2744,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* ----- Accueil ----- */
   function homeHtml() {
     if (!currentKey()) return welcomeHtml();
-    return '<div class="page-head"><div><h1>Crazy Liste</h1><p>Tendances et nouveautés TMDB. Clique sur une affiche pour ouvrir sa fiche et suivre ta progression.</p></div></div>' +
+    return '<div class="page-head"><div><h1>Crazy Liste</h1><p>Tendances et nouveautés TMDB. Clique sur une affiche pour ouvrir sa fiche et suivre ta progression.</p></div>' + availToggleHtml() + '</div>' +
       HOME_SECTIONS.map((sec) => '<section class="section" id="home-sec-' + sec.id + '" aria-labelledby="home-title-' + sec.id + '">' + homeSectionInner(sec) + '</section>').join('');
   }
   /* Aucune clé TMDB (version publique, premier lancement) : un seul message clair au lieu de six erreurs. */
@@ -2654,21 +2757,28 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       '<div class="row">' + (canSignIn ? '<button type="button" class="btn btn-primary" data-action="sync-signin"' + (sync.status === 'signing' ? ' disabled' : '') + '>Se connecter avec Google</button>' : '') +
       '<a class="btn' + (canSignIn ? '' : ' btn-primary') + '" href="#settings">Coller ma clé TMDB</a></div></section>';
   }
+  function availToggleHtml() {
+    return '<label class="avail-toggle"><input type="checkbox" data-change="only-available"' + (onlyAvailable() ? ' checked' : '') + '><span>Seulement les titres disponibles</span>' +
+      '<span class="hint">sortis en vidéo / streaming</span></label>';
+  }
   function homeSectionInner(sec) {
     const s = state.ui.home[sec.id] || { status: 'loading' };
     const ready = s.status === 'ready';
     let body;
-    if (ready) body = '<div class="rail" id="rail-' + sec.id + '">' + s.items.map(cardHtml).join('') + '</div>';
+    const shown = ready ? filterAvailable(s.items) : [];
+    if (ready && !shown.length) body = '<p class="hint rail-hidden">Tout est masqué par « Seulement les titres disponibles ».</p>';
+    else if (ready) body = '<div class="rail" id="rail-' + sec.id + '">' + shown.map(cardHtml).join('') + '</div>';
     else if (s.status === 'error') body = errorHtml(s.error, 'retry-section', ' data-section="' + sec.id + '"');
     else if (s.status === 'empty') body = emptyHtml('Rien à afficher pour le moment.', '');
     else body = '<div class="rail" aria-busy="true">' + skeletonCards(6) + '</div>';
-    const nav = ready ? '<div class="rail-nav"><button type="button" class="btn btn-sm btn-icon" data-action="rail-scroll" data-rail="' + sec.id + '" data-dir="-1" aria-label="Défiler vers la gauche">‹</button>' +
+    const nav = ready && shown.length ? '<div class="rail-nav"><button type="button" class="btn btn-sm btn-icon" data-action="rail-scroll" data-rail="' + sec.id + '" data-dir="-1" aria-label="Défiler vers la gauche">‹</button>' +
       '<button type="button" class="btn btn-sm btn-icon" data-action="rail-scroll" data-rail="' + sec.id + '" data-dir="1" aria-label="Défiler vers la droite">›</button></div>' : '';
     return '<div class="section-head"><h2 id="home-title-' + sec.id + '">' + esc(sec.title) + '</h2>' + nav + '</div>' + body;
   }
   function renderHomeSection(id) {
     if (state.renderedView !== 'home') return;
     byId('home-sec-' + id).innerHTML = homeSectionInner(HOME_SECTIONS.find((s) => s.id === id));
+    checkAvailability();
   }
 
   /* ----- Recherche ----- */
@@ -2693,6 +2803,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       (genres.length ? select('genre', 'Genre', [['', 'Tous']].concat(genres.map(([id, l]) => [String(id), l])), f.genre) : '') +
       select('rating', 'Note TMDB', [['', 'Toutes'], ['6', '6 et plus'], ['7', '7 et plus'], ['8', '8 et plus']], f.rating) +
       select('sort', 'Trier par', [['', state.ui.search.q ? 'Pertinence' : 'Popularité'], ['rating', 'Mieux notés'], ['newest', 'Plus récents'], ['oldest', 'Plus anciens']], f.sort === 'popular' ? '' : f.sort) +
+      availToggleHtml() +
       (C.hasRefinement(Object.assign({}, f, { type: 'all' })) ? '<button type="button" class="btn btn-sm btn-ghost filter-reset" data-action="search-reset">Effacer les filtres</button>' : '');
   }
   function filterSummary(f) {
@@ -2736,13 +2847,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const sortNote = s.mode === 'text' && f.sort && f.sort !== 'popular' ? ' · tri appliqué aux résultats chargés' : '';
     const votes = s.mode === 'discover' && (f.sort === 'rating' || f.rating) ? C.minVotesFor(f, f.type === 'movie', s.voteLevel) : 0;
     const voteNote = votes ? (s.voteLevel ? ' · peu de votes sur cette période : titres notés par au moins ' + votes + ' personnes' : ' · titres notés par au moins ' + votes + ' personnes') : '';
-    return '<p class="hint" role="status">' + s.results.length + ' résultat(s) : ' + esc(what) + esc(hiddenNote + sortNote) + '</p>' +
+    const results = filterAvailable(s.results);
+    const unavailable = s.results.length - results.length;
+    const availNote = unavailable ? ' · ' + unavailable + ' pas encore disponible(s), masqué(s)' : '';
+    return '<p class="hint" role="status">' + results.length + ' résultat(s) : ' + esc(what) + esc(hiddenNote + sortNote + availNote) + '</p>' +
       (voteNote ? '<p class="hint">' + esc(voteNote.slice(3).replace(/^./, (c) => c.toUpperCase())) + '.</p>' : '') +
-      (s.results.length ? '<div class="grid">' + s.results.map(cardHtml).join('') + '</div>' : '<p class="hint">Aucun titre de cette page ne correspond à tes filtres.</p>') + more;
+      (results.length ? '<div class="grid">' + results.map(cardHtml).join('') + '</div>' : '<p class="hint">Aucun titre de cette page ne correspond à tes filtres.</p>') + more;
   }
   function renderSearchBody() {
     if (state.renderedView !== 'search') return;
     byId('search-results').innerHTML = searchBodyHtml();
+    checkAvailability();
   }
 
   /* ----- Bibliothèque, Favoris, Watchlist ----- */
@@ -2830,7 +2945,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const today = state.today;
     for (const sec of C.sagaSections(saga, opts, sagaDate)) for (const k of sec.keys) {
       const d = sagaDate(k);
-      if (d && d <= today && itemState(k).status !== 'seen') return k;
+      if (d && d <= today && itemState(k).status !== 'seen' && C.isAvailable(availability(sagaItem(k)))) return k;
     }
     return null;
   }
@@ -2860,7 +2975,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         '<a href="' + link({ order: 'release' }) + '" role="button" aria-pressed="' + (o.order === 'release') + '">Ordre de sortie</a>' +
         '<a href="' + link({ order: 'story' }) + '" role="button" aria-pressed="' + (o.order === 'story') + '">Ordre de l’histoire</a></div>' +
         '<div class="toolbar" role="group" aria-label="Type">' + chip(o.type === 'all', link({ type: 'all' }), 'Tout') + chip(o.type === 'movie', link({ type: 'movie' }), 'Films') + chip(o.type === 'tv', link({ type: 'tv' }), 'Séries') + '</div>' +
-        (hasOptional ? '<a class="chip chip-btn" href="' + link({ extra: !o.extra }) + '" aria-pressed="' + o.extra + '">' + (o.extra ? '✓ ' : '＋ ') + esc(saga.groups.find((g) => g.optional).label) + '</a>' : '') + '</div>' +
+        (hasOptional ? '<a class="chip chip-btn" href="' + link({ extra: !o.extra }) + '" aria-pressed="' + o.extra + '">' + (o.extra ? '✓ ' : '＋ ') + esc(saga.groups.find((g) => g.optional).label) + '</a>' : '') + availToggleHtml() + '</div>' +
       (o.order === 'story' ? '<p class="hint saga-note">' + esc(saga.storyNote) + '</p>' : '') +
       '<div id="saga-body">' + sagaBodyHtml(saga, o) + '</div></div>';
   }
@@ -2869,8 +2984,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (!st || st.status === 'idle' || (st.status === 'loading' && st.loaded < st.total)) {
       if (st && st.status === 'loading') return '<p class="hint" role="status" id="saga-progress">Chargement des titres depuis TMDB… ' + st.loaded + ' / ' + st.total + '</p><div class="skeleton" style="height:240px;border-radius:16px" aria-busy="true"></div>';
     }
-    const sections = C.sagaSections(saga, o, sagaDate);
-    if (!sections.length) return emptyHtml('Aucun titre', 'Aucun titre de ce type dans cette saga.');
+    const sections = C.sagaSections(saga, o, sagaDate).map((sec) => Object.assign({}, sec, { keys: sec.keys.filter((k) => !onlyAvailable() || C.isAvailable(availability(sagaItem(k) || { key: k, type: C.parseKey(k).type }))) })).filter((sec) => sec.keys.length);
+    if (!sections.length) return emptyHtml('Aucun titre', onlyAvailable() ? 'Aucun titre disponible avec ces filtres.' : 'Aucun titre de ce type dans cette saga.');
     const stats = sagaStats(saga, o);
     const next = sagaNext(saga, o);
     const nextItem = next ? sagaItem(next) : null;
@@ -2894,19 +3009,22 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const pk = C.parseKey(k);
     const st = itemState(k).status;
     const d = it && it.date ? it.date : '';
-    const upcoming = !d || d > state.today;
+    const av = availability(it || { key: k, type: pk.type });
+    const upcoming = av === 'upcoming';
     const poster = it && it.posterPath ? img(it.posterPath, 'w154') : null;
     const cls = 'snake-item ' + (i % 2 ? 'down' : 'up') + (upcoming ? ' upcoming' : '') + (st === 'seen' ? ' seen' : '') + (k === next ? ' is-next' : '');
     return '<li class="' + cls + '" style="grid-column:' + (i + 1) + ' / span 2" data-item-key="' + k + '"><a class="snake-card" href="' + C.detailHash(pk.type, pk.id) + '">' +
       '<span class="snake-poster">' + (poster ? '<img src="' + esc(poster) + '" alt="" loading="lazy" decoding="async">' : '') + '</span>' +
       '<span class="snake-text"><span class="snake-num">' + n + '</span><strong>' + esc(it ? it.title : 'Titre TMDB n°' + pk.id) + '</strong>' +
       '<span class="snake-date">' + (d ? C.formatDate(d) : 'Date à venir') + ' · ' + (pk.type === 'movie' ? 'Film' : 'Série') + '</span>' +
-      (k === next ? '<span class="snake-flag">Prochain à voir</span>' : upcoming ? '<span class="snake-flag soon">À venir</span>' : statusBadge(st, k)) + '</span></a></li>';
+      (k === next ? '<span class="snake-flag">Prochain à voir</span>' : upcoming ? '<span class="snake-flag soon">À venir</span>' : statusBadge(st, k)) +
+      (pk.type === 'movie' && !upcoming ? availHtml(av, k, d) : '') + '</span></a></li>';
   }
   function renderSagaBody(id) {
     if (state.renderedView !== 'saga' || state.route.sagaId !== id) return;
     const saga = C.findSaga(id);
     byId('saga-body').innerHTML = sagaBodyHtml(saga, C.parseSagaParams(state.route.params));
+    checkAvailability();
   }
   function renderSagaProgress(id) {
     if (state.renderedView !== 'saga' || state.route.sagaId !== id) return;
@@ -3268,6 +3386,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (r.name === 'resume') renderResumeLists();
     document.title = title + ' · Crazy Liste';
     restoreFocus(f);
+    checkAvailability();
   }
   function renderAll() { applyTheme(); renderBanners(); renderView(); renderRelated(); renderChrome(); }
 
@@ -3285,6 +3404,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (el.id === 'import-file') { const f = el.files && el.files[0]; el.value = ''; if (f) importFile(f); return; }
+    if (el.dataset.change === 'only-available') { setOnlyAvailable(el.checked); return; }
     if (el.dataset.change === 'search-filter') {
       const f = C.parseSearchFilters(Object.assign({}, state.ui.search.filters, { [el.dataset.filter]: el.value.trim() }));
       navigate(searchHash(state.ui.search.q, f), true);

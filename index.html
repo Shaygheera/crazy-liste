@@ -213,6 +213,13 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .detail-original { margin: -6px 0 0; color: var(--muted); font-size: .85rem; }
 .detail-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .detail-overview { margin: 0; color: var(--text-2); max-width: 75ch; }
+.detail-cta { display: flex; gap: 8px; flex-wrap: wrap; }
+dialog.dialog-video { width: min(96vw, 960px); }
+.video-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+.video-head h2 { margin: 0; flex: 1; min-width: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-frame { position: relative; aspect-ratio: 16 / 9; background: #000; }
+.video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-foot { padding: 10px 14px 14px; margin: 0; }
 .detail-tagline { margin: 0; color: var(--muted); font-style: italic; }
 .facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; font-size: .84rem; }
 .facts div { display: flex; gap: 6px; } .facts dt { color: var(--muted); } .facts dd { margin: 0; font-weight: 650; }
@@ -224,7 +231,7 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .legacy-note p { margin: 0; flex: 1 1 240px; }
 @media (max-width: 640px) {
   .detail-grid { grid-template-columns: 104px minmax(0, 1fr); gap: 14px; padding: 14px; }
-  .detail-overview, .detail-tagline, .facts, .track-box { grid-column: 1 / -1; }
+  .detail-overview, .detail-tagline, .facts, .track-box, .detail-cta { grid-column: 1 / -1; }
   .detail-info { display: contents; }
   .detail-head { grid-column: 2; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 }
@@ -392,6 +399,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   <div class="dialog-body"><h2 id="dialog-title"></h2><div id="dialog-content"></div></div>
   <div class="dialog-actions" id="dialog-actions"></div>
 </dialog>
+<dialog id="trailer-dialog" class="dialog dialog-video" aria-labelledby="trailer-title">
+  <div class="video-head"><h2 id="trailer-title">Bande-annonce</h2><button type="button" class="btn btn-sm btn-ghost" data-action="trailer-close" aria-label="Fermer la bande-annonce">✕</button></div>
+  <div class="video-frame" id="trailer-frame"></div>
+  <p class="video-foot hint" id="trailer-foot"></p>
+</dialog>
 <input type="file" id="import-file" accept="application/json,.json" hidden>
 <script id="crazy-core">
 /* Crazy Liste — logique métier pure : aucun accès au DOM, au réseau ni au stockage.
@@ -404,7 +416,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   const STATUS_LABELS = Object.freeze({ todo: 'À voir', progress: 'En cours', seen: 'Vu' });
   const TYPE_LABELS = Object.freeze({ movie: 'Film', tv: 'Série / anime' });
   const PRODUCTION_LABELS = Object.freeze({
-    'Returning Series': 'En cours de diffusion', 'Ended': 'Terminée', 'Canceled': 'Annulée',
+    'Returning Series': 'Pas terminée', 'Ended': 'Terminée', 'Canceled': 'Annulée',
     'In Production': 'En production', 'Planned': 'Prévue', 'Pilot': 'Pilote', 'Released': 'Sorti',
     'Post Production': 'Post-production', 'Rumored': 'Annoncé', 'Upcoming': 'À venir'
   });
@@ -449,7 +461,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return 'bad';
   }
   function formatRating(v) { const n = num(v); return n > 0 ? n.toFixed(1).replace('.', ',') : '—'; }
-  function productionLabel(s) { return PRODUCTION_LABELS[s] || str(s, 40); }
+  /* « Returning Series » signifie seulement que la série n'est pas terminée : elle n'est « en cours de diffusion »
+     que si TMDB annonce un prochain épisode ; sinon, on attend une nouvelle saison (renouvelée ou non). */
+  function productionLabel(s, nextEpisode) {
+    if (s === 'Returning Series') return nextEpisode ? 'En cours de diffusion' : 'Pas terminée : prochaine saison attendue';
+    return PRODUCTION_LABELS[s] || str(s, 40);
+  }
   function episodeLabel(season, episode) { return 'S' + season + (episode == null ? '' : ' · É' + episode); }
 
   /* ---------- Normalisation des réponses TMDB ---------- */
@@ -489,6 +506,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     d.tagline = str(raw.tagline, 300);
     const reco = isObj(raw.recommendations) && Array.isArray(raw.recommendations.results) ? raw.recommendations.results : [];
     d.recommendations = reco.map((r) => normalizeSummary(r, type)).filter(Boolean).slice(0, 12);
+    d.trailer = pickTrailer(raw.videos);
     if (type === 'tv') {
       const seen = new Set();
       d.seasonSummaries = (Array.isArray(raw.seasons) ? raw.seasons : [])
@@ -508,6 +526,20 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       d.collection = isObj(c) && isPosInt(c.id) ? { id: c.id, name: str(c.name, 200) } : null;
     }
     return d;
+  }
+  /* Bande-annonce : vidéo YouTube de TMDB, de préférence en français, de type « Trailer », officielle, la plus récente. */
+  const VIDEO_TYPES = { Trailer: 3, Teaser: 2, 'Opening Credits': 1 };
+  function pickTrailer(videos) {
+    const list = isObj(videos) && Array.isArray(videos.results) ? videos.results : [];
+    let best = null, bestScore = -1;
+    for (const v of list) {
+      if (!isObj(v) || v.site !== 'YouTube' || typeof v.key !== 'string' || !/^[\w-]{6,20}$/.test(v.key) || !VIDEO_TYPES[v.type]) continue;
+      const lang = v.iso_639_1 === 'fr' ? 2 : v.iso_639_1 === 'en' ? 1 : 0;
+      const score = lang * 100 + VIDEO_TYPES[v.type] * 10 + (v.official === true ? 5 : 0);
+      const date = str(v.published_at, 40);
+      if (score > bestScore || (score === bestScore && date > best.date)) { best = { key: v.key, name: str(v.name, 200), lang: v.iso_639_1 === 'fr' ? 'fr' : 'other', type: v.type, date }; bestScore = score; }
+    }
+    return best;
   }
   function normalizeSeason(raw) {
     if (!isObj(raw) || !Number.isInteger(raw.season_number)) return null;
@@ -779,6 +811,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function detailHash(type, id) { return '#detail/' + type + '/' + id; }
 
   root.CrazyCore = Object.freeze({
+    pickTrailer,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
     normalizeSummary, normalizeDetail, normalizeSeason, isAnime, filterUpcoming,
@@ -1226,6 +1259,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     { id: 'upcoming', title: 'Films à venir', path: '/movie/upcoming', params: { region: 'FR' }, type: 'movie', upcoming: true }
   ];
   const LIST_ROUTES = ['library', 'favorites', 'watchlist', 'resume'];
+  const DETAIL_PARAMS = { append_to_response: 'recommendations,videos', include_video_language: 'fr,en,null' };
 
   /* ===== Stockage local protégé ===== */
   const storage = (function () {
@@ -1730,7 +1764,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     state.ui.detail = { key, status: 'loading', error: null };
     if (force) renderView();
     try {
-      const raw = await tmdb('/' + route.type + '/' + route.id, { append_to_response: 'recommendations' });
+      const raw = await tmdb('/' + route.type + '/' + route.id, DETAIL_PARAMS);
       const d = C.normalizeDetail(raw, route.type);
       if (!d) throw new TmdbError('invalid');
       state.cache.details.set(key, d);
@@ -1820,7 +1854,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         const k = keys[i++];
         const pk = C.parseKey(k);
         try {
-          const raw = await tmdb('/' + pk.type + '/' + pk.id, { append_to_response: 'recommendations' });
+          const raw = await tmdb('/' + pk.type + '/' + pk.id, DETAIL_PARAMS);
           const d = C.normalizeDetail(raw, pk.type);
           if (!d) continue;
           state.cache.details.set(k, d);
@@ -1953,6 +1987,27 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     'toggle-theme'() { setTheme(state.data.preferences.theme === 'dark' ? 'light' : 'dark'); },
     'set-theme'(el) { setTheme(el.dataset.theme); },
     'dismiss-banner'(el) { removeBanner(el.dataset.banner); },
+    'trailer-open'(el) {
+      const d = state.cache.details.get(el.dataset.key);
+      if (!d || !d.trailer) return;
+      const t = d.trailer;
+      byId('trailer-title').textContent = (t.name || 'Bande-annonce') + ' · ' + d.title;
+      const frame = document.createElement('iframe');
+      frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(t.key) + '?autoplay=1&rel=0&hl=fr';
+      frame.title = 'Bande-annonce de ' + d.title;
+      frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = 'strict-origin-when-cross-origin'; // YouTube refuse la lecture intégrée sans l'origine du site (erreur 153)
+      byId('trailer-frame').replaceChildren(frame);
+      const link = document.createElement('a');
+      link.href = 'https://www.youtube.com/watch?v=' + encodeURIComponent(t.key);
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Ouvrir sur YouTube';
+      byId('trailer-foot').replaceChildren((t.lang === 'fr' ? 'Vidéo YouTube proposée par TMDB. ' : 'Pas de version française sur TMDB : version originale. ') + 'Si elle ne se lance pas : ', link);
+      byId('trailer-dialog').showModal();
+    },
+    'trailer-close'() { byId('trailer-frame').replaceChildren(); byId('trailer-dialog').close(); },
     async 'sync-signin'() { await signIn(); },
     async 'sync-signout'() { await signOutSync(); },
     'sync-now'() { if (Object.keys(sync.state.dirty).length) schedulePush(0); else toast('Tout est déjà synchronisé.', 'success'); },
@@ -2342,7 +2397,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (d && d.genres.length) facts.push(['Genres', d.genres.join(', ')]);
     if (d && d.runtime) facts.push([isTv ? 'Durée d’un épisode' : 'Durée', formatRuntime(d.runtime)]);
     if (isTv && d) facts.push(['Saisons', String(d.seasonSummaries.filter((s) => s.number > 0).length)], ['Épisodes', d.numberOfEpisodes ? String(d.numberOfEpisodes) : '—']);
-    if (prod) facts.push(['Statut TMDB', C.productionLabel(prod)]);
+    if (prod) facts.push(['Statut TMDB', C.productionLabel(prod, d ? d.nextEpisode : null)]);
     const notice = d ? '' : ui.status === 'error'
       ? '<div class="error-box" role="alert" style="margin-bottom:14px"><p>Affichage hors ligne à partir de tes données enregistrées. ' + esc(ui.error.message) + '</p><button type="button" class="btn btn-sm" data-action="retry-detail">Réessayer</button></div>'
       : '<p class="hint" role="status">Mise à jour depuis TMDB…</p>';
@@ -2357,6 +2412,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         '<span class="track-label">Mon suivi :</span>' + statusBadge(itemState(key).status, key) + '</div></div>' +
         (d && d.tagline ? '<p class="detail-tagline">' + esc(d.tagline) + '</p>' : '') +
         '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p>' +
+        (d && d.trailer ? '<div class="detail-cta"><button type="button" class="btn btn-primary" data-action="trailer-open" data-key="' + key + '"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Bande-annonce' + (d.trailer.lang === 'fr' ? '' : ' (VO)') + '</button></div>' : '') +
         '<dl class="facts">' + facts.map(([k, v]) => '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>').join('') + '</dl>' +
         '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div>' +
       '</div></div></section>' +
@@ -2484,7 +2540,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       const ne = d.nextEpisode;
       parts.push(box('Prochain épisode annoncé', ne
         ? '<p><strong>' + C.episodeLabel(ne.season, ne.episode) + '</strong>' + (ne.name ? ' — ' + esc(ne.name) : '') + '</p><p class="muted">' + (ne.airDate ? 'Diffusion prévue le ' + C.formatDate(ne.airDate) : 'Date de diffusion non communiquée') + '</p>'
-        : '<p>Aucun prochain épisode annoncé par TMDB.</p><p class="muted">Statut TMDB : ' + esc(C.productionLabel(d.productionStatus) || 'inconnu') + '</p>'));
+        : '<p>Aucun prochain épisode annoncé par TMDB.</p><p class="muted">Statut TMDB : ' + esc(C.productionLabel(d.productionStatus, d.nextEpisode) || 'inconnu') + '</p>'));
       const le = d.lastEpisode;
       if (le) parts.push(box('Dernier épisode diffusé', '<p>' + C.episodeLabel(le.season, le.episode) + (le.name ? ' — ' + esc(le.name) : '') + '</p>' + (le.airDate ? '<p class="muted">' + C.formatDate(le.airDate) + '</p>' : '')));
       const t = getTrack(r.key);
@@ -2674,6 +2730,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     searchInput.focus();
     searchInput.select();
   });
+  byId('trailer-dialog').addEventListener('close', () => { byId('trailer-frame').replaceChildren(); }); // arrête la lecture
+  byId('trailer-dialog').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); }); // clic hors de la vidéo
   byId('app-dialog').addEventListener('close', () => { const r = dialogResolve; dialogResolve = null; if (r) r(byId('app-dialog').returnValue || 'cancel'); });
   window.addEventListener('hashchange', handleRoute);
   window.addEventListener('storage', (e) => {

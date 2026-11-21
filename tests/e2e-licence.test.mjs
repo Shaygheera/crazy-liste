@@ -231,7 +231,7 @@ describe('Licence : carte Diffusion', () => {
     await page.waitForSelector('#detail-cards [data-col="suite"]');
     assert.equal(await col(page, 'suite'), 'Suite annoncéeChaine Yon : le retourAnime · en production · pas encore sur TMDB');
     assert.equal(await page.locator('#detail-cards [data-col="suite"] a').count(), 0);
-    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /4 séries · 1 film · 1 OVA \/ spécial$/, 'la suite annoncée compte comme série ; le spécial relié est compté');
+    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /4 séries · 1 film · 2 OVA \/ spéciaux$/, 'la suite annoncée compte comme série ; le spécial relié est compté');
     await openLicence(page);
     assert.deepEqual(await eras(page), ['tv-220', 'tv-221', 'tv-222']);
     assert.match(await page.locator('#detail-licence .lera.is-announced').textContent(), /Chaine Yon : le retour[\s\S]*annoncée · pas encore sur TMDB/);
@@ -254,7 +254,7 @@ describe('Licence : carte Diffusion', () => {
     const snapshot = async () => page.$$eval('#detail-licence .lera', (els) => els.map((e) => (e.dataset.series || 'annoncée') + ':' + [...e.querySelectorAll('.lfilm')].map((f) => f.dataset.itemKey).join(',')));
     await openLicence(page);
     const ref = await snapshot();
-    assert.deepEqual(ref, ['tv-220:', 'tv-221:movie-142', 'tv-222:anilist-99', 'annoncée:'], 'le film relié par AniList est rangé sous sa série parente');
+    assert.deepEqual(ref, ['tv-220:', 'tv-221:movie-142', 'tv-222:anilist-99,anilist-17', 'annoncée:'], 'le film relié par AniList est rangé sous sa série parente ; l’OVA d’une saison sans fiche TMDB va avec la série');
     const label = (await page.locator('#detail-licence-btn .licbtn').textContent()).slice(2); // sans la flèche ouvert / fermé
     const calls = anilistState.calls;
     for (const hash of ['#detail/tv/222', '#detail/movie/142']) {

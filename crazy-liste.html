@@ -2808,18 +2808,18 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const extras = (Array.isArray(L.extras) ? L.extras : []).filter((e) => C.isObj(e) && Number.isInteger(e.al) && typeof e.title === 'string' && C.parseKey(e.seriesKey))
       .map((e) => ({ al: e.al, format: ['MOVIE', 'OVA', 'SPECIAL'].includes(e.format) ? e.format : 'OVA', title: String(e.title).slice(0, 200), date: /^\d{4}-\d{2}-\d{2}$/.test(e.date || '') ? e.date : '', seriesKey: e.seriesKey, key: C.parseKey(e.key) ? e.key : null }));
     const chain = (Array.isArray(L.chain) ? L.chain : []).filter((c) => C.isObj(c) && Number.isInteger(c.al))
-      .map((c) => ({ al: c.al, key: C.parseKey(c.key) ? c.key : null, status: String(c.status || ''), title: String(c.title || '').slice(0, 200) }));
+      .map((c) => ({ al: c.al, key: C.parseKey(c.key) ? c.key : null, show: C.parseKey(c.show) ? c.show : null, status: String(c.status || ''), title: String(c.title || '').slice(0, 200) }));
     return { id: L.id, at: L.at, label: String(L.label || '').slice(0, 120), items, extras, chain };
   }
   function loadLicenceStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(LICENCE_STORE) || 'null');
-      if (!C.isObj(raw) || raw.v !== 3 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
+      if (!C.isObj(raw) || raw.v !== 4 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
       for (const L of raw.list) { const c = cleanStoredLicence(L); if (c && Date.now() - c.at < LICENCE_TTL) registerLicence(c); }
     } catch (e) { /* stockage indisponible ou illisible : la licence sera recalculée */ }
   }
   function saveLicenceStore() {
-    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 3, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
+    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 4, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
   }
   function wikiRelations(d) {
     if (!wikiCache.has(d.key)) {
@@ -2855,8 +2855,16 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const alMap = alIds.length ? await fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataAnilistQuery(alIds)), { headers: { Accept: 'application/sparql-results+json' } })
       .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataAnilistMap(j)).catch(() => ({})) : {};
     if (alId && !alMap[alId]) alMap[alId] = key; // la fiche ouverte correspond à son numéro AniList
-    const chainInfo = chain.map((n) => ({ al: n.id, key: alMap[n.id] || null, status: n.status || '', title: C.anilistTitle(n) }));
-    for (const e of extras) { e.key = alMap[e.al] && alMap[e.al].startsWith('movie-') ? alMap[e.al] : null; e.seriesKey = alMap[e.seriesAl] && alMap[e.seriesAl].startsWith('tv-') ? alMap[e.seriesAl] : null; }
+    // Saisons AniList sans fiche TMDB à elles (TMDB réunit souvent toutes les saisons dans une seule fiche) : rattachées à la série précédente
+    let lastShow = null;
+    const chainInfo = chain.map((n) => {
+      const k = alMap[n.id] || null;
+      const show = k && k.startsWith('tv-') ? k : !k && n.status !== 'NOT_YET_RELEASED' && ['TV', 'TV_SHORT', 'ONA'].includes(n.format) ? lastShow : null;
+      if (show) lastShow = show;
+      return { al: n.id, key: k, show, status: n.status || '', title: C.anilistTitle(n) };
+    });
+    const showOf = new Map(chainInfo.map((c) => [c.al, c.show]));
+    for (const e of extras) { e.key = alMap[e.al] && alMap[e.al].startsWith('movie-') ? alMap[e.al] : null; e.seriesKey = alMap[e.seriesAl] && alMap[e.seriesAl].startsWith('tv-') ? alMap[e.seriesAl] : showOf.get(e.seriesAl) || null; }
     // 3. Débuts de titre : ceux de toute la chaîne (identiques quelle que soit la fiche ouverte), sinon celui de la fiche
     const keyed = [...new Set(chainInfo.map((c) => c.key).filter(Boolean).concat(w.next, w.prev))].slice(0, 12);
     const linked = (await Promise.all(keyed.map((k) => summaryOf(k).catch(() => null)))).filter(Boolean);
@@ -2882,7 +2890,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function deriveRelations(key, d, L, w) {
     const current = L.items.find((x) => x.key === key) || state.cache.summaries.get(key) || d;
     const find = (k) => (k ? L.items.find((x) => x.key === k) || state.cache.summaries.get(k) || null : null);
-    const idx = L.chain.findIndex((c) => c.key === key || (w && c.al === w.anilist[0]));
+    let idx = -1; // dernier maillon de la fiche ouverte (une fiche TMDB peut regrouper plusieurs saisons AniList)
+    L.chain.forEach((c, i) => { if (c.key === key || c.show === key || (w && c.al === w.anilist[0])) idx = i; });
     const nextNode = idx >= 0 ? L.chain[idx + 1] || null : null;
     const wikiNext = w ? w.next.map(find).find(Boolean) || null : null;
     const alNext = nextNode ? find(nextNode.key) : null;

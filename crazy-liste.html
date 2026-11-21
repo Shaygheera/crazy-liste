@@ -1219,10 +1219,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   /* Réponse SPARQL de Wikidata → clés TMDB des titres suivants / précédents (séries ou films). */
   function parseWikidataRelations(json) {
-    const out = { next: [], prev: [] };
+    const out = { next: [], prev: [], anilist: [] };
     const rows = isObj(json) && isObj(json.results) && Array.isArray(json.results.bindings) ? json.results.bindings : [];
     for (const r of rows) {
       const rel = r && r.rel && r.rel.value;
+      if (rel === 'anilist') { const al = r.al && /^\d{1,9}$/.test(r.al.value) ? Number(r.al.value) : 0; if (al && !out.anilist.includes(al)) out.anilist.push(al); continue; }
       if (rel !== 'next' && rel !== 'prev') continue;
       const tv = r.tv && /^\d{1,10}$/.test(r.tv.value) ? itemKey('tv', Number(r.tv.value)) : null;
       const mv = r.movie && /^\d{1,10}$/.test(r.movie.value) ? itemKey('movie', Number(r.movie.value)) : null;
@@ -1231,10 +1232,44 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     return out;
   }
+  /* Une requête : titre suivant (P156), précédent (P155) avec leurs numéros TMDB, et numéro AniList (P8729) de la série. */
   function wikidataQuery(tmdbTvId) {
-    return 'SELECT ?rel ?tv ?movie WHERE { ?item wdt:P4983 "' + Number(tmdbTvId) + '". ' +
-      '{ ?item wdt:P156 ?x. BIND("next" AS ?rel) } UNION { ?item wdt:P155 ?x. BIND("prev" AS ?rel) } ' +
-      'OPTIONAL { ?x wdt:P4983 ?tv. } OPTIONAL { ?x wdt:P4947 ?movie. } } LIMIT 20';
+    const ids = 'OPTIONAL { ?x wdt:P4983 ?tv. } OPTIONAL { ?x wdt:P4947 ?movie. }';
+    return 'SELECT ?rel ?tv ?movie ?al WHERE { ?item wdt:P4983 "' + Number(tmdbTvId) + '". ' +
+      '{ ?item wdt:P156 ?x. BIND("next" AS ?rel) ' + ids + ' } UNION { ?item wdt:P155 ?x. BIND("prev" AS ?rel) ' + ids + ' } ' +
+      'UNION { ?item wdt:P8729 ?al. BIND("anilist" AS ?rel) } } LIMIT 30';
+  }
+  /* AniList (anime) : préquelles et suites, pour relier des titres aux noms différents (Naruto → Naruto Shippūden → Boruto). */
+  function anilistQuery(id) {
+    const f = 'id type format status title { romaji english } startDate { year month day }';
+    return '{ Media(id: ' + Number(id) + ', type: ANIME) { ' + f + ' relations { edges { relationType node { ' + f + ' } } } } }';
+  }
+  const ANILIST_MAIN_FORMATS = ['TV', 'TV_SHORT', 'ONA'];
+  const anilistDate = (n) => (n && n.startDate && n.startDate.year ? n.startDate.year * 10000 + (n.startDate.month || 12) * 100 + (n.startDate.day || 28) : 99999999);
+  /* Maillon suivant (SEQUEL) ou précédent (PREQUEL) de la série principale : séries seulement (pas les films ni les spéciaux). */
+  function anilistStep(media, dir) {
+    const edges = isObj(media) && isObj(media.relations) && Array.isArray(media.relations.edges) ? media.relations.edges : [];
+    const nodes = edges.filter((e) => isObj(e) && e.relationType === dir && isObj(e.node) && e.node.type === 'ANIME' && ANILIST_MAIN_FORMATS.includes(e.node.format) && isPosInt(e.node.id))
+      .map((e) => e.node).sort((a, b) => anilistDate(a) - anilistDate(b));
+    return nodes.length ? (dir === 'SEQUEL' ? nodes[0] : nodes[nodes.length - 1]) : null;
+  }
+  function anilistTitle(node) { return str((node && node.title && (node.title.english || node.title.romaji)) || '', 200); }
+  /* Numéros AniList → fiches TMDB, par Wikidata (correspondance exacte, aucune recherche par titre). */
+  function wikidataAnilistQuery(ids) {
+    const vals = (Array.isArray(ids) ? ids : []).filter(isPosInt).slice(0, 20).map((n) => '"' + n + '"').join(' ');
+    return 'SELECT ?al ?tv ?movie WHERE { VALUES ?al { ' + vals + ' } ?item wdt:P8729 ?al. OPTIONAL { ?item wdt:P4983 ?tv. } OPTIONAL { ?item wdt:P4947 ?movie. } } LIMIT 60';
+  }
+  function parseWikidataAnilistMap(json) {
+    const out = {};
+    const rows = isObj(json) && isObj(json.results) && Array.isArray(json.results.bindings) ? json.results.bindings : [];
+    for (const r of rows) {
+      const al = r && r.al && /^\d{1,9}$/.test(r.al.value) ? Number(r.al.value) : 0;
+      if (!al) continue;
+      const tv = r.tv && /^\d{1,10}$/.test(r.tv.value) ? itemKey('tv', Number(r.tv.value)) : null;
+      const mv = r.movie && /^\d{1,10}$/.test(r.movie.value) ? itemKey('movie', Number(r.movie.value)) : null;
+      if (tv) out[al] = tv; else if (mv && !out[al]) out[al] = mv;
+    }
+    return out;
   }
 
   /* ---------- Navigation par hash ---------- */
@@ -1508,7 +1543,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
-    normTitle, licenceBase, inLicence, licenceList, probableNext, parseWikidataRelations, wikidataQuery, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
+    normTitle, licenceBase, inLicence, licenceList, probableNext, parseWikidataRelations, wikidataQuery,
+    anilistQuery, anilistStep, anilistTitle, wikidataAnilistQuery, parseWikidataAnilistMap, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2534,6 +2570,35 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (s) state.cache.summaries.set(key, s);
     return s;
   }
+  const ANILIST_API = 'https://graphql.anilist.co';
+  const anilistCache = new Map();
+  function anilistMedia(id) {
+    if (!anilistCache.has(id)) {
+      anilistCache.set(id, fetch(ANILIST_API, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ query: C.anilistQuery(id) }) })
+        .then((r) => (r.ok ? r.json() : null)).then((j) => (j && j.data && j.data.Media) || null).catch(() => null));
+    }
+    return anilistCache.get(id);
+  }
+  /* Chaîne principale : jusqu'à 4 préquelles et 4 suites (séries), dans l'ordre. Un maillon pas encore sorti termine la chaîne. */
+  async function anilistChain(startId) {
+    const start = await anilistMedia(startId);
+    if (!start) return [];
+    const seen = new Set([start.id]);
+    const sides = {};
+    for (const dir of ['PREQUEL', 'SEQUEL']) {
+      const arr = [];
+      let m = start;
+      for (let i = 0; i < 4 && m; i++) {
+        const n = C.anilistStep(m, dir);
+        if (!n || seen.has(n.id)) break;
+        seen.add(n.id);
+        arr.push(n);
+        m = n.status === 'NOT_YET_RELEASED' ? null : await anilistMedia(n.id);
+      }
+      sides[dir] = arr;
+    }
+    return sides.PREQUEL.reverse().concat([start], sides.SEQUEL);
+  }
   async function loadRelations(key) {
     if (state.cache.relations.has(key)) return;
     const d = state.cache.details.get(key);
@@ -2541,18 +2606,34 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const rel = { status: 'loading', base: C.licenceBase(d.title) || C.licenceBase(d.originalTitle), list: [], next: null, confirmed: false };
     state.cache.relations.set(key, rel);
     const wiki = fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataQuery(d.id)), { headers: { Accept: 'application/sparql-results+json' } })
-      .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataRelations(j)).catch(() => ({ next: [], prev: [] }));
+      .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataRelations(j)).catch(() => ({ next: [], prev: [], anilist: [] }));
     const search = rel.base ? tmdb('/search/multi', { query: rel.base, include_adult: 'false' })
       .then((j) => (Array.isArray(j.results) ? j.results : []).map((x) => C.normalizeSummary(x, null)).filter(Boolean)).catch(() => []) : Promise.resolve([]);
     const [w, found] = await Promise.all([wiki, search]);
     found.forEach(rememberSummary);
-    const linked = (await Promise.all(w.next.concat(w.prev).slice(0, 6).map((k) => summaryOf(k).catch(() => null)))).filter(Boolean);
+    // Chaîne AniList (anime) : maillons reliés à leurs fiches TMDB par Wikidata
+    const al = w.anilist[0] || 0;
+    const chain = al ? await anilistChain(al).catch(() => []) : [];
+    const alMap = chain.length > 1 ? await fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataAnilistQuery(chain.map((n) => n.id))), { headers: { Accept: 'application/sparql-results+json' } })
+      .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataAnilistMap(j)).catch(() => ({})) : {};
+    const idx = chain.findIndex((n) => n.id === al);
+    const chainKeys = chain.map((n) => alMap[n.id] || null).filter((k) => k && k !== key);
+    const linkedKeys = [...new Set(w.next.concat(w.prev, chainKeys))].slice(0, 10);
+    const linked = (await Promise.all(linkedKeys.map((k) => summaryOf(k).catch(() => null)))).filter(Boolean);
     const current = state.cache.summaries.get(key) || d;
     const list = C.licenceList(current, found, rel.base, 10);
-    for (const x of linked) if (!list.some((y) => y.key === x.key)) list.push(x); // titres liés par Wikidata même si leur titre diffère
+    for (const x of linked) if (!list.some((y) => y.key === x.key)) list.push(x); // titres liés par Wikidata ou AniList même si leur titre diffère
     list.sort((a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : 0));
-    const confirmedNext = w.next.map((k) => linked.find((x) => x.key === k)).find(Boolean) || null;
-    Object.assign(rel, { status: 'ready', list: list.length > 1 ? list : [], next: confirmedNext || C.probableNext(list, current), confirmed: !!confirmedNext });
+    const find = (k) => (k ? linked.find((x) => x.key === k) || null : null);
+    const wikiNext = w.next.map(find).find(Boolean) || null;
+    const alNextNode = idx >= 0 ? chain[idx + 1] || null : null;
+    const alNext = alNextNode ? find(alMap[alNextNode.id]) : null;
+    const announced = alNextNode && !alNext && !wikiNext ? { title: C.anilistTitle(alNextNode), status: alNextNode.status } : null;
+    const confirmedNext = wikiNext || alNext;
+    const root = chain.length > 1 ? find(alMap[chain[0].id]) || (chain[0].id === al ? current : null) : null;
+    Object.assign(rel, { status: 'ready', list: list.length > 1 ? list : [], confirmed: !!confirmedNext, announced,
+      next: confirmedNext || (announced ? null : C.probableNext(list, current)),
+      label: (root || current).title.split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0] });
     if (state.route.name === 'detail' && state.route.key === key) renderRelated();
   }
 
@@ -3800,7 +3881,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   /* Suite (confirmée par Wikidata, ou probable d'après la licence) et ligne des titres de la licence. */
   function suiteCol(key) {
     const rel = state.cache.relations.get(key);
-    if (!rel || rel.status !== 'ready' || !rel.next) return '';
+    if (!rel || rel.status !== 'ready') return '';
+    if (!rel.next && rel.announced) return dcol('suite', 'Suite annoncée', esc(rel.announced.title),
+      'Anime · ' + (rel.announced.status === 'NOT_YET_RELEASED' ? 'en production' : 'en cours') + ' · pas encore sur TMDB');
+    if (!rel.next) return '';
     const x = rel.next;
     const when = x.date ? (x.date > state.today ? 'à venir · ' + esc(C.formatDate(x.date)) : esc(x.year)) : 'à venir';
     return dcol('suite', rel.confirmed ? 'Suite' : 'Suite probable', '<a href="' + C.detailHash(x.type, x.id) + '">' + esc(x.title) + ' ›</a>',
@@ -3809,7 +3893,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function licenceRowHtml(key) {
     const rel = state.cache.relations.get(key);
     if (!rel || rel.status !== 'ready' || rel.list.length < 2) return '';
-    const label = rel.base ? 'Licence « ' + esc((state.cache.details.get(key) || {}).title.split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0]) + ' » :' : 'Titres liés :';
+    const label = rel.label ? 'Licence « ' + esc(rel.label) + ' » :' : 'Titres liés :';
     return '<div class="dlicence"><span class="dlicence-label">' + label + '</span>' + rel.list.map((x) => {
       const cur = x.key === key;
       const seen = getTrack(x.key) && itemState(x.key).status === 'seen';

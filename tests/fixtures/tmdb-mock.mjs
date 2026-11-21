@@ -61,14 +61,43 @@ SHOWS[217] = { base: show(217, 'Licence Test : Seconde partie', { first_air_date
 SHOWS[218] = { base: show(218, 'Licencieux', { first_air_date: '2020-01-01' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 SHOWS[219] = { base: show(219, 'Licence Test Origines', { first_air_date: '2010-01-01' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 MOVIES[140] = movie(140, 'Licence Test : le film', { release_date: '2015-08-01', _hidden: true });
-// Wikidata simulé : « suivi par » / « précédé par » avec numéros TMDB (série 201 → série 202).
-export const WIKIDATA = { 201: { next: [['tv', 202]], prev: [] }, 202: { next: [], prev: [['tv', 201]] } };
+// Chaîne d'anime aux titres différents (AniList 11 → 12 → 13 → 14 pas encore sortie) : séries TMDB 220, 221, 222 (hors découverte).
+SHOWS[220] = { base: show(220, 'Chaîne Un', { first_air_date: '2005-01-01', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[221] = { base: show(221, 'Chaîne Deux autre nom', { first_air_date: '2010-01-01', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[222] = { base: show(222, 'Troisième Volet', { first_air_date: '2015-01-01', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+// Wikidata simulé : « suivi par » / « précédé par » avec numéros TMDB (série 201 → série 202) et numéros AniList.
+export const WIKIDATA = { 201: { next: [['tv', 202]], prev: [] }, 202: { next: [], prev: [['tv', 201]] }, 220: { anilist: 11 }, 221: { anilist: 12 }, 222: { anilist: 13 } };
+const WIKIDATA_ANILIST = { 11: ['tv', 220], 12: ['tv', 221], 13: ['tv', 222] };
+const lit = (v) => ({ type: 'literal', value: String(v) });
 export async function handleWikidata(route) {
   const q = new URL(route.request().url()).searchParams.get('query') || '';
-  const m = /wdt:P4983 "(\d+)"/.exec(q);
-  const rel = (m && WIKIDATA[m[1]]) || { next: [], prev: [] };
-  const bindings = ['next', 'prev'].flatMap((r) => rel[r].map(([type, id]) => ({ rel: { type: 'literal', value: r }, [type === 'tv' ? 'tv' : 'movie']: { type: 'literal', value: String(id) } })));
-  return route.fulfill({ status: 200, contentType: 'application/sparql-results+json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ head: { vars: ['rel', 'tv', 'movie'] }, results: { bindings } }) });
+  let bindings = [];
+  const values = /VALUES \?al \{([^}]*)\}/.exec(q);
+  if (values) {
+    bindings = [...values[1].matchAll(/"(\d+)"/g)].map((m) => m[1]).filter((al) => WIKIDATA_ANILIST[al])
+      .map((al) => ({ al: lit(al), [WIKIDATA_ANILIST[al][0] === 'tv' ? 'tv' : 'movie']: lit(WIKIDATA_ANILIST[al][1]) }));
+  } else {
+    const m = /wdt:P4983 "(\d+)"/.exec(q);
+    const rel = (m && WIKIDATA[m[1]]) || {};
+    bindings = ['next', 'prev'].flatMap((r) => (rel[r] || []).map(([type, id]) => ({ rel: lit(r), [type === 'tv' ? 'tv' : 'movie']: lit(id) })));
+    if (rel.anilist) bindings.push({ rel: lit('anilist'), al: lit(rel.anilist) });
+  }
+  return route.fulfill({ status: 200, contentType: 'application/sparql-results+json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ head: { vars: [] }, results: { bindings } }) });
+}
+// AniList simulé (GraphQL) : 13 a aussi un spécial « suite », qui doit être ignoré.
+const al = (id, title, year, status = 'FINISHED', format = 'TV') => ({ id, type: 'ANIME', format, status, title: { romaji: title, english: null }, startDate: { year, month: 1, day: 1 } });
+const AL_NODES = { 11: al(11, 'Chaine Ichi', 2005), 12: al(12, 'Chaine Ni', 2010), 13: al(13, 'Chaine San', 2015), 14: al(14, 'Chaine Yon : le retour', null, 'NOT_YET_RELEASED'), 99: al(99, 'Spécial', 2016, 'FINISHED', 'SPECIAL') };
+const AL_REL = { 11: [['SEQUEL', 12]], 12: [['PREQUEL', 11], ['SEQUEL', 13]], 13: [['PREQUEL', 12], ['SEQUEL', 99], ['SEQUEL', 14]], 14: [['PREQUEL', 13]] };
+export const anilistState = { calls: 0 };
+export async function handleAnilist(route) {
+  const req = route.request();
+  const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
+  if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors, body: '' });
+  anilistState.calls++;
+  const m = /Media\(id: (\d+)/.exec(JSON.parse(req.postData() || '{}').query || '');
+  const id = m ? Number(m[1]) : 0;
+  const media = AL_NODES[id] ? { ...AL_NODES[id], relations: { edges: (AL_REL[id] || []).map(([t, n]) => ({ relationType: t, node: AL_NODES[n] })) } } : null;
+  return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ data: { Media: media } }) });
 }
 const STATUS_CODES = { 'Returning Series': '0', Planned: '1', 'In Production': '2', Ended: '3', Canceled: '4', Pilot: '5' };
 // Applique les paramètres de /discover comme TMDB (sous-ensemble utilisé par l'application).

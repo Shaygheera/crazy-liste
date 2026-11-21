@@ -43,9 +43,31 @@ describe('Licence : règles', () => {
       { rel: { value: 'autre' }, tv: { value: '9' } },
       { rel: { value: 'next' }, tv: { value: '<b>' } }
     ] } };
-    assert.deepEqual(C.parseWikidataRelations(json), { next: ['tv-31910'], prev: ['movie-12'] });
-    assert.deepEqual(C.parseWikidataRelations(null), { next: [], prev: [] });
+    assert.deepEqual(C.parseWikidataRelations(json), { next: ['tv-31910'], prev: ['movie-12'], anilist: [] });
+    assert.deepEqual(C.parseWikidataRelations({ results: { bindings: [{ rel: { value: 'anilist' }, al: { value: '1735' } }, { rel: { value: 'anilist' }, al: { value: 'x' } }] } }).anilist, [1735]);
+    assert.deepEqual(C.parseWikidataRelations(null), { next: [], prev: [], anilist: [] });
+    assert.match(C.wikidataQuery(46260), /\{ \?item wdt:P156 \?x\. BIND\("next" AS \?rel\) OPTIONAL \{ \?x wdt:P4983 \?tv\. \}/, 'numéros TMDB cherchés dans chaque branche, jamais hors branche');
     assert.match(C.wikidataQuery('46260 } DROP'), /wdt:P4983 "NaN"/, 'identifiant non numérique neutralisé');
+  });
+});
+
+describe('AniList : chaîne d’une licence', () => {
+  it('maillon suivant / précédent : séries seulement, la plus proche dans le temps', () => {
+    const n = (id, format, year, type = 'ANIME') => ({ id, type, format, startDate: { year, month: 1, day: 1 } });
+    const media = { relations: { edges: [
+      { relationType: 'SEQUEL', node: n(3, 'SPECIAL', 2016) }, { relationType: 'SEQUEL', node: n(4, 'TV', 2023) }, { relationType: 'SEQUEL', node: n(5, 'TV', 2018) },
+      { relationType: 'SEQUEL', node: n(6, 'MANGA', 2010, 'MANGA') }, { relationType: 'PREQUEL', node: n(1, 'TV', 2002) }, { relationType: 'PREQUEL', node: n(2, 'ONA', 2007) },
+      { relationType: 'ADAPTATION', node: n(7, 'TV', 2017) }
+    ] } };
+    assert.equal(C.anilistStep(media, 'SEQUEL').id, 5);
+    assert.equal(C.anilistStep(media, 'PREQUEL').id, 2, 'le plus récent des précédents');
+    assert.equal(C.anilistStep({}, 'SEQUEL'), null);
+    assert.equal(C.anilistTitle({ title: { english: null, romaji: 'NARUTO: Shippuuden' } }), 'NARUTO: Shippuuden');
+  });
+  it('correspondance AniList → TMDB par Wikidata ; requête bornée aux numéros', () => {
+    assert.deepEqual(C.parseWikidataAnilistMap({ results: { bindings: [{ al: { value: '20' }, tv: { value: '46260' } }, { al: { value: '21' }, movie: { value: '9' } }, { al: { value: '20' }, movie: { value: '1' } }] } }), { 20: 'tv-46260', 21: 'movie-9' });
+    assert.match(C.wikidataAnilistQuery([20, 1735, 'x', -3]), /VALUES \?al \{ "20" "1735" \}/);
+    assert.match(C.anilistQuery('97938 }'), /Media\(id: NaN, type: ANIME\)/);
   });
 });
 
@@ -78,6 +100,36 @@ describe('Licence : carte Diffusion', () => {
     await page.waitForSelector('#detail-cards [data-col="suite"]');
     assert.match(await col(page, 'suite'), /^SuiteAnime Bêta ›Anime · 2019$/);
     assert.deepEqual(await page.$$eval('#detail-cards .lic', (els) => els.map((e) => e.dataset.lic)), ['tv-201', 'tv-202']);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('chaîne AniList : titres aux noms différents reliés, suite confirmée, licence nommée d’après le premier titre', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/221' });
+    await page.waitForSelector('#detail-cards [data-col="suite"]');
+    assert.match(await col(page, 'suite'), /^SuiteTroisième Volet ›Anime · 2015$/);
+    assert.deepEqual(await page.$$eval('#detail-cards .lic', (els) => els.map((e) => e.dataset.lic)), ['tv-220', 'tv-221', 'tv-222']);
+    assert.match(await page.locator('.dlicence-label').textContent(), /Licence « Chaîne Un » :/);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('suite annoncée par AniList mais absente de TMDB : nommée, sans lien ; le spécial est ignoré', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/222' });
+    await page.waitForSelector('#detail-cards [data-col="suite"]');
+    assert.equal(await col(page, 'suite'), 'Suite annoncéeChaine Yon : le retourAnime · en production · pas encore sur TMDB');
+    assert.equal(await page.locator('#detail-cards [data-col="suite"] a').count(), 0);
+    assert.deepEqual(await page.$$eval('#detail-cards .lic', (els) => els.map((e) => e.dataset.lic)), ['tv-220', 'tv-221', 'tv-222']);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('AniList injoignable : la suite trouvée par Wikidata ou par le titre reste affichée, aucune erreur', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/216' });
+    await context.route('https://graphql.anilist.co/**', (r) => r.abort());
+    await page.reload();
+    await page.waitForSelector('#detail-cards [data-col="suite"]');
+    assert.match(await col(page, 'suite'), /^Suite probable/);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

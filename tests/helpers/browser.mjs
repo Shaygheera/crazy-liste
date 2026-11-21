@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
-import { createMock, PNG, handleWikidata } from '../fixtures/tmdb-mock.mjs';
+import { createMock, PNG, handleWikidata, handleAnilist } from '../fixtures/tmdb-mock.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = process.env.CRAZY_HTML || path.resolve(here, '..', '..', 'crazy-liste.html');
@@ -33,6 +33,7 @@ export async function openApp(browser, { hash = '', storage = null, viewport = {
   await context.route('https://api.themoviedb.org/**', (r) => mock.handle(r));
   await context.route('https://image.tmdb.org/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
   await context.route('https://query.wikidata.org/**', (r) => handleWikidata(r));
+  await context.route('https://graphql.anilist.co/**', (r) => handleAnilist(r));
   if (storage) {
     await context.addInitScript((s) => {
       if (sessionStorage.getItem('__seeded')) return;

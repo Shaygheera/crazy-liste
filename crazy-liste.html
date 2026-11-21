@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="dark light">
 <title>Crazy Liste</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235ad1e6'/%3E%3Ctext x='32' y='44' font-family='Arial' font-size='34' font-weight='900' text-anchor='middle' fill='%2304161b'%3ECL%3C/text%3E%3C/svg%3E">
@@ -1389,15 +1388,14 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   const esc = C.escapeHtml;
 
   /* ===== Configuration TMDB =====
-     Clé v3 reprise de la version précédente de l'application, vérifiée auprès de TMDB le 20/11/2026.
-     Comme toute clé placée dans une page web, elle est lisible par quiconque ouvre ce fichier : elle n'est pas secrète.
-     Une clé personnelle peut la remplacer dans Réglages. */
-  const DEFAULT_TMDB_KEY = ''; // version publique : aucune clé intégrée
+     Aucune clé dans le code (dépôt public) : chacun colle sa clé dans Réglages, et la synchronisation la transmet à ses autres appareils.
+     Une clé placée ici serait lisible par quiconque ouvre la page : elle ne serait pas secrète. */
+  const DEFAULT_TMDB_KEY = '';
   /* ===== Synchronisation entre appareils (optionnelle) =====
      Configuration web d'un projet Firebase : ces valeurs identifient le projet, elles ne sont pas secrètes.
      La protection des données repose sur les règles Firestore (lecture et écriture réservées au compte propriétaire).
      null : synchronisation désactivée (la liste reste dans ce navigateur). */
-  const FIREBASE_CONFIG = {"apiKey":"AIzaSyDN07Vq4OoD2q7ALWm0_BLPbcXLC0K_U9A","authDomain":"crazy-liste-7c940.firebaseapp.com","projectId":"crazy-liste-7c940","storageBucket":"crazy-liste-7c940.firebasestorage.app","messagingSenderId":"712529946885","appId":"1:712529946885:web:1ec484551e2ed5a6bdef6c"};
+  const FIREBASE_CONFIG = null;
   const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
   const TMDB_API = 'https://api.themoviedb.org/3';
   const TMDB_IMG = 'https://image.tmdb.org/t/p/';
@@ -2638,7 +2636,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       '<section class="panel" id="sync-panel">' + syncPanelInner() + '</section>' +
       '<section class="panel"><h2>Apparence</h2><div class="seg seg-lg" role="group" aria-label="Thème">' + [['dark', 'Sombre'], ['light', 'Clair']].map(([v, l]) =>
         '<button type="button" data-action="set-theme" data-theme="' + v + '" aria-pressed="' + (p.theme === v) + '">' + l + '</button>').join('') + '</div></section>' +
-      '<section class="panel"><h2>Connexion TMDB</h2><p>' + (custom ? 'Clé utilisée : <strong>ta clé personnelle</strong>.' : DEFAULT_TMDB_KEY ? 'Clé utilisée : <strong>la clé intégrée, reprise de la version précédente</strong>.' : '<strong>Aucune clé configurée</strong> : colle ta clé TMDB ci-dessous' + (FIREBASE_CONFIG ? ', ou connecte-toi pour la récupérer depuis ton compte' : '') + '.') + '</p>' +
+      '<section class="panel"><h2>Connexion TMDB</h2><p>' + (custom ? 'Clé utilisée : <strong>ta clé personnelle</strong>.' : DEFAULT_TMDB_KEY ? 'Clé utilisée : <strong>la clé intégrée à ce fichier</strong>.' : '<strong>Aucune clé configurée</strong> : colle ta clé TMDB ci-dessous' + (FIREBASE_CONFIG ? ', ou connecte-toi pour la récupérer depuis ton compte' : '') + '.') + '</p>' +
         '<div class="field"><label for="tmdb-key-input">Clé API TMDB (v3) ou jeton d’accès en lecture (v4)</label>' +
         '<input id="tmdb-key-input" class="input" type="text" autocomplete="off" spellcheck="false" placeholder="Colle ta clé ici" value="' + esc(p.apiKey) + '"></div>' +
         '<div class="row"><button type="button" class="btn btn-primary" data-action="key-save">Tester et enregistrer</button>' +

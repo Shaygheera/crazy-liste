@@ -207,6 +207,32 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .detail-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .22; }
 .detail-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--surface) 15%, color-mix(in srgb, var(--surface) 70%, transparent) 60%, color-mix(in srgb, var(--surface) 45%, transparent)); }
 .detail-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 184px minmax(0, 1fr); gap: 22px; padding: 20px; }
+.detail-side { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.detail-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px 18px; flex-wrap: wrap; }
+.detail-titles { flex: 1 1 320px; min-width: 0; }
+.detail-sub { margin: 4px 0 0; color: var(--muted); font-size: .86rem; }
+.detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.genre-tag { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--accent); }
+.kicker { margin: 0; font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 750; }
+.dcard { display: grid; gap: 10px; padding: 12px 16px 14px; border-radius: var(--radius); border: 1px solid var(--border); background: color-mix(in srgb, var(--surface-2) 75%, transparent); }
+.dcard-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; }
+.dcol { display: grid; gap: 3px; align-content: start; min-width: 0; }
+.dcol + .dcol { border-left: 1px solid var(--border); padding-left: 18px; }
+.dcol-label { font-size: .78rem; color: var(--muted); }
+.dcol-big { font-size: 1.02rem; font-weight: 750; overflow-wrap: anywhere; }
+.dcol-big a { color: inherit; text-decoration: none; } .dcol-big a:hover { color: var(--accent); text-decoration: underline; }
+.dcol-sub { font-size: .8rem; color: var(--muted); } .dcol-sub b { color: var(--text); }
+.dcol .accent { color: var(--accent); font-weight: 700; }
+.dcol .progress-bar { margin: 4px 0 2px; } .dcol .progress-bar span { background: var(--accent); }
+.dcol-avail { margin-top: 4px; } .dcol-avail .avail { position: static; display: inline-flex; }
+.detail-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 18px; align-items: start; }
+.detail-summary { display: grid; gap: 6px; min-width: 0; }
+.detail-info { container-type: inline-size; }
+@container (max-width: 680px) { .detail-body { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 500px) { .dcols { grid-template-columns: minmax(0, 1fr); } .dcol + .dcol { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 10px; } }
+.reco-section:empty { display: none; }
+.reco-section { margin-top: 22px; }
 .detail-poster { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); align-self: start; }
 .detail-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .detail-info h1 { margin: 0; font-size: clamp(1.4rem, 2.6vw, 2.1rem); letter-spacing: -.02em; overflow-wrap: anywhere; }
@@ -335,10 +361,8 @@ dialog.dialog.dialog-video { width: min(96vw, 1400px, calc((100dvh - 150px) * 16
 .legacy-note { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--progress-soft); font-size: .84rem; }
 .legacy-note p { margin: 0; flex: 1 1 240px; }
 @media (max-width: 640px) {
-  .detail-grid { grid-template-columns: 104px minmax(0, 1fr); gap: 14px; padding: 14px; }
-  .detail-overview, .detail-tagline, .facts, .track-box, .detail-cta { grid-column: 1 / -1; }
-  .detail-info { display: contents; }
-  .detail-head { grid-column: 2; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .detail-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 14px; }
+  .detail-side { grid-template-columns: 110px minmax(0, 1fr); align-items: start; }
 }
 .seasons-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 6px 0 12px; }
 .seasons-head h2 { margin: 0; font-size: 1.2rem; }
@@ -386,8 +410,10 @@ dialog.dialog.dialog-video { width: min(96vw, 1400px, calc((100dvh - 150px) * 16
 .stat strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
 .stat span { font-size: .7rem; color: var(--muted); font-weight: 650; }
 .stat-seen strong { color: var(--seen); } .stat-progress strong { color: var(--progress); } .stat-fav strong { color: var(--fav); }
-.where { display: grid; gap: 8px; }
-.where-title { margin: 0; font-size: .95rem; }
+.where { display: grid; gap: 8px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: color-mix(in srgb, var(--surface-2) 75%, transparent); }
+.where-link { color: var(--accent); font-size: .78rem; font-weight: 700; text-decoration: none; } .where-link:hover { text-decoration: underline; }
+.detail-side .where-group { display: grid; gap: 6px; } .detail-side .where-kind { min-width: 0; }
+.detail-side .where-list { flex-direction: column; } .detail-side .provider { white-space: normal; line-height: 1.2; }
 .where-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .where-kind { font-size: .78rem; color: var(--muted); font-weight: 650; min-width: 92px; }
 .where-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
@@ -518,10 +544,6 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     <section class="panel" aria-labelledby="resume-panel-title">
       <div class="panel-head"><h2 id="resume-panel-title">Reprendre</h2><a class="panel-link" href="#resume">Tout voir</a></div>
       <ol id="resume-panel-list" class="resume-list"></ol>
-    </section>
-    <section class="panel" aria-labelledby="related-title">
-      <div class="panel-head"><h2 id="related-title">Prochain contenu lié</h2></div>
-      <div id="related-panel" class="related"></div>
     </section>
   </aside>
 </div>
@@ -3441,57 +3463,67 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     const item = d || meta;
     const isTv = r.type === 'tv';
-    const prod = d ? d.productionStatus : meta.productionStatus || '';
-    const facts = [[isTv ? 'Première diffusion' : 'Sortie', item.date ? C.formatDate(item.date) : 'Date inconnue']];
-    if (d && d.genres.length) facts.push(['Genres', d.genres.join(', ')]);
-    if (d && d.runtime) facts.push([isTv ? 'Durée d’un épisode' : 'Durée', formatRuntime(d.runtime)]);
-    if (isTv && d) facts.push(['Saisons', String(d.seasonSummaries.filter((s) => s.number > 0).length)], ['Épisodes', d.numberOfEpisodes ? String(d.numberOfEpisodes) : '—']);
-    if (prod) facts.push(['Statut TMDB', C.productionLabel(prod, d ? d.nextEpisode : null, state.today)]);
-    const si = isTv ? airingInfo(key) : null;
-    if (si) facts.push(['Saison ' + si.season + (si.started ? ' en cours' : ' à venir'), seasonFact(si), 'airing-fact']);
     const notice = d ? '' : ui.status === 'error'
       ? '<div class="error-box" role="alert" style="margin-bottom:14px"><p>Affichage hors ligne à partir de tes données enregistrées. ' + esc(ui.error.message) + '</p><button type="button" class="btn btn-sm" data-action="retry-detail">Réessayer</button></div>'
       : '<p class="hint" role="status">Mise à jour depuis TMDB…</p>';
     const backdrop = img(item.backdropPath, 'w1280');
+    const genres = d ? d.genres : Array.isArray(meta.genres) ? meta.genres : [];
     return '<article class="detail" data-item-key="' + key + '">' + notice +
       '<section class="detail-hero">' + (backdrop ? '<img class="detail-backdrop" src="' + esc(backdrop) + '" alt="">' : '') +
-      '<div class="detail-grid">' + (item.posterPath
+      '<div class="detail-grid"><div class="detail-side">' + (item.posterPath
         ? '<button type="button" class="detail-poster poster poster-zoom" data-action="poster-zoom" data-key="' + key + '" aria-label="Agrandir l’affiche de ' + esc(item.title) + '">' + posterHtml(item, 'w500') + '<span class="zoom-hint" aria-hidden="true">⤢</span></button>'
-        : '<div class="detail-poster poster">' + posterHtml(item, 'w500') + '</div>') + '<div class="detail-info">' +
-        '<div class="detail-head"><h1>' + esc(item.title) + '</h1>' +
-        (item.originalTitle && item.originalTitle !== item.title ? '<p class="detail-original">Titre original : ' + esc(item.originalTitle) + '</p>' : '') +
+        : '<div class="detail-poster poster">' + posterHtml(item, 'w500') + '</div>') +
+        '<div id="detail-where">' + providersHtml(d) + '</div></div>' +
+      '<div class="detail-info">' +
+        '<div class="detail-top"><div class="detail-titles"><h1>' + esc(item.title) + '</h1><p class="detail-sub">' + esc(detailSubline(item, d, isTv)) + '</p></div>' +
+          '<div class="detail-actions">' + (d && d.trailer ? '<button type="button" class="btn btn-primary" data-action="trailer-open" data-key="' + key + '"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Bande-annonce' + (d.trailer.lang === 'fr' ? '' : ' (VO)') + '</button>' : '') +
+          listButton('favorite', key, '') + listButton('watchlist', key, '') + '</div></div>' +
         '<div class="detail-badges">' + ratingHtml(item.voteAverage, 'Note TMDB') + (d && d.voteCount ? '<span class="chip">' + d.voteCount.toLocaleString('fr-FR') + ' votes</span>' : '') +
-        '<span class="chip">' + TYPE_LABELS[r.type] + '</span>' + (C.isAnime(item) ? '<span class="chip">Anime</span>' : '') + (item.year ? '<span class="chip">' + esc(item.year) + '</span>' : '') +
-        '<span class="track-label">Mon suivi :</span>' + statusBadge(itemState(key).status, key) + '</div></div>' +
-        (d && d.tagline ? '<p class="detail-tagline">' + esc(d.tagline) + '</p>' : '') +
-        '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p>' +
-        (d && d.trailer ? '<div class="detail-cta"><button type="button" class="btn btn-primary" data-action="trailer-open" data-key="' + key + '"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Bande-annonce' + (d.trailer.lang === 'fr' ? '' : ' (VO)') + '</button></div>' : '') +
-        '<dl class="facts">' + facts.map(([k, v, id]) => '<div><dt>' + esc(k) + '</dt><dd' + (id ? ' id="' + id + '"' : '') + '>' + esc(v) + '</dd></div>').join('') + '</dl>' +
-        providersHtml(d) +
-        '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div>' +
+          genres.map((g) => '<span class="chip genre-tag">' + esc(g) + '</span>').join('') +
+          '<span class="track-label">Mon suivi :</span>' + statusBadge(itemState(key).status, key) + '</div>' +
+        '<div id="detail-cards">' + detailCardHtml(key) + '</div>' +
+        '<div class="detail-body"><div class="detail-summary"><h2 class="kicker">Résumé</h2>' +
+          (d && d.tagline ? '<p class="detail-tagline">' + esc(d.tagline) + '</p>' : '') +
+          '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p></div>' +
+          '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div></div>' +
       '</div></div></section>' +
       (d && d.gallery.length ? '<section class="gallery-section" aria-labelledby="gallery-title"><div class="gallery-head"><h2 id="gallery-title">Images</h2><span class="hint">Visuels officiels du titre, sans images d’épisodes pour éviter les spoilers.</span></div>' +
         '<div class="gallery">' + d.gallery.map((p, i) => '<button type="button" class="gallery-item" data-action="gallery-open" data-key="' + key + '" data-index="' + i + '" aria-label="Agrandir l’image ' + (i + 1) + ' sur ' + d.gallery.length + '">' +
           '<img src="' + esc(img(p, 'w780')) + '" alt="" loading="lazy" decoding="async"></button>').join('') + '</div></section>' : '') +
-      (isTv ? '<section id="seasons-section" aria-labelledby="seasons-title">' + seasonsHtml(key) + '</section>' : '') + '</article>';
+      (isTv ? '<section id="seasons-section" aria-labelledby="seasons-title">' + seasonsHtml(key) + '</section>' : '') +
+      '<section id="detail-reco" class="reco-section" aria-label="Dans le même esprit">' + recoHtml(key) + '</section></article>';
+  }
+  /* Ligne sous le titre : titre original · type · saisons et épisodes · durée · date. */
+  function detailSubline(item, d, isTv) {
+    const parts = [];
+    if (item.originalTitle && item.originalTitle !== item.title) parts.push(item.originalTitle);
+    parts.push(C.isAnime(item) ? 'Anime' : isTv ? 'Série' : 'Film');
+    if (isTv && d) {
+      const n = d.seasonSummaries.filter((x) => x.number > 0).length;
+      parts.push(n + ' saison' + (n > 1 ? 's' : ''));
+      if (d.numberOfEpisodes) parts.push(d.numberOfEpisodes + ' épisode' + (d.numberOfEpisodes > 1 ? 's' : ''));
+    }
+    if (d && d.runtime) parts.push(formatRuntime(d.runtime) + (isTv ? ' / ép.' : ''));
+    const future = item.date && item.date > state.today;
+    if (item.date) parts.push((isTv ? (future ? 'à partir du ' : 'depuis le ') : (future ? 'sortie le ' : 'sorti le ')) + C.formatDate(item.date));
+    else parts.push('date inconnue');
+    return parts.join(' · ');
   }
   function providersHtml(d) {
     if (!d) return '';
     const p = d.providers;
-    const head = '<h2 class="where-title">Où regarder en France</h2>';
-    if (!p) return '<section class="where" aria-label="Où regarder en France">' + head + '<p class="hint">' +
-      (d.date && d.date > state.today ? 'Pas encore sorti : aucune offre pour l’instant.' : 'Aucune offre de streaming, de location ou d’achat connue en France pour l’instant.') + '</p></section>';
-    return '<section class="where" aria-label="Où regarder en France">' + head + p.groups.map((g) =>
+    if (!p) return '<section class="where" aria-label="Où regarder en France"><p class="hint">' +
+      (d.date && d.date > state.today ? 'Pas encore sorti : aucune offre pour l’instant.' : 'Aucune offre connue en France pour l’instant (streaming, location ou achat).') + '</p></section>';
+    return '<section class="where" aria-label="Où regarder en France">' + p.groups.map((g) =>
       '<div class="where-group" data-kind="' + g.kind + '"><span class="where-kind">' + g.label + '</span><ul class="where-list">' + g.list.map((x) =>
         '<li class="provider" title="' + esc(x.name) + '">' + (x.logo ? '<img src="' + esc(img(x.logo, 'w92')) + '" alt="" loading="lazy" decoding="async">' : '') + '<span>' + esc(x.name) + '</span></li>').join('') +
       '</ul></div>').join('') +
-      '<p class="hint">Offres en France selon JustWatch, via TMDB' + (p.link ? ' · <a href="' + esc(p.link) + '" target="_blank" rel="noopener noreferrer">liens vers les plateformes</a>' : '') + '.</p></section>';
+      (p.link ? '<a class="where-link" href="' + esc(p.link) + '" target="_blank" rel="noopener noreferrer" title="Offres en France selon JustWatch, via TMDB">via JustWatch ↗</a>' : '<span class="hint">via JustWatch</span>') + '</section>';
   }
   function trackBoxHtml(key) {
     const pk = C.parseKey(key);
     const t = getTrack(key);
-    const lists = '<div class="track-row">' + listButton('favorite', key, '') + listButton('watchlist', key, '') +
-      (C.isPersonal(t) ? '<button type="button" class="btn btn-sm btn-danger" data-action="remove-item" data-key="' + key + '">Retirer de ma liste</button>' : '') + '</div>';
+    const lists = C.isPersonal(t) ? '<div class="track-row"><button type="button" class="btn btn-sm btn-danger" data-action="remove-item" data-key="' + key + '">Retirer de ma liste</button></div>' : '';
     if (pk.type === 'movie') {
       const current = t && t.trackingStatus ? t.trackingStatus : null;
       return '<div class="track-row"><span class="track-label">Mon statut</span>' + segHtml('movie-status', key, null, null, current, 'Statut du film', true) +
@@ -3590,12 +3622,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
           '" title="Marque comme vus les épisodes de cette saison jusqu’à É' + ep.number + ' inclus">Vu jusqu’ici</button>' : '') + '</div></div>';
   }
 
-  /* ----- Panneau « Prochain contenu lié » ----- */
-  function box(titleHtml, inner) { return '<div class="related-box"><h3>' + titleHtml + '</h3>' + inner + '</div>'; }
-  function relatedLink(item, sub) {
-    return '<a class="related-link" href="' + C.detailHash(item.type, item.id) + '"><span class="resume-thumb">' + posterHtml(item, 'w92') + '</span>' +
-      '<span class="resume-text"><span class="resume-title">' + esc(item.title) + '</span><span class="resume-sub">' + esc(sub || '') + '</span></span></a>';
-  }
+  /* ----- Fiche : carte Diffusion (série) ou Sortie et saga (film), recommandations ----- */
   function airingInfo(key) {
     const d = state.cache.details.get(key);
     if (!d || !d.nextEpisode) return null;
@@ -3604,74 +3631,97 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (si) si.loadError = !!load && load.status === 'error';
     return si;
   }
-  function seasonInfoHtml(si) {
-    const pct = si.total ? Math.round((si.aired / si.total) * 100) : 0;
-    const count = si.total ? '<p><strong>' + si.total + ' épisode' + (si.total > 1 ? 's' : '') + '</strong> prévus selon TMDB' +
-      (si.started ? ' · ' + si.aired + ' diffusé' + (si.aired > 1 ? 's' : '') + ', ' + si.remaining + ' restant' + (si.remaining > 1 ? 's' : '') : '') + '</p>'
-      : '<p>Nombre d’épisodes pas encore communiqué.</p>';
-    const bar = si.total && si.started ? '<div class="progress-bar" role="progressbar" aria-label="Épisodes diffusés" aria-valuemin="0" aria-valuemax="' + si.total + '" aria-valuenow="' + si.aired + '"><span style="width:' + pct + '%"></span></div>' : '';
-    const end = !si.exact ? '<p class="muted">' + (!si.listed ? 'Saison pas encore détaillée par TMDB : date du dernier épisode inconnue.' : si.loadError ? 'Date du dernier épisode indisponible (TMDB n’a pas répondu).' : 'Chargement de la date du dernier épisode…') + '</p>'
-      : si.lastDate ? '<p class="muted">Dernier épisode prévu (É' + si.lastNumber + ') : le ' + C.formatDate(si.lastDate) + ' · ' + esc(C.relativeDay(si.lastDate, state.today)) + '</p>'
-      : '<p class="muted">Date du dernier épisode (É' + si.lastNumber + ') pas encore communiquée' + (si.datedUntil ? ' ; dates connues jusqu’à l’É' + si.datedUntil.number + ' (' + C.formatDate(si.datedUntil.date) + ')' : '') + '.</p>';
-    return count + bar + end;
+  function refreshAiringInfo(key) { if (state.route.name === 'detail' && state.route.key === key) renderRelated(); }
+  const dcol = (id, label, big, sub, extra) => '<div class="dcol" data-col="' + id + '"><span class="dcol-label">' + label + '</span>' +
+    (big ? '<strong class="dcol-big">' + big + '</strong>' : '') + (sub ? '<span class="dcol-sub">' + sub + '</span>' : '') + (extra || '') + '</div>';
+  const dcard = (title, chip, cols) => '<section class="dcard" aria-label="' + esc(title) + '"><div class="dcard-head"><h2 class="kicker">' + esc(title) + '</h2>' + (chip ? '<span class="chip">' + esc(chip) + '</span>' : '') + '</div><div class="dcols">' + cols + '</div></section>';
+  /* Date proche : jour de la semaine (« Jeudi 27 novembre ») ; sinon date complète. Suivie de « dans 6 jours ». */
+  function whenHtml(date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return 'Date non communiquée';
+    const days = Math.round((Date.parse(date + 'T00:00:00Z') - Date.parse(state.today + 'T00:00:00Z')) / 86400000);
+    let label = C.formatDate(date);
+    if (days >= 0 && days <= 7) { const w = new Date(date + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'long', timeZone: 'UTC' }); label = w.charAt(0).toUpperCase() + w.slice(1) + ' ' + label.replace(/ \d{4}$/, ''); }
+    const rel = C.relativeDay(date, state.today);
+    return esc(label) + (rel ? ' · <span class="accent">' + esc(rel) + '</span>' : '');
   }
-  function seasonFact(si) {
-    const parts = [si.total ? (si.started ? si.aired + ' / ' + si.total + ' épisodes diffusés' : si.total + ' épisodes prévus') : 'nombre d’épisodes inconnu'];
-    if (si.lastDate) parts.push('dernier le ' + C.formatDate(si.lastDate));
-    else if (si.exact) parts.push('date du dernier épisode inconnue');
-    return parts.join(' · ');
+  const genericEpName = (name) => !name || /^(épisode|episode)\s*\d+$/i.test(name);
+  function detailCardHtml(key) {
+    const d = state.cache.details.get(key);
+    if (!d) return state.ui.detail.status === 'error' ? '' : '<div class="dcard skeleton" style="height:112px" aria-hidden="true"></div>';
+    return d.type === 'tv' ? tvCardHtml(key, d) : movieCardHtml(key, d);
   }
-  function refreshAiringInfo(key) {
-    if (state.route.name !== 'detail' || state.route.key !== key) return;
-    const si = airingInfo(key);
-    const el = document.getElementById('airing-fact');
-    if (el && si) el.textContent = seasonFact(si);
-    renderRelated();
-  }
-  function relatedHtml() {
-    const r = state.route;
-    if (r.name !== 'detail') return '<p class="related-note">Ouvre une fiche pour voir ici le prochain épisode annoncé, la suite d’un film ou des recommandations.</p>';
-    const d = state.cache.details.get(r.key);
-    if (!d) {
-      return state.ui.detail.status === 'error' ? '<p class="related-note">Indisponible : la fiche n’a pas pu être chargée depuis TMDB.</p>'
-        : '<div class="skeleton" style="height:96px" aria-hidden="true"></div>';
+  function tvCardHtml(key, d) {
+    const ne = d.nextEpisode, le = d.lastEpisode, si = airingInfo(key);
+    const status = C.productionLabel(d.productionStatus, ne, state.today);
+    const lastAired = le ? 'Dernier diffusé : <b>' + (si && le.season === si.season ? 'É' + le.episode : C.episodeLabel(le.season, le.episode)) + '</b>' + (le.airDate ? ' — ' + esc(C.formatDate(le.airDate).replace(/ \d{4}$/, (y) => (le.airDate.slice(0, 4) === state.today.slice(0, 4) ? '' : y))) : '') : '';
+    if (!ne) {
+      const n = d.seasonSummaries.filter((x) => x.number > 0).length;
+      return dcard('Diffusion', status, dcol('last', 'Dernier épisode diffusé', le ? C.episodeLabel(le.season, le.episode) : '—', le && le.airDate ? esc(C.formatDate(le.airDate)) : '') +
+        dcol('size', 'Saisons et épisodes', n + ' saison' + (n > 1 ? 's' : '') + (d.numberOfEpisodes ? ' · ' + d.numberOfEpisodes + ' épisodes' : ''), '') +
+        dcol('next', 'Prochain épisode', 'Aucun annoncé', ['Ended', 'Canceled'].includes(d.productionStatus) ? 'La série est terminée.' : 'TMDB n’annonce pas encore de suite.'));
     }
-    const parts = [];
-    if (d.type === 'tv') {
-      const ne = d.nextEpisode;
-      parts.push(box('Prochain épisode annoncé', ne
-        ? '<p><strong>' + C.episodeLabel(ne.season, ne.episode) + '</strong>' + (ne.name ? ' — ' + esc(ne.name) : '') + '</p><p class="muted">' + (ne.airDate ? 'Diffusion prévue le ' + C.formatDate(ne.airDate) : 'Date de diffusion non communiquée') + '</p>'
-        : '<p>Aucun prochain épisode annoncé par TMDB.</p><p class="muted">Statut TMDB : ' + esc(C.productionLabel(d.productionStatus, d.nextEpisode, state.today) || 'inconnu') + '</p>'));
-      const si = airingInfo(r.key);
-      if (si) parts.push(box('Saison ' + si.season + (si.started ? ' en cours de diffusion' : ' à venir'), seasonInfoHtml(si)));
-      const le = d.lastEpisode;
-      if (le) parts.push(box('Dernier épisode diffusé', '<p>' + C.episodeLabel(le.season, le.episode) + (le.name ? ' — ' + esc(le.name) : '') + '</p>' + (le.airDate ? '<p class="muted">' + C.formatDate(le.airDate) + '</p>' : '')));
-      const t = getTrack(r.key);
-      const nu = C.hasActivity(t) ? C.nextUpEpisode(viewMeta(r.key), t) : null;
-      if (nu) parts.push(box('À regarder ensuite (ta progression)', '<p>' + (nu.announced ? 'Saison ' + nu.season + ' annoncée, sans épisode disponible' : C.episodeLabel(nu.season, nu.episode)) + '</p>'));
-    } else if (!d.collection) {
-      parts.push(box('Suite ou collection', '<p>Aucune collection ni suite répertoriée par TMDB pour ce film.</p>'));
+    const c1 = dcol('next', 'Prochain épisode', C.episodeLabel(ne.season, ne.episode), whenHtml(ne.airDate), genericEpName(ne.name) ? '' : '<span class="dcol-sub">' + esc(ne.name) + '</span>');
+    let c2, c3;
+    if (si && si.total) {
+      const pct = Math.round((si.aired / si.total) * 100);
+      c2 = dcol('aired', 'Saison ' + si.season, si.started ? si.aired + ' / ' + si.total : si.total + ' épisodes prévus',
+        si.started ? 'épisodes diffusés · ' + si.remaining + ' restant' + (si.remaining > 1 ? 's' : '') : 'selon TMDB',
+        (si.started ? '<div class="progress-bar" role="progressbar" aria-label="Épisodes diffusés" aria-valuemin="0" aria-valuemax="' + si.total + '" aria-valuenow="' + si.aired + '"><span style="width:' + pct + '%"></span></div>' : '') +
+        (lastAired ? '<span class="dcol-sub">' + lastAired + '</span>' : ''));
     } else {
-      const c = state.cache.collections.get(d.collection.id);
-      const title = 'Collection « ' + esc((c && c.name) || d.collection.name) + ' »';
-      if (!c || c.status === 'loading') parts.push(box(title, '<p class="muted">Chargement de la collection…</p>'));
-      else if (c.status === 'error') parts.push(box(title, '<p class="muted">Collection indisponible : ' + esc(c.error.message) + '</p>'));
-      else {
-        const nb = C.collectionNeighbors(c.parts, d.id, state.today);
-        let html = '<p class="muted">' + nb.list.length + ' film(s) dans la collection, classés par date de sortie.</p>';
-        if (nb.next) html += '<p class="related-note">' + (nb.nextIsUpcoming ? 'Film suivant (à venir)' : 'Film suivant') + '</p>' +
-          relatedLink(nb.next, nb.next.date ? (nb.nextIsUpcoming ? 'Sortie prévue le ' : 'Sorti le ') + C.formatDate(nb.next.date) : 'Date de sortie inconnue');
-        else html += '<p>C’est le dernier film connu de cette collection.</p>';
-        if (nb.previous) html += '<p class="related-note">Film précédent</p>' + relatedLink(nb.previous, nb.previous.year || '');
-        parts.push(box(title, html));
-      }
+      c2 = dcol('aired', 'Saison ' + ne.season, '', 'Nombre d’épisodes pas encore communiqué', lastAired ? '<span class="dcol-sub">' + lastAired + '</span>' : '');
     }
-    const recos = d.recommendations.slice(0, 5);
-    parts.push(box('Recommandations TMDB', '<p class="related-note">Suggestions proches : ce ne sont pas des suites officielles.</p>' +
-      (recos.length ? '<div class="related-list">' + recos.map((x) => relatedLink(x, (x.year ? x.year + ' · ' : '') + TYPE_LABELS[x.type])).join('') + '</div>' : '<p class="muted">Aucune recommandation disponible.</p>')));
-    return parts.join('');
+    if (!si || !si.exact) {
+      c3 = dcol('end', 'Dernier épisode prévu', '', !si || !si.listed ? 'Saison pas encore détaillée par TMDB : date inconnue.' : si.loadError ? 'Indisponible (TMDB n’a pas répondu).' : 'Chargement…');
+    } else if (si.lastDate) {
+      c3 = dcol('end', 'Dernier épisode prévu', 'É' + si.lastNumber + ' · ' + esc(C.formatDate(si.lastDate)), esc(C.relativeDay(si.lastDate, state.today)) + ' · fin de la saison ' + si.season);
+    } else {
+      c3 = dcol('end', 'Dernier épisode prévu', 'É' + si.lastNumber, 'Date pas encore communiquée' + (si.datedUntil ? ' (dates connues jusqu’à l’É' + si.datedUntil.number + ', ' + esc(C.formatDate(si.datedUntil.date)) + ')' : ''));
+    }
+    return dcard('Diffusion' + (si ? ' · saison ' + si.season : ''), status, c1 + c2 + c3);
   }
-  function renderRelated() { byId('related-panel').innerHTML = relatedHtml(); }
+  function movieLinkCol(id, label, it) {
+    const seen = getTrack(it.key) && itemState(it.key).status === 'seen';
+    const future = it.date && it.date > state.today;
+    return dcol(id, label, '<a href="' + C.detailHash(it.type, it.id) + '">' + esc(it.title) + '</a>',
+      it.date ? (future ? whenHtml(it.date) : esc(C.formatDate(it.date))) + (seen ? ' · <span class="accent">✓ vu</span>' : '') : 'Date de sortie inconnue');
+  }
+  function movieCardHtml(key, d) {
+    const future = d.date && d.date > state.today;
+    const c1 = dcol('release', future ? 'Sortie prévue' : 'Sortie', d.date ? esc(C.formatDate(d.date)) : 'Date inconnue', future ? whenHtml(d.date) : '',
+      '<div class="dcol-avail">' + availHtml(availability(d), key, d.date || '') + '</div>');
+    if (!d.collection) {
+      return dcard('Sortie', C.productionLabel(d.productionStatus, null, state.today), c1 +
+        dcol('runtime', 'Durée', d.runtime ? formatRuntime(d.runtime) : '—', '') +
+        dcol('saga', 'Saga', 'Aucune', 'Aucune collection ni suite répertoriée par TMDB.'));
+    }
+    const c = state.cache.collections.get(d.collection.id);
+    const title = 'Sortie et saga « ' + ((c && c.name) || d.collection.name) + ' »';
+    if (!c || c.status === 'loading') return dcard(title, '', c1 + dcol('saga', 'Saga', '', 'Chargement de la collection…'));
+    if (c.status === 'error') return dcard(title, '', c1 + dcol('saga', 'Saga', '', 'Collection indisponible : ' + esc(c.error.message)));
+    const nb = C.collectionNeighbors(c.parts, d.id, state.today);
+    return dcard(title, nb.list.length + ' films', c1 +
+      (nb.previous ? movieLinkCol('previous', 'Film précédent', nb.previous) : dcol('previous', 'Film précédent', 'Aucun', 'C’est le premier film de la saga.')) +
+      (nb.next ? movieLinkCol('following', nb.nextIsUpcoming ? 'Film suivant (à venir)' : 'Film suivant', nb.next) : dcol('following', 'Film suivant', 'Aucun', 'C’est le dernier film connu de la saga.')));
+  }
+  function recoHtml(key) {
+    const d = state.cache.details.get(key);
+    if (!d || !d.recommendations.length) return '';
+    return '<div class="gallery-head"><h2>Dans le même esprit</h2><span class="hint">Recommandations TMDB : ce ne sont pas des suites officielles.</span></div>' +
+      '<div class="rail">' + d.recommendations.map(cardHtml).join('') + '</div>';
+  }
+  /* Parties de la fiche qui dépendent de données chargées après coup (saison en cours, collection, suivi) : redessinées sur place. */
+  function renderRelated() {
+    if (state.renderedView !== 'detail' || !state.renderedDetail || !state.renderedDetail.full) return;
+    const key = state.route.key;
+    const cards = document.getElementById('detail-cards');
+    if (cards) cards.innerHTML = detailCardHtml(key);
+    const where = document.getElementById('detail-where');
+    if (where) where.innerHTML = providersHtml(state.cache.details.get(key));
+    const reco = document.getElementById('detail-reco');
+    if (reco && !reco.firstChild) { reco.innerHTML = recoHtml(key); }
+    checkAvailability();
+  }
 
   /* ----- Éléments permanents : compteurs, statistiques, Reprendre ----- */
   function renderChrome() {

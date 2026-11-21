@@ -203,26 +203,30 @@ describe('Films, fiche et Reprendre', () => {
   it('statut d’un film, favoris et watchlist sur la fiche sans navigation ni requête', T, async () => {
     const { page, errors, mock, context } = await openApp(browser, { hash: '#detail/movie/120' });
     await page.waitForSelector('#detail-track');
-    await page.waitForFunction(() => document.querySelector('#related-panel').textContent.includes('Saga : Partie 2'));
+    await page.waitForFunction(() => document.querySelector('#detail-cards').textContent.includes('Saga : Partie 2'));
     const requests = mock.state.requests.length;
     await page.locator('[data-action="movie-status"][data-status="seen"]').click();
     assert.equal(await page.locator('[data-action="movie-status"][data-status="seen"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await statusOf(page, 'movie-120'), 'Vu');
-    const fav = page.locator('#detail-track [data-action="toggle-favorite"]');
+    const fav = page.locator('.detail-actions [data-action="toggle-favorite"]');
     await fav.click();
     assert.equal(await fav.textContent(), '♥ En favori');
-    const watch = page.locator('#detail-track [data-action="toggle-watchlist"]');
+    const watch = page.locator('.detail-actions [data-action="toggle-watchlist"]');
     await watch.click();
     assert.equal(await watch.getAttribute('aria-pressed'), 'true');
     assert.equal(await page.evaluate(() => location.hash), '#detail/movie/120');
     assert.equal(mock.state.requests.length, requests);
-    assert.match(await text(page, '#related-panel'), /Film suivant[\s\S]*Saga : Partie 2/);
-    assert.match(await text(page, '#related-panel'), /pas des suites officielles/);
-    await page.locator('#related-panel a[href="#detail/movie/121"]').click();
+    assert.match(await text(page, '#detail-cards'), /Sortie et saga « Saga intégrale »/);
+    assert.match(await text(page, '#detail-cards [data-col="following"]'), /Film suivant[\s\S]*Saga : Partie 2/);
+    assert.match(await text(page, '#detail-cards [data-col="previous"]'), /Aucun/, 'premier film de la saga');
+    assert.match(await text(page, '#detail-reco'), /Dans le même esprit[\s\S]*pas des suites officielles/);
+    assert.equal(await page.locator('#related-panel').count(), 0, 'plus de panneau « Prochain contenu lié »');
+    await page.locator('#detail-cards a[href="#detail/movie/121"]').click();
     await page.waitForFunction(() => document.querySelector('h1').textContent === 'Saga : Partie 2');
-    await page.waitForFunction(() => document.querySelector('#related-panel').textContent.includes('Film suivant (à venir)'));
+    await page.waitForFunction(() => document.querySelector('#detail-cards').textContent.includes('Film suivant (à venir)'));
+    assert.match(await text(page, '#detail-cards [data-col="previous"]'), /Saga : Partie 1/);
     await go(page, '#detail/movie/101', `L'Été d'Amélie & <b>Les "Fous"</b>`);
-    await page.waitForFunction(() => document.querySelector('#related-panel').textContent.includes('Aucune collection'));
+    await page.waitForFunction(() => document.querySelector('#detail-cards').textContent.includes('Aucune collection'));
     assert.deepEqual(errors, []);
     await context.close();
   });
@@ -243,7 +247,7 @@ describe('Films, fiche et Reprendre', () => {
     const expected = ['tv-205', 'movie-106', 'movie-105', 'movie-104', 'movie-103'];
     assert.deepEqual(await resumeKeys(page, 'resume-panel-list'), expected, 'le sixième est en tête, le plus ancien sort, une ligne par série');
     await go(page, '#detail/movie/102', 'Film Test 2'); // simple ouverture : aucun effet
-    await page.locator('#detail-track [data-action="toggle-favorite"]').click(); // favori : aucun effet sur l'ordre
+    await page.locator('.detail-actions [data-action="toggle-favorite"]').click(); // favori : aucun effet sur l'ordre
     assert.deepEqual(await resumeKeys(page, 'resume-panel-list'), expected);
     await go(page, '#resume', 'Reprendre');
     assert.deepEqual(await resumeKeys(page, 'resume-page-list'), expected, 'page Reprendre identique au panneau');
@@ -270,9 +274,9 @@ describe('Films, fiche et Reprendre', () => {
     await page.locator('[data-action="movie-status"][data-status="seen"]').click();
     await go(page, '#detail/movie/103', 'Film Test 3');
     await page.locator('[data-action="movie-status"][data-status="progress"]').click();
-    await page.locator('#detail-track [data-action="toggle-favorite"]').click();
+    await page.locator('.detail-actions [data-action="toggle-favorite"]').click();
     await go(page, '#detail/movie/104', 'Film Test 4');
-    await page.locator('#detail-track [data-action="toggle-watchlist"]').click();
+    await page.locator('.detail-actions [data-action="toggle-watchlist"]').click();
     await go(page, '#library', 'Bibliothèque');
     const counts = async () => page.$$eval('[data-action="lib-status"]', (b) => b.map((x) => x.textContent));
     assert.deepEqual(await counts(), ['Tous (3)', 'Vu (1)', 'En cours (1)', 'À voir (1)']);

@@ -164,18 +164,23 @@ describe('Dans Chrome', () => {
     await context.close();
   });
 
-  it('fiche d’une série en cours : épisodes prévus, diffusés et date du dernier épisode (panneau et infos)', T, async () => {
+  it('fiche d’une série en cours : carte Diffusion (prochain, diffusés, dernier prévu), offres sous l’affiche, genres en tags', T, async () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/210' });
     const last = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
-    await page.waitForFunction(() => /dernier le/.test((document.getElementById('airing-fact') || {}).textContent || ''));
-    const fact = await page.locator('#airing-fact').textContent();
-    assert.match(fact, /^11 \/ 12 épisodes diffusés · dernier le /);
-    assert.equal(fact.endsWith(C.formatDate(last)), true);
-    const box = page.locator('.related-box', { hasText: 'Saison 1 en cours de diffusion' });
-    await box.waitFor();
-    assert.match(await box.textContent(), /12 épisodes prévus selon TMDB · 11 diffusés, 1 restant/);
-    assert.match(await box.textContent(), new RegExp('Dernier épisode prévu \\(É12\\) : le ' + C.formatDate(last) + ' · dans 3 jours'));
-    assert.equal(await box.locator('[role="progressbar"]').getAttribute('aria-valuenow'), '11');
+    const col = (id) => page.locator('#detail-cards [data-col="' + id + '"]').textContent();
+    await page.waitForFunction(() => /É12 ·/.test((document.querySelector('#detail-cards [data-col="end"]') || {}).textContent || ''));
+    assert.match(await page.locator('#detail-cards .dcard-head').textContent(), /^Diffusion · saison 1En cours de diffusion$/);
+    assert.match(await col('next'), /^Prochain épisodeS1 · É12.* · dans 3 jours$/);
+    assert.match(await col('aired'), /^Saison 111 \/ 12épisodes diffusés · 1 restantDernier diffusé : É11 — /);
+    assert.equal(await page.locator('#detail-cards [data-col="aired"] [role="progressbar"]').getAttribute('aria-valuenow'), '11');
+    assert.equal(await col('end'), 'Dernier épisode prévuÉ12 · ' + C.formatDate(last) + 'dans 3 jours · fin de la saison 1');
+    assert.match(await page.locator('.detail-sub').textContent(), /^Anime · 1 saison · 12 épisodes · 42 min \/ ép\. · depuis le 5 avril 2015$/);
+    assert.deepEqual(await page.$$eval('.detail-badges .genre-tag', (els) => els.map((e) => e.textContent)), ['Drame']);
+    assert.equal(await page.locator('.detail-side #detail-where .where').count(), 1, 'offres sous l’affiche');
+    assert.equal(await page.locator('.where-title').count(), 0, 'sans titre « Où regarder en France »');
+    assert.equal(await page.locator('.detail-actions [data-action="toggle-watchlist"]').count(), 1);
+    assert.equal(await page.locator('#detail-track [data-action="toggle-watchlist"]').count(), 0, 'favori et watchlist en haut, plus dans le suivi');
+    assert.match(await page.locator('.detail-summary').textContent(), /^Résumé/);
     assert.deepEqual(await duplicateIds(page), []);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
@@ -223,8 +228,8 @@ describe('Dans Chrome', () => {
     await page.waitForSelector('.sidebar [data-nav="agenda"][aria-current="page"]');
     await page.locator('[data-item-key="tv-214"] a').click();
     await page.waitForFunction(() => location.hash === '#detail/tv/214');
-    await page.waitForFunction(() => /Suite annoncée · reprise le/.test(document.querySelector('.facts').textContent));
-    assert.match(await page.locator('.related-box', { hasText: 'Saison 2 à venir' }).textContent(), /Saison pas encore détaillée par TMDB/, 'saison annoncée mais pas encore listée par TMDB');
+    await page.waitForFunction(() => /Suite annoncée · reprise le/.test((document.querySelector('#detail-cards .dcard-head') || {}).textContent || ''));
+    assert.match(await page.locator('#detail-cards [data-col="end"]').textContent(), /Saison pas encore détaillée par TMDB/, 'saison annoncée mais pas encore listée par TMDB');
     assert.deepEqual(await duplicateIds(page), []);
     assert.deepEqual(jsErrors(errors), []);
     await context.close();

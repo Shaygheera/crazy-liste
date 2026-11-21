@@ -48,11 +48,11 @@ try {
   const counts = Object.fromEntries(Object.entries(tracked).map(([s, v]) => [s, Object.keys(v.episodes).length]));
   assert.deepEqual(Object.keys(counts), ['1', '2', '3', '4', '5'], 'saisons régulières uniquement (spéciaux exclus)');
   step('Breaking Bad « Tout marquer comme vu » : ' + JSON.stringify(counts) + ' → « Vu »');
-  assert.match(await page.locator('#related-panel').textContent(), /Aucun prochain épisode annoncé|Prochain épisode annoncé/);
-  step('panneau « Prochain contenu lié » rempli depuis TMDB');
+  assert.match(await page.locator('#detail-cards').textContent(), /Prochain épisode/);
+  step('carte « Diffusion » remplie depuis TMDB');
 
   await page.evaluate(() => { location.hash = '#detail/movie/120'; });
-  await page.waitForFunction(() => document.querySelector('#related-panel').textContent.includes('Film suivant'), null, { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelector('#detail-cards').textContent.includes('Film suivant'), null, { timeout: 20000 });
   step('film « La Communauté de l’anneau » : suite trouvée via sa collection TMDB');
 
   await page.reload();

@@ -214,6 +214,13 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .detail-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .detail-overview { margin: 0; color: var(--text-2); max-width: 75ch; }
 .detail-cta { display: flex; gap: 8px; flex-wrap: wrap; }
+.filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; margin: 4px 0 18px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-lg, 14px); background: var(--surface); }
+.filter { display: grid; gap: 4px; font-size: .76rem; font-weight: 650; color: var(--muted); min-width: 0; }
+.filter .select, .filter .input { min-width: 0; height: 38px; font: inherit; font-size: .88rem; }
+.filter-year .input { width: 96px; }
+.filter-reset { margin-left: auto; }
+.ideas { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+@media (max-width: 899px) { .filters { display: grid; grid-template-columns: 1fr 1fr; } .filter-year .input { width: 100%; } .filter .select { width: 100%; } .filter-reset { margin-left: 0; grid-column: 1 / -1; } }
 dialog.dialog-video { width: min(96vw, 960px); }
 .video-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
 .video-head h2 { margin: 0; flex: 1; min-width: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -810,8 +817,100 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   function detailHash(type, id) { return '#detail/' + type + '/' + id; }
 
+  /* ---------- Recherche ciblée et découverte ----------
+     Sans titre : /discover de TMDB, qui applique lui-même tous les filtres sur tout le catalogue.
+     Avec un titre : /search de TMDB (qui n'accepte pas ces filtres), puis filtrage et tri des résultats reçus. */
+  const SEARCH_TYPES = ['all', 'movie', 'tv', 'anime'];
+  const SEARCH_SORTS = ['popular', 'rating', 'newest', 'oldest'];
+  const GENRES = {
+    movie: [[28, 'Action'], [12, 'Aventure'], [16, 'Animation'], [35, 'Comédie'], [80, 'Crime'], [99, 'Documentaire'], [18, 'Drame'], [10751, 'Familial'],
+      [14, 'Fantastique'], [36, 'Histoire'], [27, 'Horreur'], [10402, 'Musique'], [9648, 'Mystère'], [10749, 'Romance'], [878, 'Science-fiction'],
+      [53, 'Thriller'], [10752, 'Guerre'], [37, 'Western']],
+    tv: [[10759, 'Action & aventure'], [16, 'Animation'], [35, 'Comédie'], [80, 'Crime'], [99, 'Documentaire'], [18, 'Drame'], [10751, 'Familial'],
+      [10762, 'Enfants'], [9648, 'Mystère'], [10765, 'Science-fiction & fantastique'], [10768, 'Guerre & politique'], [10764, 'Téléréalité'], [37, 'Western']]
+  };
+  const ENDED_STATUSES = ['Ended', 'Canceled'];
+  const ONGOING_STATUSES = ['Returning Series', 'In Production', 'Planned', 'Pilot'];
+  function genresFor(type) { return type === 'movie' ? GENRES.movie : type === 'tv' ? GENRES.tv : type === 'anime' ? GENRES.tv.filter(([id]) => id !== 16) : []; }
+  function parseSearchFilters(params) {
+    const p = isObj(params) ? params : {};
+    const f = { type: SEARCH_TYPES.includes(p.type) ? p.type : 'all', status: 'any', from: '', to: '', genre: '', rating: '', sort: '' };
+    if ((f.type === 'tv' || f.type === 'anime') && (p.status === 'ended' || p.status === 'ongoing')) f.status = p.status;
+    const year = (v) => (/^\d{4}$/.test(String(v == null ? '' : v)) && Number(v) >= 1900 && Number(v) <= 2100 ? String(v) : '');
+    f.from = year(p.from);
+    f.to = year(p.to);
+    if (f.from && f.to && f.from > f.to) { const t = f.from; f.from = f.to; f.to = t; }
+    if (genresFor(f.type).some(([id]) => String(id) === String(p.genre))) f.genre = String(p.genre);
+    if (['6', '7', '8'].includes(String(p.rating))) f.rating = String(p.rating);
+    if (SEARCH_SORTS.includes(p.sort)) f.sort = p.sort;
+    return f;
+  }
+  function filtersToParams(f) {
+    const o = {};
+    if (f.type !== 'all') o.type = f.type;
+    if (f.status !== 'any') o.status = f.status;
+    for (const k of ['from', 'to', 'genre', 'rating', 'sort']) if (f[k]) o[k] = f[k];
+    return o;
+  }
+  function hasRefinement(f) { return f.type !== 'all' || f.status !== 'any' || !!(f.from || f.to || f.genre || f.rating || f.sort); }
+  function sameFilters(a, b) { return !!a && !!b && ['type', 'status', 'from', 'to', 'genre', 'rating', 'sort'].every((k) => a[k] === b[k]); }
+  /* Requêtes /discover (une par type : « Tout » interroge films et séries). today évite les titres pas encore sortis en tri « Plus récents ». */
+  function discoverRequests(f, page, today) {
+    const types = f.type === 'all' ? ['movie', 'tv'] : [f.type === 'movie' ? 'movie' : 'tv'];
+    return types.map((t) => {
+      const movie = t === 'movie';
+      const dateKey = movie ? 'primary_release_date' : 'first_air_date';
+      const params = { page, include_adult: 'false' };
+      if (!movie) params.include_null_first_air_dates = 'false';
+      const genres = [];
+      if (f.type === 'anime') { genres.push(16); params.with_original_language = 'ja'; }
+      if (f.genre) genres.push(Number(f.genre));
+      if (genres.length) params.with_genres = genres.join(',');
+      if (f.from) params[dateKey + '.gte'] = f.from + '-01-01';
+      if (f.to) params[dateKey + '.lte'] = f.to + '-12-31' < today || f.sort !== 'newest' ? f.to + '-12-31' : today;
+      else if (f.sort === 'newest') params[dateKey + '.lte'] = today;
+      if (f.rating) params['vote_average.gte'] = f.rating;
+      const minVotes = f.sort === 'rating' ? (movie ? 1000 : 300) : f.rating ? (movie ? 100 : 50) : 0; // évite les notes gonflées par une poignée de votes
+      if (minVotes) params['vote_count.gte'] = String(minVotes);
+      if (!movie && f.status !== 'any') params.with_status = f.status === 'ended' ? '3|4' : '0|2';
+      params.sort_by = f.sort === 'rating' ? 'vote_average.desc' : f.sort === 'newest' ? dateKey + '.desc' : f.sort === 'oldest' ? dateKey + '.asc' : 'popularity.desc';
+      return { type: t, path: '/discover/' + t, params };
+    });
+  }
+  /* Filtre local (recherche par titre). productionStatus : statut TMDB de la série, nécessaire seulement pour le filtre de statut. */
+  function matchesFilters(item, f, productionStatus) {
+    if (!item) return false;
+    if (f.type === 'movie' && item.type !== 'movie') return false;
+    if (f.type === 'tv' && item.type !== 'tv') return false;
+    if (f.type === 'anime' && !isAnime(item)) return false;
+    const y = item.date ? item.date.slice(0, 4) : '';
+    if ((f.from || f.to) && !y) return false;
+    if (f.from && y < f.from) return false;
+    if (f.to && y > f.to) return false;
+    if (f.genre && !(Array.isArray(item.genreIds) && item.genreIds.includes(Number(f.genre)))) return false;
+    if (f.rating && !(item.voteAverage >= Number(f.rating))) return false;
+    if (f.status === 'ended' && !ENDED_STATUSES.includes(productionStatus)) return false;
+    if (f.status === 'ongoing' && !ONGOING_STATUSES.includes(productionStatus)) return false;
+    return true;
+  }
+  function sortResults(items, sort) {
+    const list = items.slice();
+    const d = (x) => x.date || '';
+    if (sort === 'rating') list.sort((a, b) => (b.voteAverage || 0) - (a.voteAverage || 0));
+    else if (sort === 'newest') list.sort((a, b) => d(b).localeCompare(d(a)));
+    else if (sort === 'oldest') list.sort((a, b) => (d(a) || '9999').localeCompare(d(b) || '9999'));
+    return list;
+  }
+  /* Fusion films + séries : alternance (popularité), ou tri commun pour note et dates. Sans doublon. */
+  function mergeResults(lists, sort) {
+    const out = [], seen = new Set();
+    const max = Math.max(0, ...lists.map((l) => l.length));
+    for (let i = 0; i < max; i++) for (const l of lists) { const it = l[i]; if (it && !seen.has(it.key)) { seen.add(it.key); out.push(it); } }
+    return sort && sort !== 'popular' ? sortResults(out, sort) : out;
+  }
+
   root.CrazyCore = Object.freeze({
-    pickTrailer,
+    pickTrailer, genresFor, parseSearchFilters, filtersToParams, hasRefinement, sameFilters, discoverRequests, matchesFilters, sortResults, mergeResults,
     SCHEMA_VERSION, STATUSES, STATUS_LABELS, TYPE_LABELS, isStatus, isObj, num, str, validTime, isIntKey,
     itemKey, parseKey, escapeHtml, yearOf, imgPath, formatDate, ratingTier, formatRating, productionLabel, episodeLabel,
     normalizeSummary, normalizeDetail, normalizeSeason, isAnime, filterUpcoming,
@@ -1283,7 +1382,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     route: { name: 'home', params: {} },
     ui: {
       home: {},                   // id de section -> { status, items, error }
-      search: { q: '', type: 'all', page: 0, totalPages: 0, results: [], status: 'idle', error: null },
+      search: { q: '', filters: C.parseSearchFilters({}), mode: 'idle', page: 0, totalPages: 0, results: [], hidden: 0, status: 'idle', error: null },
       detail: { key: null, status: 'idle', error: null },
       expanded: {},               // clé -> Set des saisons ouvertes
       seasonLoad: {},             // "clé#n" -> { status, error }
@@ -1723,26 +1822,28 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
 
   let searchSeq = 0, searchAbort = null, searchTimer = 0;
-  function startSearch(q, type, page) {
+  function searchHash(q, f) { return C.buildHash('search', Object.assign({ q }, C.filtersToParams(f))); }
+  function startSearch(q, filters, page) {
     const s = state.ui.search;
     const p = page || 1;
     if (searchAbort) searchAbort.abort();
     const seq = ++searchSeq;
-    s.q = q; s.type = type;
-    if (!q) { Object.assign(s, { status: 'idle', results: [], page: 0, totalPages: 0, error: null }); renderSearchBody(); return; }
+    s.q = q; s.filters = filters;
+    s.mode = q ? 'text' : C.hasRefinement(filters) ? 'discover' : 'idle';
+    if (s.mode === 'idle') { Object.assign(s, { status: 'idle', results: [], page: 0, totalPages: 0, hidden: 0, error: null }); renderSearchBody(); return; }
     s.error = null;
     s.status = p === 1 ? 'loading' : 'loading-more';
-    if (p === 1) s.results = [];
+    if (p === 1) { s.results = []; s.hidden = 0; }
     renderSearchBody();
     const ctrl = new AbortController();
     searchAbort = ctrl;
-    const path = type === 'movie' ? '/search/movie' : type === 'tv' ? '/search/tv' : '/search/multi';
-    tmdb(path, { query: q, page: p, include_adult: 'false' }, { signal: ctrl.signal, noCache: true }).then((json) => {
+    (s.mode === 'text' ? textSearch(q, filters, p, ctrl.signal) : discoverSearch(filters, p, ctrl.signal)).then((res) => {
       if (seq !== searchSeq) return; // réponse périmée : une recherche plus récente a été lancée
-      const items = (Array.isArray(json.results) ? json.results : []).map((r) => C.normalizeSummary(r, type === 'all' ? null : type)).filter(Boolean);
-      items.forEach(rememberSummary);
-      const merged = p === 1 ? items : s.results.concat(items.filter((i) => !s.results.some((r) => r.key === i.key)));
-      Object.assign(s, { results: merged, page: p, totalPages: C.num(json.total_pages), status: merged.length ? 'ready' : 'empty' });
+      res.items.forEach(rememberSummary);
+      let merged = p === 1 ? res.items : s.results.concat(res.items.filter((i) => !s.results.some((r) => r.key === i.key)));
+      if (s.mode === 'text' && filters.sort) merged = C.sortResults(merged, filters.sort);
+      Object.assign(s, { results: merged, page: p, totalPages: res.totalPages, hidden: s.hidden + (res.hidden || 0) });
+      s.status = merged.length ? 'ready' : p < res.totalPages ? 'ready' : 'empty';
       renderSearchBody();
     }).catch((err) => {
       if (seq !== searchSeq || (err && err.name === 'AbortError')) return;
@@ -1750,6 +1851,38 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       renderSearchBody();
       if (p > 1) toast(err.message, 'error');
     });
+  }
+  async function discoverSearch(f, p, signal) {
+    const reqs = C.discoverRequests(f, p, todayIso());
+    const answers = await Promise.all(reqs.map((r) => tmdb(r.path, r.params, { signal, noCache: true })));
+    const lists = answers.map((json, i) => (Array.isArray(json.results) ? json.results : []).map((x) => C.normalizeSummary(x, reqs[i].type)).filter(Boolean));
+    return { items: C.mergeResults(lists, f.sort), totalPages: Math.min(500, Math.max(0, ...answers.map((j) => C.num(j.total_pages)))) };
+  }
+  async function textSearch(q, f, p, signal) {
+    const path = f.type === 'movie' ? '/search/movie' : f.type === 'tv' || f.type === 'anime' ? '/search/tv' : '/search/multi';
+    const json = await tmdb(path, { query: q, page: p, include_adult: 'false' }, { signal, noCache: true });
+    const fallback = f.type === 'movie' ? 'movie' : f.type === 'all' ? null : 'tv';
+    const all = (Array.isArray(json.results) ? json.results : []).map((r) => C.normalizeSummary(r, fallback)).filter(Boolean);
+    const statuses = {};
+    if (f.status !== 'any') { // le statut de diffusion n'est que dans la fiche : chargée pour les séries qui passent les autres filtres
+      const loose = Object.assign({}, f, { status: 'any' });
+      const todo = all.filter((i) => i.type === 'tv' && C.matchesFilters(i, loose));
+      let next = 0;
+      const worker = async () => {
+        while (next < todo.length) {
+          const it = todo[next++];
+          let d = state.cache.details.get(it.key);
+          if (!d) {
+            try { d = C.normalizeDetail(await tmdb('/tv/' + it.id, DETAIL_PARAMS, { signal }), 'tv'); } catch (err) { if (err && err.name === 'AbortError') throw err; d = null; }
+            if (d) state.cache.details.set(it.key, d);
+          }
+          if (d) statuses[it.key] = d.productionStatus;
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+    }
+    const items = all.filter((i) => C.matchesFilters(i, f, statuses[i.key]));
+    return { items, totalPages: C.num(json.total_pages), hidden: all.length - items.length };
   }
 
   let detailToken = 0;
@@ -1969,12 +2102,14 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     },
     'retry-section'(el) { const sec = HOME_SECTIONS.find((s) => s.id === el.dataset.section); if (sec) loadHomeSection(sec, true); },
     'retry-detail'() { if (state.route.name === 'detail') loadDetail(state.route, true); },
-    'retry-search'() { startSearch(state.ui.search.q, state.ui.search.type, 1); },
-    'search-more'() { const s = state.ui.search; startSearch(s.q, s.type, s.page + 1); },
+    'retry-search'() { startSearch(state.ui.search.q, state.ui.search.filters, 1); },
+    'search-more'() { const s = state.ui.search; startSearch(s.q, s.filters, s.page + 1); },
     'search-type'(el) {
-      const type = el.dataset.type;
-      navigate(C.buildHash('search', { q: state.ui.search.q || byId('search-input').value.trim(), type: type === 'all' ? '' : type }), true);
+      const f = C.parseSearchFilters(Object.assign({}, state.ui.search.filters, { type: el.dataset.type }));
+      navigate(searchHash(state.ui.search.q || byId('search-input').value.trim(), f), state.route.name === 'search');
     },
+    'search-reset'() { navigate(searchHash(state.ui.search.q, C.parseSearchFilters({ type: state.ui.search.filters.type })), true); },
+    'discover'(el) { navigate(searchHash('', C.parseSearchFilters(JSON.parse(el.dataset.filters))), false); },
     'lib-status'(el) {
       state.data.preferences.libraryStatus = el.dataset.status;
       persist();
@@ -2254,23 +2389,70 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
 
   /* ----- Recherche ----- */
+  const TYPE_CHIPS = [['all', 'Tout'], ['movie', 'Films'], ['tv', 'Séries'], ['anime', 'Anime']];
+  const SORT_LABELS = { popular: 'Popularité', rating: 'Mieux notés', newest: 'Plus récents', oldest: 'Plus anciens' };
   function searchHtml() {
-    const s = state.ui.search;
-    return '<div class="page-head"><div><h1>Recherche</h1><p>Films, séries et anime sur TMDB.</p></div></div>' +
-      '<div class="toolbar" role="group" aria-label="Type de contenu">' + [['all', 'Tout'], ['movie', 'Films'], ['tv', 'Séries / anime']].map(([v, l]) =>
-        '<button type="button" class="chip chip-btn" data-action="search-type" data-type="' + v + '" aria-pressed="' + (s.type === v) + '">' + l + '</button>').join('') + '</div>' +
+    const f = state.ui.search.filters;
+    return '<div class="page-head"><div><h1>Recherche</h1><p>Cherche un titre, ou découvre de nouveaux contenus avec des filtres, sans rien taper.</p></div></div>' +
+      '<div class="toolbar" role="group" aria-label="Type de contenu">' + TYPE_CHIPS.map(([v, l]) =>
+        '<button type="button" class="chip chip-btn" data-action="search-type" data-type="' + v + '" aria-pressed="' + (f.type === v) + '"' + (v === 'tv' ? ' title="Toutes les séries, anime compris"' : '') + '>' + l + '</button>').join('') + '</div>' +
+      '<div class="filters" id="search-filters" role="group" aria-label="Filtres">' + filtersHtml(f) + '</div>' +
       '<div id="search-results">' + searchBodyHtml() + '</div>';
   }
+  function filtersHtml(f) {
+    const select = (name, label, options, current) => '<label class="filter"><span>' + label + '</span><select class="select" data-change="search-filter" data-filter="' + name + '">' +
+      options.map(([v, l]) => '<option value="' + v + '"' + (current === v ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select></label>';
+    const year = (name, label, value, ph) => '<label class="filter filter-year"><span>' + label + '</span><input class="input" type="number" inputmode="numeric" min="1900" max="2100" step="1" placeholder="' + ph + '" value="' + value + '" data-change="search-filter" data-filter="' + name + '"></label>';
+    const series = f.type === 'tv' || f.type === 'anime';
+    const genres = C.genresFor(f.type);
+    return (series ? select('status', 'Statut', [['any', 'Tous'], ['ended', 'Terminés'], ['ongoing', 'Pas terminés']], f.status) : '') +
+      year('from', 'Depuis l’année', f.from, '1990') + year('to', 'Jusqu’à l’année', f.to, String(new Date().getFullYear())) +
+      (genres.length ? select('genre', 'Genre', [['', 'Tous']].concat(genres.map(([id, l]) => [String(id), l])), f.genre) : '') +
+      select('rating', 'Note TMDB', [['', 'Toutes'], ['6', '6 et plus'], ['7', '7 et plus'], ['8', '8 et plus']], f.rating) +
+      select('sort', 'Trier par', [['', state.ui.search.q ? 'Pertinence' : 'Popularité'], ['rating', 'Mieux notés'], ['newest', 'Plus récents'], ['oldest', 'Plus anciens']], f.sort === 'popular' ? '' : f.sort) +
+      (C.hasRefinement(Object.assign({}, f, { type: 'all' })) ? '<button type="button" class="btn btn-sm btn-ghost filter-reset" data-action="search-reset">Effacer les filtres</button>' : '');
+  }
+  function filterSummary(f) {
+    const parts = [];
+    const typeLabel = { movie: 'Films', tv: 'Séries', anime: 'Anime' }[f.type];
+    if (typeLabel) parts.push(typeLabel);
+    if (f.status !== 'any') parts.push(f.status === 'ended' ? 'terminés' : 'pas terminés');
+    if (f.from && f.to) parts.push(f.from === f.to ? 'sortis en ' + f.from : 'sortis de ' + f.from + ' à ' + f.to);
+    else if (f.from) parts.push('sortis depuis ' + f.from);
+    else if (f.to) parts.push('sortis jusqu’en ' + f.to);
+    if (f.genre) { const g = C.genresFor(f.type).find(([id]) => String(id) === f.genre); if (g) parts.push(g[1].toLowerCase()); }
+    if (f.rating) parts.push('note ' + f.rating + '+');
+    if (f.sort && f.sort !== 'popular') parts.push('triés : ' + SORT_LABELS[f.sort].toLowerCase());
+    return parts.join(' · ');
+  }
+  const DISCOVER_IDEAS = [
+    ['Anime terminés les mieux notés', { type: 'anime', status: 'ended', sort: 'rating' }],
+    ['Séries terminées, 8 et plus', { type: 'tv', status: 'ended', rating: '8', sort: 'rating' }],
+    ['Films les mieux notés depuis 2020', { type: 'movie', from: '2020', sort: 'rating' }],
+    ['Anime récents', { type: 'anime', sort: 'newest' }],
+    ['Science-fiction (séries)', { type: 'tv', genre: '10765' }],
+    ['Films d’horreur populaires', { type: 'movie', genre: '27' }]
+  ];
   function searchBodyHtml() {
     const s = state.ui.search;
-    if (s.status === 'idle') return emptyHtml('Que veux-tu regarder ?', 'Saisis un titre dans la barre de recherche : les résultats s’affichent pendant la frappe.');
-    if (s.status === 'loading') return '<p class="hint" role="status">Recherche de « ' + esc(s.q) + ' »…</p><div class="grid" aria-busy="true">' + skeletonCards(8) + '</div>';
+    const f = s.filters;
+    if (s.status === 'idle') {
+      return '<div class="empty"><strong>Que veux-tu regarder ?</strong>Tape un titre dans la barre de recherche, ou choisis un type et des filtres ci-dessus pour explorer TMDB. Quelques idées :' +
+        '<div class="ideas">' + DISCOVER_IDEAS.map(([l, o]) => '<button type="button" class="chip chip-btn" data-action="discover" data-filters="' + esc(JSON.stringify(o)) + '">' + esc(l) + '</button>').join('') + '</div></div>';
+    }
+    const what = s.mode === 'text' ? '« ' + s.q + ' »' + (C.hasRefinement(f) ? ' · ' + filterSummary(f) : '') : filterSummary(f);
+    if (s.status === 'loading') return '<p class="hint" role="status">' + (s.mode === 'text' ? 'Recherche de ' : 'Exploration de TMDB : ') + esc(what) + '…</p><div class="grid" aria-busy="true">' + skeletonCards(8) + '</div>';
     if (s.status === 'error') return errorHtml(s.error, 'retry-search');
-    if (s.status === 'empty') return emptyHtml('Aucun résultat pour « ' + s.q + ' »', s.type !== 'all' ? 'Essaie le filtre « Tout » ou une autre orthographe.' : 'Vérifie l’orthographe ou essaie le titre original.');
+    if (s.status === 'empty') {
+      return emptyHtml(s.mode === 'text' ? 'Aucun résultat pour ' + what : 'Aucun résultat : ' + what, C.hasRefinement(f) ? 'Élargis les filtres (années, note, statut) ou essaie « Effacer les filtres ».' : 'Vérifie l’orthographe ou essaie le titre original.');
+    }
     const loadingMore = s.status === 'loading-more';
     const more = s.page < s.totalPages ? '<div class="row" style="justify-content:center;margin-top:16px"><button type="button" class="btn" data-action="search-more"' + (loadingMore ? ' disabled' : '') + '>' +
-      (loadingMore ? 'Chargement…' : 'Plus de résultats') + '</button></div>' : '';
-    return '<p class="hint" role="status">' + s.results.length + ' résultat(s) pour « ' + esc(s.q) + ' »</p><div class="grid">' + s.results.map(cardHtml).join('') + '</div>' + more;
+      (loadingMore ? 'Chargement…' : s.mode === 'text' && s.hidden ? 'Chercher plus loin' : 'Plus de résultats') + '</button></div>' : '';
+    const hiddenNote = s.mode === 'text' && s.hidden ? ' · ' + s.hidden + ' autre(s) titre(s) écarté(s) par tes filtres' : '';
+    const sortNote = s.mode === 'text' && f.sort && f.sort !== 'popular' ? ' · tri appliqué aux résultats chargés' : '';
+    return '<p class="hint" role="status">' + s.results.length + ' résultat(s) : ' + esc(what) + esc(hiddenNote + sortNote) + '</p>' +
+      (s.results.length ? '<div class="grid">' + s.results.map(cardHtml).join('') + '</div>' : '<p class="hint">Aucun titre de cette page ne correspond à tes filtres.</p>') + more;
   }
   function renderSearchBody() {
     if (state.renderedView !== 'search') return;
@@ -2655,9 +2837,9 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     if (route.name === 'search') {
       const q = (route.params.q || '').trim().slice(0, 120);
-      const type = route.params.type === 'movie' || route.params.type === 'tv' ? route.params.type : 'all';
+      const f = C.parseSearchFilters(route.params);
       const s = state.ui.search;
-      if (q !== s.q || type !== s.type || s.status === 'error') startSearch(q, type, 1);
+      if (q !== s.q || !C.sameFilters(f, s.filters) || s.status === 'error') startSearch(q, f, 1);
       const input = byId('search-input');
       if (document.activeElement !== input && input.value.trim() !== q) input.value = q;
     }
@@ -2678,7 +2860,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     let html, title;
     switch (r.name) {
       case 'home': html = homeHtml(); title = 'Accueil'; break;
-      case 'search': html = searchHtml(); title = state.ui.search.q ? 'Recherche « ' + state.ui.search.q + ' »' : 'Recherche'; break;
+      case 'search': html = searchHtml(); title = state.ui.search.q ? 'Recherche « ' + state.ui.search.q + ' »' : state.ui.search.mode === 'discover' ? 'Découvrir' : 'Recherche'; break;
       case 'detail': html = detailHtml(); title = ((state.cache.details.get(r.key) || state.data.metadata[r.key] || {}).title) || 'Fiche'; break;
       case 'resume': html = resumePageHtml(); title = 'Reprendre'; break;
       case 'library': case 'favorites': case 'watchlist': html = listPageHtml(r.name); title = LIST_TITLES[r.name][0]; break;
@@ -2710,6 +2892,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (el.id === 'import-file') { const f = el.files && el.files[0]; el.value = ''; if (f) importFile(f); return; }
+    if (el.dataset.change === 'search-filter') {
+      const f = C.parseSearchFilters(Object.assign({}, state.ui.search.filters, { [el.dataset.filter]: el.value.trim() }));
+      navigate(searchHash(state.ui.search.q, f), true);
+      return;
+    }
     if (el.dataset.change === 'lib-type') { state.data.preferences.libraryType = el.value; persist(); renderView(); }
     if (el.dataset.change === 'lib-sort') { state.data.preferences.librarySort = el.value; persist(); renderView(); }
   });
@@ -2717,8 +2904,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   const searchInput = byId('search-input');
   function submitSearch() {
     const q = searchInput.value.trim();
-    const type = state.ui.search.type || 'all';
-    navigate(C.buildHash('search', { q, type: type === 'all' ? '' : type }), state.route.name === 'search');
+    navigate(searchHash(q, state.ui.search.filters), state.route.name === 'search');
   }
   byId('search-form').addEventListener('submit', (e) => { e.preventDefault(); clearTimeout(searchTimer); submitSearch(); });
   searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(submitSearch, 350); });

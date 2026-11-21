@@ -55,10 +55,25 @@ export const PROVIDERS = {
     flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }, { provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }, { provider_id: 1796, provider_name: 'Netflix Standard with Ads', logo_path: '/netflix-ads.jpg', display_priority: 9 }],
     rent: [{ provider_id: 2, provider_name: 'Apple TV', logo_path: '/apple.jpg', display_priority: 3 }], buy: [] }, US: { flatrate: [{ provider_id: 9, provider_name: 'Prime Video US', logo_path: '/p.jpg', display_priority: 1 }] } }
 };
+// Licence de test (titres hors découverte) : un film et quatre séries dont le titre commence par « Licence Test », plus un faux ami.
+SHOWS[216] = { base: show(216, 'Licence Test : Première partie', { first_air_date: '2017-04-05' }), status: 'Ended', seasons: [[1, range(1, 3)]], hidden: true };
+SHOWS[217] = { base: show(217, 'Licence Test : Seconde partie', { first_air_date: '' }), status: 'In Production', seasons: [], hidden: true };
+SHOWS[218] = { base: show(218, 'Licencieux', { first_air_date: '2020-01-01' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[219] = { base: show(219, 'Licence Test Origines', { first_air_date: '2010-01-01' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+MOVIES[140] = movie(140, 'Licence Test : le film', { release_date: '2015-08-01', _hidden: true });
+// Wikidata simulé : « suivi par » / « précédé par » avec numéros TMDB (série 201 → série 202).
+export const WIKIDATA = { 201: { next: [['tv', 202]], prev: [] }, 202: { next: [], prev: [['tv', 201]] } };
+export async function handleWikidata(route) {
+  const q = new URL(route.request().url()).searchParams.get('query') || '';
+  const m = /wdt:P4983 "(\d+)"/.exec(q);
+  const rel = (m && WIKIDATA[m[1]]) || { next: [], prev: [] };
+  const bindings = ['next', 'prev'].flatMap((r) => rel[r].map(([type, id]) => ({ rel: { type: 'literal', value: r }, [type === 'tv' ? 'tv' : 'movie']: { type: 'literal', value: String(id) } })));
+  return route.fulfill({ status: 200, contentType: 'application/sparql-results+json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ head: { vars: ['rel', 'tv', 'movie'] }, results: { bindings } }) });
+}
 const STATUS_CODES = { 'Returning Series': '0', Planned: '1', 'In Production': '2', Ended: '3', Canceled: '4', Pilot: '5' };
 // Applique les paramètres de /discover comme TMDB (sous-ensemble utilisé par l'application).
 function discover(kind, q) {
-  const items = kind === 'tv' ? Object.values(SHOWS).map((s) => ({ ...s.base, _status: s.status, _next: s.next ? s.next.air_date : '' })) : Object.values(MOVIES).map((m) => ({ ...m }));
+  const items = kind === 'tv' ? Object.values(SHOWS).filter((s) => !s.hidden).map((s) => ({ ...s.base, _status: s.status, _next: s.next ? s.next.air_date : '' })) : Object.values(MOVIES).filter((m) => !m._hidden).map((m) => ({ ...m }));
   const dateKey = kind === 'tv' ? 'first_air_date' : 'release_date';
   const qDate = kind === 'tv' ? 'first_air_date' : 'primary_release_date';
   let out = items.filter((it) => {
@@ -116,6 +131,7 @@ const SEARCH = {
   anime: { multi: [asShow(202), asShow(210), asShow(211), asShow(212), asMovie(104)], movie: [MOVIES[104]], tv: [SHOWS[202].base, SHOWS[210].base, SHOWS[211].base, SHOWS[212].base] },
   lent: { multi: [asMovie(102)], movie: [MOVIES[102]], tv: [], delay: 1500 },
   rapide: { multi: [asMovie(103)], movie: [MOVIES[103]], tv: [] },
+  'licence test': { multi: [asShow(217), asMovie(140), asShow(216), asShow(218), asShow(219), PERSON], movie: [MOVIES[140]], tv: [216, 217, 218, 219].map((id) => SHOWS[id].base) },
   saison: { multi: [asShow(210), asShow(213), asShow(214), asShow(215), asShow(211)], movie: [], tv: [210, 213, 214, 215, 211].map((id) => SHOWS[id].base) },
   sortie: { multi: [asMovie(130), asMovie(131), asMovie(122), asMovie(101), asShow(201)], movie: [MOVIES[130], MOVIES[131], MOVIES[122], MOVIES[101]], tv: [SHOWS[201].base] }
 };

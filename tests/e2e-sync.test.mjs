@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import os from 'node:os';
 import { launch, jsErrors } from './helpers/browser.mjs';
-import { createMock, PNG } from './fixtures/tmdb-mock.mjs';
+import { createMock, PNG, handleWikidata } from './fixtures/tmdb-mock.mjs';
 import { createFirebaseBackend } from './fixtures/firebase-mock.mjs';
 import { buildPublic } from '../tools/build-public.mjs';
 
@@ -28,6 +28,7 @@ async function device(backend, { storage = null, viewport = { width: 1440, heigh
   const tmdb = createMock();
   await context.route('https://api.themoviedb.org/**', (r) => tmdb.handle(r));
   await context.route('https://image.tmdb.org/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
+  await context.route('https://query.wikidata.org/**', (r) => handleWikidata(r));
   await context.route('https://www.gstatic.com/**', (r) => backend.handle(r));
   await context.route('https://mock-firebase.test/**', (r) => backend.handle(r));
   await context.route(ORIGIN + '/**', (r) => r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: PUBLIC }));

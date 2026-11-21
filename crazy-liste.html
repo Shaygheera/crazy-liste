@@ -217,6 +217,17 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .dcard { display: grid; gap: 10px; padding: 12px 16px 14px; border-radius: var(--radius); border: 1px solid var(--border); background: color-mix(in srgb, var(--surface-2) 75%, transparent); }
 .dcard-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .dcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; }
+.dcols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dcol[data-col="suite"] .dcol-big a { color: var(--accent); }
+.dlicence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+.dlicence-label { font-size: .8rem; color: var(--muted); font-weight: 650; margin-right: 2px; }
+.lic { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px 3px 3px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: inherit; text-decoration: none; font-size: .8rem; font-weight: 650; max-width: 100%; }
+a.lic:hover { border-color: var(--accent); }
+.lic-current { border-color: var(--accent); background: var(--accent-soft); }
+.lic-thumb { position: relative; width: 22px; height: 32px; border-radius: 4px; overflow: hidden; flex: none; background: var(--surface-2); }
+.lic-thumb .poster-fallback { display: none; } .lic-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.lic-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lic-seen { color: var(--seen); font-weight: 800; }
 .dcol { display: grid; gap: 3px; align-content: start; min-width: 0; }
 .dcol + .dcol { border-left: 1px solid var(--border); padding-left: 18px; }
 .dcol-label { font-size: .78rem; color: var(--muted); }
@@ -229,7 +240,7 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .detail-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 18px; align-items: start; }
 .detail-summary { display: grid; gap: 6px; min-width: 0; }
 .detail-info { container-type: inline-size; }
-@container (max-width: 680px) { .detail-body { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 680px) { .detail-body { grid-template-columns: minmax(0, 1fr); } .dcols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dcols-4 .dcol:nth-child(3) { border-left: 0; padding-left: 0; } }
 @container (max-width: 500px) { .dcols { grid-template-columns: minmax(0, 1fr); } .dcol + .dcol { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 10px; } }
 .reco-section:empty { display: none; }
 .reco-section { margin-top: 22px; }
@@ -1171,6 +1182,61 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return { list, index, previous: index > 0 ? list[index - 1] : null, next, nextIsUpcoming: !!next && (!next.date || next.date > today) };
   }
 
+  /* ---------- Licence et suite d'une série ----------
+     TMDB ne relie pas les séries entre elles. Deux sources :
+     - Wikidata (« suivi par » / « précédé par », avec le numéro TMDB exact) : suite confirmée ;
+     - les fiches TMDB dont le titre commence comme celui-ci (« Boruto … ») : même licence, rangées par date ;
+       la série suivante dans cet ordre est une « suite probable ». */
+  const LICENCE_STOP = new Set(['the', 'les', 'la', 'le', 'una', 'der', 'die', 'das']);
+  function normTitle(t) {
+    return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9\u3040-\u30ff\u4e00-\u9fff]+/g, ' ').trim();
+  }
+  /* Début commun du titre : avant « : », « - », « – » ou « ( ». Trop court ou trop générique : pas de licence. */
+  function licenceBase(title) {
+    const head = String(title || '').split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0];
+    const base = normTitle(head);
+    if (base.length < 3 || LICENCE_STOP.has(base)) return '';
+    return base;
+  }
+  function inLicence(base, item) {
+    if (!base || !item) return false;
+    return [item.title, item.originalTitle].some((t) => { const n = normTitle(t); return n === base || n.startsWith(base + ' '); });
+  }
+  const byDateThenTitle = (a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : String(a.title).localeCompare(String(b.title), 'fr'));
+  /* Titres de la même licence (fiche courante comprise), par date, sans doublon ; anime : seulement l'animation. */
+  function licenceList(current, candidates, base, max) {
+    const anime = isAnime(current);
+    const seen = new Set([current.key]);
+    const others = (Array.isArray(candidates) ? candidates : []).filter((c) => c && (c.type === 'tv' || c.type === 'movie') && !seen.has(c.key) && seen.add(c.key) &&
+      inLicence(base, c) && (!anime || (Array.isArray(c.genreIds) && c.genreIds.includes(16))));
+    return [current].concat(others).sort(byDateThenTitle).slice(0, max || 10);
+  }
+  /* Suite probable : la première série de la licence qui commence après celle-ci (ou sans date, donc à venir). */
+  function probableNext(list, current) {
+    const i = list.findIndex((x) => x.key === current.key);
+    if (i < 0) return null;
+    return list.slice(i + 1).find((x) => x.type === 'tv' && (!x.date || !current.date || x.date > current.date)) || null;
+  }
+  /* Réponse SPARQL de Wikidata → clés TMDB des titres suivants / précédents (séries ou films). */
+  function parseWikidataRelations(json) {
+    const out = { next: [], prev: [] };
+    const rows = isObj(json) && isObj(json.results) && Array.isArray(json.results.bindings) ? json.results.bindings : [];
+    for (const r of rows) {
+      const rel = r && r.rel && r.rel.value;
+      if (rel !== 'next' && rel !== 'prev') continue;
+      const tv = r.tv && /^\d{1,10}$/.test(r.tv.value) ? itemKey('tv', Number(r.tv.value)) : null;
+      const mv = r.movie && /^\d{1,10}$/.test(r.movie.value) ? itemKey('movie', Number(r.movie.value)) : null;
+      const k = tv || mv;
+      if (k && !out[rel].includes(k)) out[rel].push(k);
+    }
+    return out;
+  }
+  function wikidataQuery(tmdbTvId) {
+    return 'SELECT ?rel ?tv ?movie WHERE { ?item wdt:P4983 "' + Number(tmdbTvId) + '". ' +
+      '{ ?item wdt:P156 ?x. BIND("next" AS ?rel) } UNION { ?item wdt:P155 ?x. BIND("prev" AS ?rel) } ' +
+      'OPTIONAL { ?x wdt:P4983 ?tv. } OPTIONAL { ?x wdt:P4947 ?movie. } } LIMIT 20';
+  }
+
   /* ---------- Navigation par hash ---------- */
   const SIMPLE_ROUTES = ['home', 'search', 'resume', 'library', 'favorites', 'watchlist', 'settings', 'sagas', 'agenda', 'stats'];
   function parseRoute(hash) {
@@ -1441,7 +1507,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     aggregateCounts, aggregateStatuses, episodeStatus, computeSeasonState, hasActivity, computeShowState, computeItemState, nextUpEpisode,
     emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
     startShow, toggleFlag, dismissLegacy, isPersonal,
-    personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
+    personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
+    normTitle, licenceBase, inLicence, licenceList, probableNext, parseWikidataRelations, wikidataQuery, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1916,7 +1983,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       seasonLoad: {},             // "clé#n" -> { status, error }
       busy: {}                    // opérations longues en cours
     },
-    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map(), sagas: {}, availability: new Map(), agenda: { status: 'idle', loaded: 0, total: 0, failed: 0 }, runtimes: { status: 'idle', loaded: 0, total: 0, tried: new Set() } }
+    cache: { summaries: new Map(), details: new Map(), seasons: new Map(), collections: new Map(), sagas: {}, availability: new Map(), agenda: { status: 'idle', loaded: 0, total: 0, failed: 0 }, relations: new Map(), runtimes: { status: 'idle', loaded: 0, total: 0, tried: new Set() } }
   };
   let lastStamp = 0;
   function activityStamp() { const n = Date.now(); lastStamp = n > lastStamp ? n : lastStamp + 1; return lastStamp; }
@@ -2457,6 +2524,38 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return statuses;
   }
 
+  /* Suite et licence d'une série : Wikidata (suite confirmée) et recherche TMDB par début de titre, en parallèle.
+     Échecs silencieux : la colonne « Suite » et la ligne « Licence » n'apparaissent simplement pas. */
+  const WIKIDATA_SPARQL = 'https://query.wikidata.org/sparql';
+  async function summaryOf(key) {
+    if (state.cache.summaries.has(key)) return state.cache.summaries.get(key);
+    const pk = C.parseKey(key);
+    const s = C.normalizeSummary(Object.assign({}, await tmdb('/' + pk.type + '/' + pk.id, {}), { media_type: pk.type }), pk.type);
+    if (s) state.cache.summaries.set(key, s);
+    return s;
+  }
+  async function loadRelations(key) {
+    if (state.cache.relations.has(key)) return;
+    const d = state.cache.details.get(key);
+    if (!d || d.type !== 'tv') return;
+    const rel = { status: 'loading', base: C.licenceBase(d.title) || C.licenceBase(d.originalTitle), list: [], next: null, confirmed: false };
+    state.cache.relations.set(key, rel);
+    const wiki = fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataQuery(d.id)), { headers: { Accept: 'application/sparql-results+json' } })
+      .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataRelations(j)).catch(() => ({ next: [], prev: [] }));
+    const search = rel.base ? tmdb('/search/multi', { query: rel.base, include_adult: 'false' })
+      .then((j) => (Array.isArray(j.results) ? j.results : []).map((x) => C.normalizeSummary(x, null)).filter(Boolean)).catch(() => []) : Promise.resolve([]);
+    const [w, found] = await Promise.all([wiki, search]);
+    found.forEach(rememberSummary);
+    const linked = (await Promise.all(w.next.concat(w.prev).slice(0, 6).map((k) => summaryOf(k).catch(() => null)))).filter(Boolean);
+    const current = state.cache.summaries.get(key) || d;
+    const list = C.licenceList(current, found, rel.base, 10);
+    for (const x of linked) if (!list.some((y) => y.key === x.key)) list.push(x); // titres liés par Wikidata même si leur titre diffère
+    list.sort((a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : 0));
+    const confirmedNext = w.next.map((k) => linked.find((x) => x.key === k)).find(Boolean) || null;
+    Object.assign(rel, { status: 'ready', list: list.length > 1 ? list : [], next: confirmedNext || C.probableNext(list, current), confirmed: !!confirmedNext });
+    if (state.route.name === 'detail' && state.route.key === key) renderRelated();
+  }
+
   /* Fiche complète chargée hors de la page Fiche (calendrier, durées) : mise en cache, métadonnées enregistrées mises à jour. */
   async function fetchDetail(key) {
     const pk = C.parseKey(key);
@@ -2622,6 +2721,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       for (const n of expandedSeasons(key)) ensureSeason(key, n).catch(noop);
       const ns = d.nextEpisode && d.seasonSummaries.some((x) => x.number === d.nextEpisode.season) ? d.nextEpisode.season : null; // saison parfois pas encore listée par TMDB
       if (ns != null) ensureSeason(key, ns).then(() => refreshAiringInfo(key), noop); // dernier épisode prévu de la saison en cours
+      loadRelations(key);
     }
     else if (d.collection) ensureCollection(d.collection.id);
   }
@@ -3696,7 +3796,27 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function refreshAiringInfo(key) { if (state.route.name === 'detail' && state.route.key === key) renderRelated(); }
   const dcol = (id, label, big, sub, extra) => '<div class="dcol" data-col="' + id + '"><span class="dcol-label">' + label + '</span>' +
     (big ? '<strong class="dcol-big">' + big + '</strong>' : '') + (sub ? '<span class="dcol-sub">' + sub + '</span>' : '') + (extra || '') + '</div>';
-  const dcard = (title, chip, cols) => '<section class="dcard" aria-label="' + esc(title) + '"><div class="dcard-head"><h2 class="kicker">' + esc(title) + '</h2>' + (chip ? '<span class="chip">' + esc(chip) + '</span>' : '') + '</div><div class="dcols">' + cols + '</div></section>';
+  const dcard = (title, chip, cols, extra, n) => '<section class="dcard" aria-label="' + esc(title) + '"><div class="dcard-head"><h2 class="kicker">' + esc(title) + '</h2>' + (chip ? '<span class="chip">' + esc(chip) + '</span>' : '') + '</div><div class="dcols' + (n === 4 ? ' dcols-4' : '') + '">' + cols + '</div>' + (extra || '') + '</section>';
+  /* Suite (confirmée par Wikidata, ou probable d'après la licence) et ligne des titres de la licence. */
+  function suiteCol(key) {
+    const rel = state.cache.relations.get(key);
+    if (!rel || rel.status !== 'ready' || !rel.next) return '';
+    const x = rel.next;
+    const when = x.date ? (x.date > state.today ? 'à venir · ' + esc(C.formatDate(x.date)) : esc(x.year)) : 'à venir';
+    return dcol('suite', rel.confirmed ? 'Suite' : 'Suite probable', '<a href="' + C.detailHash(x.type, x.id) + '">' + esc(x.title) + ' ›</a>',
+      (x.type === 'movie' ? 'Film' : C.isAnime(x) ? 'Anime' : 'Série') + ' · ' + when + (rel.confirmed ? '' : ' · même licence, après celui-ci'));
+  }
+  function licenceRowHtml(key) {
+    const rel = state.cache.relations.get(key);
+    if (!rel || rel.status !== 'ready' || rel.list.length < 2) return '';
+    const label = rel.base ? 'Licence « ' + esc((state.cache.details.get(key) || {}).title.split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0]) + ' » :' : 'Titres liés :';
+    return '<div class="dlicence"><span class="dlicence-label">' + label + '</span>' + rel.list.map((x) => {
+      const cur = x.key === key;
+      const seen = getTrack(x.key) && itemState(x.key).status === 'seen';
+      const inner = '<span class="lic-thumb">' + posterHtml(x, 'w92') + '</span><span class="lic-text">' + esc(x.title) + ' · ' + (x.date ? (x.date > state.today ? 'à venir' : esc(x.year)) : 'à venir') + '</span>' + (seen ? '<span class="lic-seen" title="Vu">✓</span>' : '');
+      return cur ? '<span class="lic lic-current" aria-current="true" data-lic="' + x.key + '">' + inner + '</span>' : '<a class="lic" href="' + C.detailHash(x.type, x.id) + '" data-lic="' + x.key + '">' + inner + '</a>';
+    }).join('') + '</div>';
+  }
   /* Date proche : jour de la semaine (« Jeudi 27 novembre ») ; sinon date complète. Suivie de « dans 6 jours ». */
   function whenHtml(date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return 'Date non communiquée';
@@ -3718,9 +3838,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const lastAired = le ? 'Dernier diffusé : <b>' + (si && le.season === si.season ? 'É' + le.episode : C.episodeLabel(le.season, le.episode)) + '</b>' + (le.airDate ? ' — ' + esc(C.formatDate(le.airDate).replace(/ \d{4}$/, (y) => (le.airDate.slice(0, 4) === state.today.slice(0, 4) ? '' : y))) : '') : '';
     if (!ne) {
       const n = d.seasonSummaries.filter((x) => x.number > 0).length;
-      return dcard('Diffusion', status, dcol('last', 'Dernier épisode diffusé', le ? C.episodeLabel(le.season, le.episode) : '—', le && le.airDate ? esc(C.formatDate(le.airDate)) : '') +
+      const sc = suiteCol(key);
+      return dcard(sc ? 'Diffusion et suite' : 'Diffusion', status, dcol('last', 'Dernier épisode diffusé', le ? C.episodeLabel(le.season, le.episode) : '—', le && le.airDate ? esc(C.formatDate(le.airDate)) : '') +
         dcol('size', 'Saisons et épisodes', n + ' saison' + (n > 1 ? 's' : '') + (d.numberOfEpisodes ? ' · ' + d.numberOfEpisodes + ' épisodes' : ''), '') +
-        dcol('next', 'Prochain épisode', 'Aucun annoncé', ['Ended', 'Canceled'].includes(d.productionStatus) ? 'La série est terminée.' : 'TMDB n’annonce pas encore de suite.'));
+        dcol('next', 'Prochain épisode', 'Aucun annoncé', sc ? 'Aucun nouvel épisode pour cette série.' : ['Ended', 'Canceled'].includes(d.productionStatus) ? 'La série est terminée.' : 'TMDB n’annonce pas encore de suite.') + sc,
+        licenceRowHtml(key), sc ? 4 : 3);
     }
     const c1 = dcol('next', 'Prochain épisode', C.episodeLabel(ne.season, ne.episode), whenHtml(ne.airDate), genericEpName(ne.name) ? '' : '<span class="dcol-sub">' + esc(ne.name) + '</span>');
     let c2, c3;
@@ -3740,7 +3862,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     } else {
       c3 = dcol('end', 'Dernier épisode prévu', 'É' + si.lastNumber, 'Date pas encore communiquée' + (si.datedUntil ? ' (dates connues jusqu’à l’É' + si.datedUntil.number + ', ' + esc(C.formatDate(si.datedUntil.date)) + ')' : ''));
     }
-    return dcard('Diffusion' + (si ? ' · saison ' + si.season : ''), status, c1 + c2 + c3);
+    const sc = suiteCol(key);
+    return dcard('Diffusion' + (si ? ' · saison ' + si.season : '') + (sc ? ' et suite' : ''), status, c1 + c2 + c3 + sc, licenceRowHtml(key), sc ? 4 : 3);
   }
   function movieLinkCol(id, label, it) {
     const seen = getTrack(it.key) && itemState(it.key).status === 'seen';

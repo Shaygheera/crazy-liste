@@ -220,7 +220,7 @@ describe('Dans Chrome', () => {
     assert.deepEqual(await page.$$eval('.agenda-group', (els) => els.map((e) => e.dataset.group)), ['week', 'later']);
     assert.match(await page.locator('[data-item-key="tv-210"]').textContent(), /dans 3 jours.*Anime Oméga.*Nouvel épisode · S1 · É12/);
     assert.match(await page.locator('[data-item-key="tv-214"]').textContent(), /Début de la saison 2/);
-    assert.equal(await page.locator('.sidebar [data-nav="agenda"]').getAttribute('aria-current'), 'page');
+    await page.waitForSelector('.sidebar [data-nav="agenda"][aria-current="page"]');
     await page.locator('[data-item-key="tv-214"] a').click();
     await page.waitForFunction(() => location.hash === '#detail/tv/214');
     await page.waitForFunction(() => /Suite annoncée · reprise le/.test(document.querySelector('.facts').textContent));
@@ -246,7 +246,7 @@ describe('Dans Chrome', () => {
     const cur = month(new Date());
     assert.equal(await page.locator('.month[data-month="' + cur + '"] .month-value').textContent(), '1');
     assert.equal((await store(page)).metadata['movie-101'].runtime, 112, 'durée enregistrée');
-    assert.equal(await page.locator('.tabs [href="#stats"]').getAttribute('aria-current'), 'page');
+    await page.waitForSelector('.tabs [href="#stats"][aria-current="page"]');
     await page.evaluate(() => { location.hash = '#detail/movie/102'; });
     await page.locator('[data-action="movie-status"][data-status="seen"]').click();
     const s = await store(page);
@@ -264,11 +264,11 @@ describe('Dans Chrome', () => {
     assert.deepEqual(await page.$$eval('.bottom-nav a', (els) => els.map((a) => a.dataset.nav)), ['home', 'search', 'resume', 'agenda', 'library', 'sagas'], 'six onglets, comme avant');
     await page.locator('.topbar [data-nav="settings"]').click(); // Réglages : icône de la barre du haut sur téléphone
     await page.waitForFunction(() => location.hash === '#settings');
-    assert.equal(await page.locator('.topbar [data-nav="settings"]').getAttribute('aria-current'), 'page');
+    await page.waitForSelector('.topbar [data-nav="settings"][aria-current="page"]');
     await page.evaluate(() => { location.hash = '#library'; });
     await page.locator('.tabs [href="#stats"]').click();
     await page.waitForFunction(() => location.hash === '#stats');
-    assert.equal(await page.locator('.bottom-nav [aria-current="page"]').getAttribute('data-nav'), 'library');
+    await page.waitForSelector('.bottom-nav [data-nav="library"][aria-current="page"]'); // Statistiques : onglet de Ma liste
     await page.locator('.bottom-nav [data-nav="agenda"]').click();
     await page.waitForFunction(() => location.hash === '#agenda');
     await page.waitForSelector('.empty');

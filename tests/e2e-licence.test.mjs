@@ -15,6 +15,9 @@ describe('Licence : règles', () => {
     assert.equal(C.licenceBase('Naruto Shippuden'), 'naruto shippuden');
     assert.equal(C.licenceBase('Élite - Histoires courtes'), 'elite');
     assert.equal(C.licenceBase('Up'), '');
+    assert.equal(C.licenceBase('KONOSUBA -An Explosion on This Wonderful World!'), 'konosuba', 'tiret collé au mot suivant');
+    assert.equal(C.licenceBase("KONOSUBA -God's blessing on this wonderful world!"), 'konosuba');
+    assert.equal(C.licenceBase('Spider-Man'), 'spider man', 'tiret à l’intérieur d’un mot : pas de coupure');
     assert.equal(C.licenceBase('The: Show'), '');
     assert.equal(C.inLicence('naruto', { title: 'Naruto Shippuden' }), true);
     assert.equal(C.inLicence('naruto', { title: 'Narutoverse' }), false, 'mot entier seulement');
@@ -62,12 +65,43 @@ describe('AniList : chaîne d’une licence', () => {
     assert.equal(C.anilistStep(media, 'SEQUEL').id, 5);
     assert.equal(C.anilistStep(media, 'PREQUEL').id, 2, 'le plus récent des précédents');
     assert.equal(C.anilistStep({}, 'SEQUEL'), null);
+    const viaFilm = { relations: { edges: [{ relationType: 'SEQUEL', node: n(8, 'MOVIE', 2019) }, { relationType: 'SIDE_STORY', node: n(9, 'TV', 2023) }] } };
+    assert.equal(C.anilistStep(viaFilm, 'SEQUEL'), null, 'séries seulement par défaut');
+    assert.equal(C.anilistStep(viaFilm, 'SEQUEL', true).id, 8, 'saison 2 → film → saison 3 : on passe par le film');
     assert.equal(C.anilistTitle({ title: { english: null, romaji: 'NARUTO: Shippuuden' } }), 'NARUTO: Shippuuden');
   });
   it('correspondance AniList → TMDB par Wikidata ; requête bornée aux numéros', () => {
     assert.deepEqual(C.parseWikidataAnilistMap({ results: { bindings: [{ al: { value: '20' }, tv: { value: '46260' } }, { al: { value: '21' }, movie: { value: '9' } }, { al: { value: '20' }, movie: { value: '1' } }] } }), { 20: 'tv-46260', 21: 'movie-9' });
     assert.match(C.wikidataAnilistQuery([20, 1735, 'x', -3]), /VALUES \?al \{ "20" "1735" \}/);
     assert.match(C.anilistQuery('97938 }'), /Media\(id: NaN, type: ANIME\)/);
+  });
+});
+
+describe('Licence : OVA et spéciaux', () => {
+  it('AniList : films, OVA et spéciaux reliés, sans adaptations ni résumés', () => {
+    const n = (id, format, year) => ({ id, type: 'ANIME', format, title: { romaji: 'T' + id }, startDate: { year, month: 3, day: 4 } });
+    const media = { relations: { edges: [
+      { relationType: 'SIDE_STORY', node: n(1, 'OVA', 2016) }, { relationType: 'ALTERNATIVE', node: n(2, 'MOVIE', 2015) }, { relationType: 'OTHER', node: n(3, 'SPECIAL', 2013) },
+      { relationType: 'SUMMARY', node: n(4, 'SPECIAL', 2022) }, { relationType: 'CHARACTER', node: n(5, 'MOVIE', 2022) }, { relationType: 'SEQUEL', node: n(6, 'TV', 2020) },
+      { relationType: 'SIDE_STORY', node: n(1, 'OVA', 2016) }
+    ] } };
+    assert.deepEqual(C.anilistExtras(media), [
+      { al: 1, format: 'OVA', title: 'T1', date: '2016-03-04' }, { al: 2, format: 'MOVIE', title: 'T2', date: '2015-03-04' }, { al: 3, format: 'SPECIAL', title: 'T3', date: '2013-03-04' }
+    ]);
+  });
+  it('rangement : type d’après AniList, placé sous la série reliée ; sans fiche TMDB : ajouté avec lien AniList', () => {
+    const s1 = { key: 'tv-1', type: 'tv', title: 'Série Un', date: '2010-01-01' }, s2 = { key: 'tv-2', type: 'tv', title: 'Série Deux', date: '2015-01-01' };
+    const film = { key: 'movie-7', type: 'movie', title: 'Série Un : OVA de Noël', date: '2016-12-01' };
+    const autre = { key: 'movie-8', type: 'movie', title: 'Série Un : le film', date: '2011-06-01' };
+    const r = C.attachExtras([{ series: s1, films: [film, autre] }, { series: s2, films: [] }], [], [
+      { al: 70, format: 'SPECIAL', title: 'Spécial', date: '2014-01-01', seriesKey: 'tv-1', key: 'movie-7' },
+      { al: 71, format: 'OVA', title: 'OVA sans fiche', date: '2016-02-02', seriesKey: 'tv-2', key: null },
+      { al: 72, format: 'OVA', title: 'Série inconnue', date: '2016-02-02', seriesKey: 'tv-9', key: null }
+    ]);
+    assert.deepEqual(r.groups.map((g) => [g.series.key, g.films.map((x) => x.key + ':' + x.kind)]), [
+      ['tv-1', ['movie-8:MOVIE', 'movie-7:SPECIAL']], ['tv-2', ['anilist-71:OVA']]
+    ], 'type d’AniList prioritaire sur « OVA » dans le titre ; série inconnue ignorée');
+    assert.equal(C.attachExtras([{ series: s1, films: [{ key: 'movie-3', type: 'movie', title: 'Série Un OVA 2' }] }], [], []).groups[0].films[0].kind, 'OVA', '« OVA » dans le titre');
   });
 });
 
@@ -140,6 +174,17 @@ describe('Licence : carte Diffusion', () => {
     await context.close();
   });
 
+  it('fiche d’un film : bouton Licence aussi, le film ouvert est mis en avant sous sa série', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/movie/140' });
+    await page.waitForSelector('#detail-licence-btn .licbtn');
+    await openLicence(page);
+    assert.deepEqual(await eras(page), ['tv-219', 'tv-216', 'tv-217']);
+    assert.equal(await page.locator('#detail-licence [data-series="tv-216"] .lfilm.is-current').getAttribute('data-item-key'), 'movie-140');
+    assert.match(await page.locator('#detail-licence .lfilm.is-current').textContent(), /Film[\s\S]*tu es ici/);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
   it('suite confirmée par Wikidata, même avec un titre différent', T, async () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/201' });
     await page.waitForSelector('#detail-cards [data-col="suite"]');
@@ -168,7 +213,7 @@ describe('Licence : carte Diffusion', () => {
     await page.waitForSelector('#detail-cards [data-col="suite"]');
     assert.equal(await col(page, 'suite'), 'Suite annoncéeChaine Yon : le retourAnime · en production · pas encore sur TMDB');
     assert.equal(await page.locator('#detail-cards [data-col="suite"] a').count(), 0);
-    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /4 séries · 0 film$/, 'la suite annoncée compte comme série');
+    assert.match(await page.locator('#detail-licence-btn .licbtn').textContent(), /4 séries · 0 film · 1 OVA \/ spécial$/, 'la suite annoncée compte comme série ; le spécial relié est compté');
     await openLicence(page);
     assert.deepEqual(await eras(page), ['tv-220', 'tv-221', 'tv-222']);
     assert.match(await page.locator('#detail-licence .lera.is-announced').textContent(), /Chaine Yon : le retour[\s\S]*annoncée · pas encore sur TMDB/);

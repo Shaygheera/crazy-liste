@@ -219,6 +219,8 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .dcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; }
 .dcols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .dcol[data-col="suite"] .dcol-big a { color: var(--accent); }
+.kind { display: inline-block; font-size: .66rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; padding: 0 5px; border-radius: 4px; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+.kind-ova, .kind-special { background: color-mix(in srgb, #8b5cf6 14%, transparent); color: #7c3aed; border-color: color-mix(in srgb, #8b5cf6 40%, transparent); }
 .films-section { margin: 22px 0 6px; } .films-section:empty { display: none; }
 .films-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
 .film-row { display: grid; gap: 8px; padding: 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); align-content: start; }
@@ -239,7 +241,7 @@ h1, h2, h3, h4 { line-height: 1.2; }
 a.lseries:hover .lseries-title { color: var(--accent); }
 .lseries-poster { width: 62px; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; }
 .lseries-poster .poster-fallback { font-size: .55rem; }
-.lera.is-current .lseries-poster { outline: 3px solid var(--accent); outline-offset: 2px; }
+.lera.is-current .lseries-poster, .lfilm.is-current .lfilm-poster { outline: 3px solid var(--accent); outline-offset: 2px; }
 .lseries-ghost { display: block; background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 6px, var(--surface-3, var(--surface-2)) 6px, var(--surface-3, var(--surface-2)) 12px); border: 1px dashed var(--border-strong); }
 .lseries-text { display: grid; gap: 3px; align-content: start; min-width: 0; }
 .lseries-title { font-weight: 750; font-size: .92rem; line-height: 1.2; overflow-wrap: anywhere; } .lseries-year { font-size: .78rem; color: var(--muted); }
@@ -1229,7 +1231,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   /* Début commun du titre : avant « : », « - », « – » ou « ( ». Trop court ou trop générique : pas de licence. */
   function licenceBase(title) {
-    const head = String(title || '').split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0];
+    const head = String(title || '').split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0];
     const base = normTitle(head);
     if (base.length < 3 || LICENCE_STOP.has(base)) return '';
     return base;
@@ -1303,9 +1305,9 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return out;
   }
   /* Une requête : titre suivant (P156), précédent (P155) avec leurs numéros TMDB, et numéro AniList (P8729) de la série. */
-  function wikidataQuery(tmdbTvId) {
+  function wikidataQuery(tmdbId, type) {
     const ids = 'OPTIONAL { ?x wdt:P4983 ?tv. } OPTIONAL { ?x wdt:P4947 ?movie. }';
-    return 'SELECT ?rel ?tv ?movie ?al WHERE { ?item wdt:P4983 "' + Number(tmdbTvId) + '". ' +
+    return 'SELECT ?rel ?tv ?movie ?al WHERE { ?item wdt:' + (type === 'movie' ? 'P4947' : 'P4983') + ' "' + Number(tmdbId) + '". ' +
       '{ ?item wdt:P156 ?x. BIND("next" AS ?rel) ' + ids + ' } UNION { ?item wdt:P155 ?x. BIND("prev" AS ?rel) ' + ids + ' } ' +
       'UNION { ?item wdt:P8729 ?al. BIND("anilist" AS ?rel) } } LIMIT 30';
   }
@@ -1317,17 +1319,60 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   const ANILIST_MAIN_FORMATS = ['TV', 'TV_SHORT', 'ONA'];
   const anilistDate = (n) => (n && n.startDate && n.startDate.year ? n.startDate.year * 10000 + (n.startDate.month || 12) * 100 + (n.startDate.day || 28) : 99999999);
   /* Maillon suivant (SEQUEL) ou précédent (PREQUEL) de la série principale : séries seulement (pas les films ni les spéciaux). */
-  function anilistStep(media, dir) {
+  function anilistStep(media, dir, allowMovie) {
     const edges = isObj(media) && isObj(media.relations) && Array.isArray(media.relations.edges) ? media.relations.edges : [];
-    const nodes = edges.filter((e) => isObj(e) && e.relationType === dir && isObj(e.node) && e.node.type === 'ANIME' && ANILIST_MAIN_FORMATS.includes(e.node.format) && isPosInt(e.node.id))
-      .map((e) => e.node).sort((a, b) => anilistDate(a) - anilistDate(b));
-    return nodes.length ? (dir === 'SEQUEL' ? nodes[0] : nodes[nodes.length - 1]) : null;
+    const pick = (formats) => {
+      const nodes = edges.filter((e) => isObj(e) && e.relationType === dir && isObj(e.node) && e.node.type === 'ANIME' && formats.includes(e.node.format) && isPosInt(e.node.id))
+        .map((e) => e.node).sort((a, b) => anilistDate(a) - anilistDate(b));
+      return nodes.length ? (dir === 'SEQUEL' ? nodes[0] : nodes[nodes.length - 1]) : null;
+    };
+    return pick(ANILIST_MAIN_FORMATS) || (allowMovie ? pick(['MOVIE']) : null);
+  }
+  /* Films, OVA et spéciaux reliés à une série AniList (hors adaptations, personnages et résumés). */
+  const ANILIST_EXTRA_FORMATS = ['MOVIE', 'OVA', 'SPECIAL'];
+  const ANILIST_EXTRA_SKIP = ['ADAPTATION', 'CHARACTER', 'SOURCE', 'SUMMARY', 'COMPILATION', 'CONTAINS'];
+  function anilistIso(node) {
+    const d = node && node.startDate;
+    if (!d || !d.year) return '';
+    return d.year + '-' + String(d.month || 1).padStart(2, '0') + '-' + String(d.day || 1).padStart(2, '0');
+  }
+  function anilistExtras(media) {
+    const edges = isObj(media) && isObj(media.relations) && Array.isArray(media.relations.edges) ? media.relations.edges : [];
+    const seen = new Set();
+    return edges.filter((e) => isObj(e) && isObj(e.node) && e.node.type === 'ANIME' && ANILIST_EXTRA_FORMATS.includes(e.node.format) && !ANILIST_EXTRA_SKIP.includes(e.relationType) &&
+      isPosInt(e.node.id) && !seen.has(e.node.id) && seen.add(e.node.id))
+      .map((e) => ({ al: e.node.id, format: e.node.format, title: anilistTitle(e.node), date: anilistIso(e.node) }));
+  }
+  /* Range les films / OVA / spéciaux : type d'après AniList (sinon « OVA » dans le titre), sous la série à laquelle AniList les relie ;
+     ceux sans fiche TMDB sont ajoutés (lien vers AniList). extras : [{ al, format, title, date, seriesKey, key (fiche TMDB ou null) }]. */
+  function attachExtras(groupsIn, orphansIn, extras) {
+    const groups = groupsIn.map((g) => Object.assign({}, g, { films: g.films.slice() }));
+    let orphans = orphansIn.slice();
+    const kinds = {};
+    for (const e of extras || []) if (e.key) kinds[e.key] = e.format;
+    const kindOf = (f) => kinds[f.key] || (/\bOVA\b/i.test(f.title || '') ? 'OVA' : 'MOVIE');
+    for (const e of extras || []) {
+      const target = groups.find((g) => g.series.key === e.seriesKey);
+      if (!target) continue;
+      if (e.key) {
+        let item = null;
+        for (const g of groups) { const i = g.films.findIndex((f) => f.key === e.key); if (i >= 0) { item = g.films.splice(i, 1)[0]; break; } }
+        if (!item) { const i = orphans.findIndex((f) => f.key === e.key); if (i >= 0) item = orphans.splice(i, 1)[0]; }
+        if (item) { target.films.push(item); continue; }
+      }
+      if (!target.films.some((f) => f.anilistId === e.al || (e.key && f.key === e.key))) {
+        target.films.push({ key: 'anilist-' + e.al, type: 'extra', anilistId: e.al, title: e.title, date: e.date, year: yearOf(e.date), kind: e.format });
+      }
+    }
+    for (const g of groups) { g.films = g.films.map((f) => Object.assign({}, f, { kind: f.kind || kindOf(f) })).sort(byDateThenTitle); }
+    orphans = orphans.map((f) => Object.assign({}, f, { kind: kindOf(f) }));
+    return { groups, orphans };
   }
   function anilistTitle(node) { return str((node && node.title && (node.title.english || node.title.romaji)) || '', 200); }
   /* Numéros AniList → fiches TMDB, par Wikidata (correspondance exacte, aucune recherche par titre). */
   function wikidataAnilistQuery(ids) {
-    const vals = (Array.isArray(ids) ? ids : []).filter(isPosInt).slice(0, 20).map((n) => '"' + n + '"').join(' ');
-    return 'SELECT ?al ?tv ?movie WHERE { VALUES ?al { ' + vals + ' } ?item wdt:P8729 ?al. OPTIONAL { ?item wdt:P4983 ?tv. } OPTIONAL { ?item wdt:P4947 ?movie. } } LIMIT 60';
+    const vals = (Array.isArray(ids) ? ids : []).filter(isPosInt).slice(0, 60).map((n) => '"' + n + '"').join(' ');
+    return 'SELECT ?al ?tv ?movie WHERE { VALUES ?al { ' + vals + ' } ?item wdt:P8729 ?al. OPTIONAL { ?item wdt:P4983 ?tv. } OPTIONAL { ?item wdt:P4947 ?movie. } } LIMIT 200';
   }
   function parseWikidataAnilistMap(json) {
     const out = {};
@@ -1614,7 +1659,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
     normTitle, licenceBase, inLicence, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
-    anilistQuery, anilistStep, anilistTitle, wikidataAnilistQuery, parseWikidataAnilistMap, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
+    anilistQuery, anilistStep, anilistTitle, wikidataAnilistQuery, parseWikidataAnilistMap, anilistExtras, attachExtras, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2660,7 +2705,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       const arr = [];
       let m = start;
       for (let i = 0; i < 4 && m; i++) {
-        const n = C.anilistStep(m, dir);
+        const n = C.anilistStep(m, dir, true);
         if (!n || seen.has(n.id)) break;
         seen.add(n.id);
         arr.push(n);
@@ -2673,10 +2718,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   async function loadRelations(key) {
     if (state.cache.relations.has(key)) return;
     const d = state.cache.details.get(key);
-    if (!d || d.type !== 'tv') return;
+    if (!d) return;
     const rel = { status: 'loading', base: C.licenceBase(d.title) || C.licenceBase(d.originalTitle), list: [], next: null, confirmed: false };
     state.cache.relations.set(key, rel);
-    const wiki = fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataQuery(d.id)), { headers: { Accept: 'application/sparql-results+json' } })
+    const wiki = fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataQuery(d.id, d.type)), { headers: { Accept: 'application/sparql-results+json' } })
       .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataRelations(j)).catch(() => ({ next: [], prev: [], anilist: [] }));
     const search = rel.base ? tmdb('/search/multi', { query: rel.base, include_adult: 'false' })
       .then((j) => (Array.isArray(j.results) ? j.results : []).map((x) => C.normalizeSummary(x, null)).filter(Boolean)).catch(() => []) : Promise.resolve([]);
@@ -2685,8 +2730,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     // Chaîne AniList (anime) : maillons reliés à leurs fiches TMDB par Wikidata
     const al = w.anilist[0] || 0;
     const chain = al ? await anilistChain(al).catch(() => []) : [];
-    const alMap = chain.length > 1 ? await fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataAnilistQuery(chain.map((n) => n.id))), { headers: { Accept: 'application/sparql-results+json' } })
+    // OVA, spéciaux et films reliés à chaque série de la chaîne (déjà chargées depuis AniList, donc sans nouvelle requête)
+    const extras = [];
+    for (const n of chain) {
+      if (n.status === 'NOT_YET_RELEASED') continue;
+      const m = await anilistMedia(n.id);
+      for (const e of C.anilistExtras(m)) if (!extras.some((x) => x.al === e.al)) extras.push(Object.assign(e, { seriesAl: n.id }));
+    }
+    const alIds = chain.map((n) => n.id).concat(extras.map((e) => e.al));
+    const alMap = alIds.length > 1 ? await fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataAnilistQuery(alIds)), { headers: { Accept: 'application/sparql-results+json' } })
       .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataAnilistMap(j)).catch(() => ({})) : {};
+    for (const e of extras) { e.key = alMap[e.al] && alMap[e.al].startsWith('movie-') ? alMap[e.al] : null; e.seriesKey = alMap[e.seriesAl] || (e.seriesAl === al ? key : null); }
     const idx = chain.findIndex((n) => n.id === al);
     const chainKeys = chain.map((n) => alMap[n.id] || null).filter((k) => k && k !== key);
     const linkedKeys = [...new Set(w.next.concat(w.prev, chainKeys))].slice(0, 10);
@@ -2702,15 +2756,18 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     films.forEach(rememberSummary);
     const all = list.concat(films.filter((f, i, arr) => arr.findIndex((y) => y.key === f.key) === i && !list.some((y) => y.key === f.key) &&
       bases.some((b) => C.inLicence(b, f)) && (!anime || !f.genreIds.length || f.genreIds.includes(16))));
+    // films / OVA d'AniList qui ont une fiche TMDB mais que la recherche par titre n'a pas trouvés
+    const missing = extras.filter((e) => e.key && e.seriesKey && !all.some((y) => y.key === e.key)).slice(0, 12);
+    for (const x of (await Promise.all(missing.map((e) => summaryOf(e.key).catch(() => null)))).filter(Boolean)) all.push(x);
     list.sort((a, b) => ((a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : 0));
     const find = (k) => (k ? linked.find((x) => x.key === k) || null : null);
     const wikiNext = w.next.map(find).find(Boolean) || null;
     const alNextNode = idx >= 0 ? chain[idx + 1] || null : null;
     const alNext = alNextNode ? find(alMap[alNextNode.id]) : null;
-    const announced = alNextNode && !alNext && !wikiNext ? { title: C.anilistTitle(alNextNode), status: alNextNode.status } : null;
+    const announced = alNextNode && !alNext && !wikiNext && ['NOT_YET_RELEASED', 'RELEASING'].includes(alNextNode.status) ? { title: C.anilistTitle(alNextNode), status: alNextNode.status } : null;
     const confirmedNext = wikiNext || alNext;
     const root = chain.length > 1 ? find(alMap[chain[0].id]) || (chain[0].id === al ? current : null) : null;
-    Object.assign(rel, { status: 'ready', list: list.length > 1 ? list : [], all, confirmed: !!confirmedNext, announced,
+    Object.assign(rel, { status: 'ready', list: list.length > 1 ? list : [], all, extras: extras.filter((e) => e.seriesKey), confirmed: !!confirmedNext, announced,
       next: confirmedNext || (announced ? null : C.probableNext(list, current)),
       label: (root || current).title.split(/\s*[:：]\s*|\s+[-–—]\s+|\s*\(/)[0] });
     if (state.route.name === 'detail' && state.route.key === key) renderRelated();
@@ -2883,7 +2940,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       if (ns != null) ensureSeason(key, ns).then(() => refreshAiringInfo(key), noop); // dernier épisode prévu de la saison en cours
       loadRelations(key);
     }
-    else if (d.collection) ensureCollection(d.collection.id);
+    else { if (d.collection) ensureCollection(d.collection.id); loadRelations(key); }
   }
   /* Saisons ouvertes : choix de l'utilisateur, sinon la première saison régulière non terminée. */
   function expandedSeasons(key) {
@@ -3982,20 +4039,25 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   /* Bouton « Licence » sous l'affiche et panneau ouvert sous la fiche. */
   const licenceOpen = (key) => state.ui.licenceOpen === key;
+  const KIND_LABELS = { MOVIE: 'Film', OVA: 'OVA', SPECIAL: 'Spécial' };
+  const anilistUrl = (id) => 'https://anilist.co/anime/' + Number(id);
   function licenceData(key) {
     const rel = state.cache.relations.get(key);
     if (!rel || rel.status !== 'ready') return null;
-    const { groups, orphans } = C.licenceGroups(rel.all || rel.list);
-    const films = groups.reduce((n, g) => n + g.films.length, 0) + orphans.length;
-    if (groups.length + films + (rel.announced ? 1 : 0) < 2) return null;
-    return { rel, groups, orphans, films };
+    const base = C.licenceGroups(rel.all || rel.list);
+    const { groups, orphans } = C.attachExtras(base.groups, base.orphans, rel.extras || []);
+    const items = groups.flatMap((g) => g.films).concat(orphans);
+    const films = items.filter((f) => f.kind === 'MOVIE').length;
+    const ovas = items.length - films;
+    if (groups.length + items.length + (rel.announced ? 1 : 0) < 2) return null;
+    return { rel, groups, orphans, films, ovas };
   }
   function licenceButtonHtml(key) {
     const L = licenceData(key);
     if (!L) return '';
     const n = L.groups.length + (L.rel.announced ? 1 : 0);
     return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '" aria-expanded="' + licenceOpen(key) + '" aria-controls="detail-licence">' +
-      '<span>' + (licenceOpen(key) ? '▴' : '▾') + ' Licence « ' + esc(L.rel.label || '') + ' »</span><small>' + n + ' série' + (n > 1 ? 's' : '') + ' · ' + L.films + ' film' + (L.films > 1 ? 's' : '') + '</small></button>';
+      '<span>' + (licenceOpen(key) ? '▴' : '▾') + ' Licence « ' + esc(L.rel.label || '') + ' »</span><small>' + n + ' série' + (n > 1 ? 's' : '') + ' · ' + L.films + ' film' + (L.films > 1 ? 's' : '') + (L.ovas ? ' · ' + L.ovas + ' OVA / spécia' + (L.ovas > 1 ? 'ux' : 'l') : '') + '</small></button>';
   }
   function seriesProgress(key) {
     const t = getTrack(key);
@@ -4009,19 +4071,23 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const L = licenceData(key);
     if (!L) return '';
     const year = (x) => (x.date ? (x.date > state.today ? 'à venir · ' + esc(C.formatDate(x.date)) : esc(x.year)) : 'à venir');
-    const film = (f) => '<a class="lfilm" href="' + C.detailHash('movie', f.id) + '" data-item-key="' + f.key + '"><span class="lfilm-poster poster">' + posterHtml(f, 'w154') + '</span>' +
-      '<span class="lfilm-title">' + esc(f.title) + '</span><span class="lfilm-year">' + year(f) + '</span>' + (getTrack(f.key) && itemState(f.key).status === 'seen' ? '<span class="tagc t-seen">✓ vu</span>' : '') + '</a>';
+    const film = (f) => (f.type === 'extra'
+      ? '<a class="lfilm" href="' + anilistUrl(f.anilistId) + '" target="_blank" rel="noopener noreferrer" data-item-key="' + f.key + '" title="Pas de fiche TMDB : voir sur AniList"><span class="lfilm-poster lseries-ghost" aria-hidden="true"></span>'
+      : f.key === key ? '<span class="lfilm is-current" aria-current="true" data-item-key="' + f.key + '"><span class="lfilm-poster poster">' + posterHtml(f, 'w154') + '</span>'
+      : '<a class="lfilm" href="' + C.detailHash('movie', f.id) + '" data-item-key="' + f.key + '"><span class="lfilm-poster poster">' + posterHtml(f, 'w154') + '</span>') +
+      '<span class="lfilm-title">' + esc(f.title) + '</span><span class="lfilm-year"><span class="kind kind-' + f.kind.toLowerCase() + '">' + KIND_LABELS[f.kind] + '</span> ' + year(f) + '</span>' +
+      (f.type === 'extra' ? '<span class="lfilm-year">pas sur TMDB ↗</span>' : f.key === key ? '<span class="tagc t-here">tu es ici</span>' : getTrack(f.key) && itemState(f.key).status === 'seen' ? '<span class="tagc t-seen">✓ vu</span>' : '') + (f.key === key ? '</span>' : '</a>');
     const era = (g) => {
       const x = g.series, cur = x.key === key;
       const head = '<span class="lseries-poster poster">' + posterHtml(x, 'w154') + '</span><span class="lseries-text"><span class="lseries-title">' + esc(x.title) + '</span>' +
         '<span class="lseries-year">' + (C.isAnime(x) ? 'Anime' : 'Série') + ' · ' + year(x) + '</span>' + (cur ? '<span class="tagc t-here">tu es ici</span>' : seriesProgress(x.key)) + '</span>';
       return '<div class="lera' + (cur ? ' is-current' : '') + '" data-series="' + x.key + '">' +
         (cur ? '<div class="lseries" aria-current="true">' + head + '</div>' : '<a class="lseries" href="' + C.detailHash('tv', x.id) + '">' + head + '</a>') +
-        '<div class="lfilms">' + (g.films.length ? g.films.map(film).join('') : '<span class="hint">Aucun film</span>') + '</div></div>';
+        '<div class="lfilms">' + (g.films.length ? g.films.map(film).join('') : '<span class="hint">Aucun film ni OVA</span>') + '</div></div>';
     };
     const ann = L.rel.announced ? '<div class="lera is-announced"><div class="lseries"><span class="lseries-poster lseries-ghost" aria-hidden="true"></span><span class="lseries-text"><span class="lseries-title">' + esc(L.rel.announced.title) + '</span>' +
       '<span class="lseries-year">Série · ' + (L.rel.announced.status === 'NOT_YET_RELEASED' ? 'en production' : 'en cours') + '</span><span class="tagc t-ann">annoncée · pas encore sur TMDB</span></span></div><div class="lfilms"></div></div>' : '';
-    return '<div class="licence-head"><h2>Licence « ' + esc(L.rel.label || '') + ' »</h2><span class="hint">Ordre de sortie · chaque série suivie de ses films</span>' +
+    return '<div class="licence-head"><h2>Licence « ' + esc(L.rel.label || '') + ' »</h2><span class="hint">Ordre de sortie · chaque série suivie de ses films et OVA</span>' +
       '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button></div>' +
       L.groups.map(era).join('') + ann + (L.orphans.length ? '<div class="lera"><div class="lseries"><span class="lseries-text"><span class="lseries-title">Autres films</span></span></div><div class="lfilms">' + L.orphans.map(film).join('') + '</div></div>' : '');
   }
@@ -4032,12 +4098,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (!g || !g.films.length) return '';
     const d = state.cache.details.get(key) || viewMeta(key);
     const anime = C.isAnime(d);
-    return '<div class="gallery-head"><h2 id="films-title">Films liés</h2><span class="hint">Films de la licence rattachés à cette série. Le bon moment pour les regarder varie selon les sources : vérifie avec la recherche.</span></div>' +
+    const hasOva = g.films.some((f) => f.kind !== 'MOVIE');
+    return '<div class="gallery-head"><h2 id="films-title">' + (hasOva ? 'Films et OVA liés' : 'Films liés') + '</h2><span class="hint">Rattachés à cette série. Le bon moment pour les regarder varie selon les sources : vérifie avec la recherche.</span></div>' +
       '<ul class="films-list">' + g.films.map((f) => {
-        const seen = getTrack(f.key) && itemState(f.key).status === 'seen';
-        return '<li class="film-row" data-item-key="' + f.key + '"><a class="film-row-main" href="' + C.detailHash('movie', f.id) + '"><span class="film-row-poster poster">' + posterHtml(f, 'w154') + '</span>' +
-          '<span class="film-row-text"><strong>' + esc(f.title) + '</strong><span class="muted">Film · ' + (f.date ? (f.date > state.today ? 'à venir · ' + esc(C.formatDate(f.date)) : esc(C.formatDate(f.date))) : 'date inconnue') + '</span>' +
-          (seen ? '<span class="tagc t-seen">✓ vu</span>' : '') + '</span></a>' +
+        const seen = f.type !== 'extra' && getTrack(f.key) && itemState(f.key).status === 'seen';
+        const when = f.date ? (f.date > state.today ? 'à venir · ' + esc(C.formatDate(f.date)) : esc(C.formatDate(f.date))) : 'date inconnue';
+        const main = f.type === 'extra'
+          ? '<a class="film-row-main" href="' + anilistUrl(f.anilistId) + '" target="_blank" rel="noopener noreferrer" title="Pas de fiche TMDB : voir sur AniList"><span class="film-row-poster lseries-ghost" aria-hidden="true"></span>'
+          : '<a class="film-row-main" href="' + C.detailHash('movie', f.id) + '"><span class="film-row-poster poster">' + posterHtml(f, 'w154') + '</span>';
+        return '<li class="film-row" data-item-key="' + f.key + '" data-kind="' + f.kind + '">' + main +
+          '<span class="film-row-text"><strong>' + esc(f.title) + '</strong><span class="muted"><span class="kind kind-' + f.kind.toLowerCase() + '">' + KIND_LABELS[f.kind] + '</span> · ' + when + '</span>' +
+          (f.type === 'extra' ? '<span class="muted">Pas de fiche TMDB · voir sur AniList ↗</span>' : '') + (seen ? '<span class="tagc t-seen">✓ vu</span>' : '') + '</span></a>' +
           '<a class="btn btn-sm film-row-search" href="' + esc(C.watchWhenSearchUrl(f.title, d.title, anime)) + '" target="_blank" rel="noopener noreferrer" title="Recherche Google : où placer ce film dans l’ordre de visionnage">🔎 Quand le regarder ?</a></li>';
       }).join('') + '</ul>';
   }

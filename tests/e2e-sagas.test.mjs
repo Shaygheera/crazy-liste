@@ -67,7 +67,7 @@ describe('Sagas : frise', () => {
     assert.match(await page.locator('.snake-item[data-item-key="' + nextKey + '"]').getAttribute('class'), /is-next/);
     await page.locator('.saga-controls a', { hasText: 'Ordre de l’histoire' }).click();
     await page.waitForFunction(() => location.hash === '#saga/monsterverse?ordre=histoire');
-    await page.waitForSelector('.snake-item');
+    await page.waitForFunction(() => { const el = document.querySelector('.snake-item'); return el && el.dataset.itemKey === 'movie-293167'; }); // frise redessinée
     assert.equal((await keys(page))[0], 'movie-293167', 'histoire : Kong : Skull Island (1973) en premier');
     await page.locator('.saga-controls a', { hasText: 'Séries' }).click();
     await page.waitForFunction(() => location.hash === '#saga/monsterverse?ordre=histoire&type=tv');

@@ -2814,12 +2814,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function loadLicenceStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(LICENCE_STORE) || 'null');
-      if (!C.isObj(raw) || raw.v !== 4 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
+      if (!C.isObj(raw) || raw.v !== 5 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
       for (const L of raw.list) { const c = cleanStoredLicence(L); if (c && Date.now() - c.at < LICENCE_TTL) registerLicence(c); }
     } catch (e) { /* stockage indisponible ou illisible : la licence sera recalculée */ }
   }
   function saveLicenceStore() {
-    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 4, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
+    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 5, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
   }
   function wikiRelations(d) {
     if (!wikiCache.has(d.key)) {
@@ -2846,9 +2846,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     // 2. Films, OVA et spéciaux de chaque série de la chaîne
     const extras = [];
+    let unreadable = 0; // saisons qu'AniList n'a pas renvoyées (trop de requêtes) : licence incomplète
     for (const n of chain) {
       if (n.status === 'NOT_YET_RELEASED') continue;
       const m = await anilistMedia(n.id);
+      if (!m) unreadable++;
       for (const e of C.anilistExtras(m)) if (!extras.some((x) => x.al === e.al)) extras.push(Object.assign(e, { seriesAl: n.id }));
     }
     const alIds = chain.map((n) => n.id).concat(extras.map((e) => e.al));
@@ -2883,7 +2885,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     // 5. Nom : la première série de la chaîne, sinon la série au nom le plus général
     const root = chainInfo.length && chainInfo[0].key ? items.find((x) => x.key === chainInfo[0].key) : null;
     const named = root || items.filter((x) => x.type === 'tv' && C.licenceBaseOf(x)).sort((p, q) => (C.licenceBaseOf(p).length - C.licenceBaseOf(q).length) || ((p.date || '9999') < (q.date || '9999') ? -1 : 1))[0] || current;
-    return { partial: !!alId && !chain.length, id: chain.length ? 'al:' + chain[0].id : 'base:' + (bases[0] || key), at: Date.now(), label: named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
+    return { partial: (!!alId && !chain.length) || unreadable > 0, id: chain.length ? 'al:' + chain[0].id : 'base:' + (bases[0] || key), at: Date.now(), label: named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
       items: items.slice(0, 80), extras: extras.filter((e) => e.seriesKey).map(({ seriesAl, ...e }) => e), chain: chainInfo };
   }
   /* Ce que la fiche ouverte affiche, d'après la licence partagée : suite (Wikidata, puis chaîne AniList, sinon suite probable), suite annoncée. */

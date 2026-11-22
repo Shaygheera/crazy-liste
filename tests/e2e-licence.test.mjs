@@ -317,13 +317,31 @@ describe('Licence : fiche', () => {
     assert.deepEqual(await btns.evaluateAll((els) => els.map((e) => e.getAttribute('aria-expanded'))), ['true', 'false']);
     const bg = () => btns.evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor !== 'rgba(0, 0, 0, 0)'));
     assert.deepEqual(await bg(), [true, false], 'seul le bouton ouvert est coloré');
-    await btns.nth(1).click(); // panneau ouvert : passe directement à toute la licence
+    assert.equal(await page.locator('#licence-dialog').evaluate((d) => d.open), true, 'ouvert dans une fenêtre');
+    await page.locator('#detail-licence [data-action="licence-toggle"][data-scope="all"]').click(); // depuis la fenêtre : toute la licence
     await page.waitForFunction(() => document.querySelectorAll('#detail-licence .lfilm').length === 8);
     assert.match(await page.locator('#detail-licence .licence-head h2').textContent(), /^Licence « Univers Merveille »$/);
     assert.deepEqual(await btns.allTextContents(), ['▾ Saga « Homme de Fer »3 films', '▴ Licence « Univers Merveille »8 films']);
     assert.deepEqual(await bg(), [false, true], 'après le clic sur Licence, Saga n’est plus coloré');
-    await btns.nth(1).click(); // second clic sur le même bouton : referme
+    await page.keyboard.press('Escape'); // Échap ferme la fenêtre
+    await page.waitForFunction(() => !document.getElementById('licence-dialog').open);
     assert.equal(await page.locator('#detail-licence').isHidden(), true);
+    assert.deepEqual(await btns.evaluateAll((els) => els.map((e) => e.getAttribute('aria-expanded'))), ['false', 'false']);
+    await btns.nth(1).click(); // bouton Licence : ouvre directement toute la licence
+    await page.waitForFunction(() => document.querySelectorAll('#detail-licence .lfilm').length === 8);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('licence répertoriée dans le menu Licences (MCU) : la fenêtre montre la frise de ce menu', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/movie/1726', mock: { generic: true } });
+    await page.waitForFunction(() => /Licence « Marvel Cinematic Universe »/.test((document.querySelector('#detail-licence-btn') || {}).textContent || ''), null, { timeout: 15000 });
+    assert.match(await page.locator('#detail-licence-btn .licbtn').last().textContent(), /comme dans le menu Licences$/);
+    await page.locator('#detail-licence-btn .licbtn').last().click();
+    await page.waitForSelector('#licence-saga-body[data-saga="mcu"] .snake-item', { timeout: 20000 });
+    assert.ok(await page.locator('#licence-saga-body .snake-item').count() > 20, 'frise par phase, comme la page de la licence');
+    assert.equal(await page.locator('#licence-dialog a[href="#saga/mcu"]').count(), 1, 'lien vers la page complète');
+    assert.match(await page.locator('nav').first().textContent(), /Licences/, 'menu renommé');
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

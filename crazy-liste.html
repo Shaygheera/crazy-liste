@@ -399,6 +399,9 @@ dialog.lightbox[open] { display: flex; align-items: center; justify-content: cen
 .ideas { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
 @media (max-width: 899px) { .filters { display: grid; grid-template-columns: 1fr 1fr; } .filter-year .input { width: 100%; } .filter .select { width: 100%; } .filter-reset { margin-left: 0; grid-column: 1 / -1; } }
 /* Lecteur : aussi grand que possible en 16/9 sans dépasser l'écran (titre et pied compris). Spécificité plus forte que dialog.dialog. */
+dialog.dialog.dialog-licence { width: min(96vw, 1240px); max-width: 96vw; max-height: 92dvh; overflow: auto; }
+dialog.dialog.dialog-licence .licence-panel { margin: 0; border: 0; border-radius: 0; }
+dialog.dialog.dialog-licence .licence-head { position: sticky; top: -14px; z-index: 2; background: var(--surface); padding: 6px 0 8px; }
 dialog.dialog.dialog-video { width: min(96vw, 1400px, calc((100dvh - 150px) * 16 / 9)); max-width: 96vw; }
 .video-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
 .video-head h2 { margin: 0; flex: 1; min-width: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -568,7 +571,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       <a href="#agenda" data-nav="agenda"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>À venir</a>
       <a href="#library" data-nav="library"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Bibliothèque<span class="count" data-count="total"></span></a>
       <a href="#favorites" data-nav="favorites"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></svg>Favoris<span class="count" data-count="favorites"></span></a>
-      <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Sagas</a>
+      <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Licences</a>
       <a href="#watchlist" data-nav="watchlist"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>Watchlist<span class="count" data-count="watchlist"></span></a>
       <a href="#stats" data-nav="stats"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20v-8M11 20V5M17 20v-5M3 20h18"/></svg>Statistiques</a>
       <a href="#settings" data-nav="settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Réglages</a>
@@ -612,7 +615,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   <a href="#resume" data-nav="resume"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></svg>Reprendre</a>
   <a href="#agenda" data-nav="agenda"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>À venir</a>
   <a href="#library" data-nav="library" data-nav-group="favorites watchlist stats"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Ma liste</a>
-  <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Sagas</a>
+  <a href="#sagas" data-nav="sagas" data-nav-group="saga"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><circle cx="3" cy="17" r="1.2"/><circle cx="21" cy="11" r="1.2"/></svg>Licences</a>
 </nav>
 
 <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
@@ -620,6 +623,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   <div class="dialog-body"><h2 id="dialog-title"></h2><div id="dialog-content"></div></div>
   <div class="dialog-actions" id="dialog-actions"></div>
 </dialog>
+<dialog id="licence-dialog" class="dialog dialog-licence" aria-label="Licence"><section id="detail-licence" class="licence-panel" hidden></section></dialog>
 <dialog id="trailer-dialog" class="dialog dialog-video" aria-labelledby="trailer-title">
   <div class="video-head"><h2 id="trailer-title">Bande-annonce</h2><button type="button" class="btn btn-sm btn-ghost" data-action="trailer-close" aria-label="Fermer la bande-annonce">✕</button></div>
   <div class="video-frame" id="trailer-frame"></div>
@@ -3755,9 +3759,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       // bouton « Saga » ou « Licence » : ouvre le panneau sur ce choix ; un second clic sur le même le referme
       if (scope && licenceOpen(key) && state.ui.licenceScope !== scope) state.ui.licenceScope = scope;
       else { if (scope) state.ui.licenceScope = scope; state.ui.licenceOpen = licenceOpen(key) ? null : key; }
+      const cur = curatedLicenceOf(key);
+      if (licenceOpen(key) && cur && state.ui.licenceScope !== 'saga' && tmdbReady()) loadSaga(cur, false);
       renderLicence(key);
-      const target = licenceOpen(key) ? document.getElementById('detail-licence') : document.querySelector('#detail-licence-btn .licbtn' + (scope ? '[data-scope="' + scope + '"]' : ''));
-      if (target) { if (licenceOpen(key)) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); else target.focus(); }
+      if (!licenceOpen(key)) { const b = document.querySelector('#detail-licence-btn .licbtn' + (scope ? '[data-scope="' + scope + '"]' : '')); if (b) b.focus(); }
       checkAvailability();
     },
     'poster-zoom'(el) {
@@ -4310,7 +4315,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return null;
   }
   function sagasHtml() {
-    return '<div class="page-head"><div><h1>Sagas</h1><p>Revois les grands univers dans l’ordre, phase par phase, et suis où tu en es.</p></div></div>' +
+    return '<div class="page-head"><div><h1>Licences</h1><p>Revois les grands univers dans l’ordre, phase par phase, et suis où tu en es.</p></div></div>' +
       '<div class="saga-list">' + C.SAGAS.map((sg) => {
         const all = C.sagaKeys(sg, false);
         const seen = all.filter((k) => itemState(k).status === 'seen').length;
@@ -4330,7 +4335,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const link = (patch) => '#saga/' + saga.id + (() => { const q = new URLSearchParams(C.sagaParamsToQuery(Object.assign({}, o, patch))).toString(); return q ? '?' + q : ''; })();
     const chip = (on, href, label) => '<a class="chip chip-btn" href="' + href + '" aria-pressed="' + on + '">' + label + '</a>';
     const hasOptional = saga.groups.some((g) => g.optional);
-    return '<div class="saga-page" style="--saga:' + saga.accent + '"><div class="page-head saga-head"><div><p class="saga-crumb"><a href="#sagas">Sagas</a> ›</p><h1>' + esc(saga.name) + '</h1><p>' + esc(saga.intro) + '</p></div></div>' +
+    return '<div class="saga-page" style="--saga:' + saga.accent + '"><div class="page-head saga-head"><div><p class="saga-crumb"><a href="#sagas">Licences</a> ›</p><h1>' + esc(saga.name) + '</h1><p>' + esc(saga.intro) + '</p></div></div>' +
       '<div class="saga-controls"><div class="seg seg-lg" role="group" aria-label="Ordre">' +
         '<a href="' + link({ order: 'release' }) + '" role="button" aria-pressed="' + (o.order === 'release') + '">Ordre de sortie</a>' +
         '<a href="' + link({ order: 'story' }) + '" role="button" aria-pressed="' + (o.order === 'story') + '">Ordre de l’histoire</a></div>' +
@@ -4381,6 +4386,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       (!upcoming ? availHtml(av, k, d) : '') + '</span></a></li>';
   }
   function renderSagaBody(id) {
+    const inDialog = document.getElementById('licence-saga-body');
+    if (inDialog && inDialog.dataset.saga === id) { inDialog.innerHTML = sagaBodyHtml(C.findSaga(id), CURATED_OPTS); checkAvailability(); }
     if (state.renderedView !== 'saga' || state.route.sagaId !== id) return;
     const saga = C.findSaga(id);
     byId('saga-body').innerHTML = sagaBodyHtml(saga, C.parseSagaParams(state.route.params));
@@ -4464,7 +4471,6 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
           '<p class="detail-overview">' + esc(item.overview || 'Synopsis indisponible en français.') + '</p></div>' +
           '<div class="track-box" id="detail-track">' + trackBoxHtml(key) + '</div></div>' +
       '</div></div></section>' +
-      '<section id="detail-licence" class="licence-panel" aria-label="Licence"' + (licenceOpen(key) ? '' : ' hidden') + '>' + (licenceOpen(key) ? licencePanelHtml(key) : '') + '</section>' +
       (d && d.gallery.length ? '<section class="gallery-section" aria-labelledby="gallery-title"><div class="gallery-head"><h2 id="gallery-title">Images</h2><span class="hint">Visuels officiels du titre, sans images d’épisodes pour éviter les spoilers.</span></div>' +
         '<div class="gallery">' + d.gallery.map((p, i) => '<button type="button" class="gallery-item" data-action="gallery-open" data-key="' + key + '" data-index="' + i + '" aria-label="Agrandir l’image ' + (i + 1) + ' sur ' + d.gallery.length + '">' +
           '<img src="' + esc(img(p, 'w780')) + '" alt="" loading="lazy" decoding="async"></button>').join('') + '</div></section>' : '') +
@@ -4665,17 +4671,25 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const rel = state.cache.relations.get(key);
     if (rel && rel.status === 'loading') return '<button type="button" class="licbtn" disabled aria-busy="true"><span>Licence</span><small>Recherche des séries, films et OVA…</small></button>';
     const L = licenceData(key);
-    if (!L) return '';
+    const cur0 = curatedLicenceOf(key);
+    if (!L && !cur0) return '';
     // une saga plus petite que la licence (Iron Man dans l'univers Marvel) : deux boutons, « Saga » puis « Licence »
     const one = (X, scope) => {
       const n = X.groups.length + (X.upcoming ? 1 : 0);
       const open = licenceOpen(key) && (!scope || state.ui.licenceScope === scope);
-      return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '"' + (scope ? ' data-scope="' + scope + '"' : '') + ' aria-expanded="' + open + '" aria-controls="detail-licence">' +
+      return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '"' + (scope ? ' data-scope="' + scope + '"' : '') + ' aria-expanded="' + open + '" aria-haspopup="dialog">' +
         '<span>' + (open ? '▴' : '▾') + ' ' + scopeWord(X) + ' « ' + esc(X.label || '') + ' »</span><small>' + [n ? n + ' série' + (n > 1 ? 's' : '') : '', X.films ? X.films + ' film' + (X.films > 1 ? 's' : '') : (n ? '0 film' : ''), X.ovas ? X.ovas + ' OVA / spécia' + (X.ovas > 1 ? 'ux' : 'l') : ''].filter(Boolean).join(' · ') + '</small></button>';
     };
-    if (!L.saga) return one(L, null);
+    const cur = curatedLicenceOf(key);
+    const curated = (scope) => {
+      const open = licenceOpen(key) && (!scope || state.ui.licenceScope === scope);
+      const n = C.sagaKeys(cur, false).length;
+      return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '"' + (scope ? ' data-scope="' + scope + '"' : '') + ' aria-expanded="' + open + '" aria-haspopup="dialog">' +
+        '<span>' + (open ? '▴' : '▾') + ' Licence « ' + esc(cur.name) + ' »</span><small>' + n + ' titres · comme dans le menu Licences</small></button>';
+    };
+    if (!L || !L.saga) return cur ? curated(null) : one(L, null);
     const S = licenceData(key, 'saga'), A = licenceData(key, 'all');
-    return (S ? one(S, 'saga') : '') + (A ? one(A, 'all') : '');
+    return (S ? one(S, 'saga') : '') + (cur ? curated('all') : A ? one(A, 'all') : '');
   }
   function seriesProgress(key) {
     const t = getTrack(key);
@@ -4686,8 +4700,18 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     return '';
   }
   function licencePanelHtml(key) {
-    const L = licenceData(key);
+    const cur = curatedLicenceOf(key);
+    const L = licenceData(key) || (cur ? { scope: 'all', saga: null } : null);
     if (!L) return '';
+    const other = L.saga ? (L.scope === 'saga'
+      ? '<button type="button" class="btn btn-sm" data-action="licence-toggle" data-scope="all" data-key="' + key + '">Voir toute la licence' + (cur ? ' « ' + esc(cur.name) + ' »' : '') + ' ›</button>'
+      : '<button type="button" class="btn btn-sm" data-action="licence-toggle" data-scope="saga" data-key="' + key + '">Voir la saga « ' + esc(L.saga.label) + ' » ›</button>') : '';
+    const close = '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button>';
+    if (cur && L.scope !== 'saga') {
+      return '<div class="licence-head"><h2>Licence « ' + esc(cur.name) + ' »</h2><span class="hint">Comme dans le menu Licences · ordre de sortie</span>' + other +
+        '<a class="btn btn-sm" href="#saga/' + cur.id + '">Ordre de l’histoire, filtres ›</a>' + close + '</div>' +
+        '<div class="saga-page" style="--saga:' + cur.accent + '"><div id="licence-saga-body" data-saga="' + cur.id + '">' + sagaBodyHtml(cur, CURATED_OPTS) + '</div></div>';
+    }
     const year = (x) => (x.date ? (x.date > state.today ? 'à venir · ' + esc(C.formatDate(x.date)) : esc(x.year)) : 'à venir');
     const film = (f) => (f.type === 'extra'
       ? '<a class="lfilm" href="' + anilistUrl(f.anilistId) + '" target="_blank" rel="noopener noreferrer" data-item-key="' + f.key + '" title="Pas de fiche TMDB : voir sur AniList"><span class="lfilm-poster lseries-ghost" aria-hidden="true"></span>'
@@ -4706,7 +4730,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const ann = L.upcoming ? '<div class="lera is-announced"><div class="lseries"><span class="lseries-poster lseries-ghost" aria-hidden="true"></span><span class="lseries-text"><span class="lseries-title">' + esc(L.upcoming.title) + '</span>' +
       '<span class="lseries-year">Série · ' + (L.upcoming.status === 'NOT_YET_RELEASED' ? 'en production' : 'en cours') + '</span><span class="tagc t-ann">annoncée · pas encore sur TMDB</span></span></div><div class="lfilms"></div></div>' : '';
     return '<div class="licence-head"><h2>' + scopeWord(L) + ' « ' + esc(L.label || '') + ' »</h2><span class="hint">Ordre de sortie · chaque série suivie de ses films et OVA</span>' +
-      '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button></div>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button>' + other + '</div>' +
       L.groups.map(era).join('') + ann + (L.orphans.length ? '<div class="lera"><div class="lseries"><span class="lseries-text"><span class="lseries-title">' + (L.groups.length ? 'Autres films' : 'Films') + '</span></span></div><div class="lfilms">' + L.orphans.map(film).join('') + '</div></div>' : '');
   }
   /* Films rangés avec cette série dans sa licence, avec une recherche « Quand le regarder ? » pour chacun. */
@@ -4736,8 +4760,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const btn = document.getElementById('detail-licence-btn');
     if (btn) btn.innerHTML = licenceButtonHtml(key);
     const panel = document.getElementById('detail-licence');
-    if (panel) { const open = licenceOpen(key) && !!licenceData(key); panel.hidden = !open; panel.innerHTML = open ? licencePanelHtml(key) : ''; }
+    const dlg = document.getElementById('licence-dialog');
+    if (panel && dlg) {
+      const open = licenceOpen(key) && (!!licenceData(key) || !!curatedLicenceOf(key));
+      panel.hidden = !open;
+      panel.innerHTML = open ? licencePanelHtml(key) : '';
+      if (open && !dlg.open) dlg.showModal(); else if (!open && dlg.open) dlg.close();
+    }
   }
+  /* Licence répertoriée dans le menu « Licences » (MCU, DC, Star Wars…) : affichée comme dans ce menu (frise par phase). */
+  const CURATED_OPTS = { order: 'release', type: 'all', extra: false };
+  function curatedLicenceOf(key) { return C.SAGAS.find((sg) => C.sagaKeys(sg, true).includes(key)) || null; }
   /* Date proche : jour de la semaine (« Jeudi 27 novembre ») ; sinon date complète. Suivie de « dans 6 jours ». */
   function whenHtml(date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return 'Date non communiquée';
@@ -4938,6 +4971,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   function renderView() {
     const r = state.route;
+    if (byId('licence-dialog').open) byId('licence-dialog').close(); // changement de page : la fenêtre de licence se ferme
     let html, title;
     switch (r.name) {
       case 'home': html = homeHtml(); title = 'Accueil'; break;
@@ -4946,7 +4980,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       case 'resume': html = resumePageHtml(); title = 'Reprendre'; break;
       case 'library': case 'favorites': case 'watchlist': html = listPageHtml(r.name); title = LIST_TITLES[r.name][0]; break;
       case 'settings': html = settingsHtml(); title = 'Réglages'; break;
-      case 'sagas': html = sagasHtml(); title = 'Sagas'; break;
+      case 'sagas': html = sagasHtml(); title = 'Licences'; break;
       case 'agenda': html = agendaHtml(); title = 'À venir'; break;
       case 'stats': html = statsHtml(); title = 'Statistiques'; break;
       case 'saga': { const sg = C.findSaga(r.sagaId); html = sagaHtml(); title = sg ? sg.name : 'Saga introuvable'; break; }
@@ -5013,6 +5047,13 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   byId('lightbox').addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
   byId('lightbox').addEventListener('touchend', (e) => { if (touchX == null) return; const dx = e.changedTouches[0].clientX - touchX; touchX = null; if (Math.abs(dx) > 50) stepLightbox(dx < 0 ? 1 : -1); });
   byId('trailer-dialog').addEventListener('close', () => { byId('trailer-frame').replaceChildren(); }); // arrête la lecture
+  byId('licence-dialog').addEventListener('close', () => {
+    const k = state.ui.licenceOpen;
+    state.ui.licenceOpen = null;
+    byId('detail-licence').hidden = true;
+    byId('detail-licence').innerHTML = '';
+    if (k && state.route.name === 'detail' && state.route.key === k) renderLicence(k);
+  });
   byId('trailer-dialog').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); }); // clic hors de la vidéo
   byId('app-dialog').addEventListener('close', () => { const r = dialogResolve; dialogResolve = null; if (r) r(byId('app-dialog').returnValue || 'cancel'); });
   window.addEventListener('hashchange', handleRoute);

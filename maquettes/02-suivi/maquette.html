@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquette suivi</title>
+<style>
+:root{
+  --bg:#0b0e14;--bg-elev:#0f131b;--surface:#151a24;--surface-2:#1c2230;--surface-3:#262d3e;
+  --border:rgba(255,255,255,.08);--border-strong:rgba(255,255,255,.16);
+  --text:#eef2f8;--text-2:#c2c9d6;--muted:#97a1b4;
+  --accent:#5ad1e6;--accent-ink:#04161b;--accent-soft:rgba(90,209,230,.14);
+  --fav:#ff6b9a;--fav-soft:rgba(255,107,154,.15);--watch:#b197fc;--watch-soft:rgba(177,151,252,.15);
+  --seen:#3ccf7a;--seen-soft:rgba(60,207,122,.14);--progress:#f5b83d;--progress-soft:rgba(245,184,61,.14);
+  --todo:#93a6cc;--todo-soft:rgba(147,166,204,.12);--orange:#f08a2e;--orange-soft:rgba(240,138,46,.12);--blue:#5b9cf5;--blue-soft:rgba(91,156,245,.1);
+  --r-top:#22c46d;--r-good:#82c341;--r-mid:#e8c33a;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}body{margin:0;background:#05070b;color:var(--text);font:15px/1.5 var(--font)}
+.icon{width:18px;height:18px;flex:none}
+.label{width:1440px;margin:34px auto 10px;font:700 13px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.label span{display:block;text-transform:none;letter-spacing:0;font-weight:500;font-size:14px;color:var(--text-2);margin-top:4px}
+.frame{width:1440px;margin:0 auto 40px;border:1px solid var(--border-strong);border-radius:16px;overflow:hidden;background:var(--bg)}
+.app{display:grid;grid-template-columns:232px 1fr;min-height:900px}
+/* menu */
+.side{background:var(--bg-elev);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 8px}
+.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#5ad1e6,#b197fc);color:#04161b;display:grid;place-items:center;font-weight:900}
+.brand b{display:block;font-size:16px}.brand small{color:var(--muted);font-size:12px}
+.navt{font:700 11px var(--font);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:0 12px;margin:0 0 4px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:11px;min-height:42px;padding:0 12px;border-radius:10px;color:var(--text-2);font-weight:550}
+.nav a.on{background:var(--accent-soft);color:var(--accent)}
+.nav .n{margin-left:auto;font-size:12px;min-width:24px;text-align:center;padding:1px 7px;border-radius:99px;background:var(--surface-2);color:var(--text-2)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+.sync{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--surface);font-size:13px;color:var(--text-2)}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--seen)}
+/* haut */
+.main{min-width:0}
+.top{display:flex;align-items:center;gap:14px;padding:14px 32px;border-bottom:1px solid var(--border)}
+.search{flex:1;max-width:640px;display:flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border-strong);color:var(--muted)}
+.search span:not(.kbd){flex:1}
+.kbd{font:700 12px var(--font);padding:2px 8px;border-radius:6px;border:1px solid var(--border-strong)}
+.btn{height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);font:650 14px var(--font);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.sm{height:34px;font-size:13px;padding:0 11px}
+.btn.ghost{background:transparent}
+.btn.seen{background:var(--seen);border-color:var(--seen);color:#03210e}
+.iconbtn{width:40px;height:40px;padding:0;justify-content:center}
+.iconbtn.fav{color:var(--fav);border-color:rgba(255,107,154,.5);background:var(--fav-soft)}
+.iconbtn.wl{color:var(--watch);border-color:rgba(177,151,252,.5);background:var(--watch-soft)}
+.content{padding:24px 32px 40px;display:flex;flex-direction:column;gap:30px}
+h1{font-size:28px;margin:0;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:2px 0 0;font-size:14px}
+.sec-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sec-h h2{font-size:19px;margin:0}
+.sec-h .c{font-size:12px;padding:1px 8px;border-radius:99px;background:var(--surface-2);color:var(--text-2)}
+.sec-h .more{margin-left:auto;color:var(--accent);font-weight:650;font-size:14px}
+/* bandeau stats */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+.kpi .ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center}
+.kpi b{font-size:24px;display:block;line-height:1.1;font-variant-numeric:tabular-nums}.kpi small{color:var(--muted);font-size:13px}
+/* reprendre */
+.resume{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rc{display:grid;grid-template-columns:64px 1fr;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px}
+.rc .po{aspect-ratio:2/3;border-radius:8px}
+.rc b{display:block;font-size:15px}.rc .meta{font-size:13px;color:var(--muted)}
+.pbar{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin:8px 0 4px}
+.pbar i{display:block;height:100%;border-radius:99px;background:var(--progress)}
+.pbar.seen i{background:var(--seen)}
+.nextep{font-size:13px;color:var(--text-2)}
+.nextep strong{color:var(--text)}
+.rc .acts{display:flex;gap:6px;margin-top:10px}
+/* à venir de ma liste */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}
+.ag{display:grid;grid-template-columns:86px 36px 1fr auto;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--border)}
+.ag:first-of-type{border-top:0}
+.ag .d b{display:block;font-size:14px}.ag .d small{color:var(--accent);font-size:12px;font-weight:650}
+.ag .po{aspect-ratio:2/3;border-radius:5px}
+.ag .t b{display:block;font-size:14px}.ag .t small{color:var(--muted);font-size:13px}
+/* cartes */
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:13px;overflow:hidden;display:flex;flex-direction:column}
+.poster{aspect-ratio:2/3;position:relative}
+.note{position:absolute;top:8px;left:8px;font:800 12px var(--font);padding:2px 7px;border-radius:7px;color:#0b1a07}
+.type{position:absolute;top:8px;right:8px;font:700 11px var(--font);padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.65);color:#fff}
+.avail{position:absolute;left:8px;bottom:8px;font:800 11px var(--font);padding:2px 7px;border-radius:6px;background:var(--seen);color:#03210e}
+.avail.soon{background:rgba(0,0,0,.7);color:#fff;border:1px dashed rgba(255,255,255,.6)}
+.quick{position:absolute;right:8px;bottom:8px;display:flex;gap:6px}
+.quick span{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:rgba(8,10,15,.78);border:1px solid rgba(255,255,255,.18);color:#fff}
+.quick span.on-f{color:var(--fav);border-color:var(--fav)}.quick span.on-w{color:var(--watch);border-color:var(--watch)}
+.cb{padding:10px 11px 12px;display:flex;flex-direction:column;gap:6px}
+.cb b{font-size:14px;line-height:1.3}.cb .m{font-size:12.5px;color:var(--muted)}
+.st{display:inline-flex;align-items:center;gap:5px;font:700 12px var(--font);padding:2px 9px;border-radius:99px;width:max-content}
+.st.seen{background:var(--seen-soft);color:var(--seen)}.st.prog{background:var(--progress-soft);color:var(--progress)}.st.todo{background:var(--todo-soft);color:var(--todo)}
+.cb .pbar{margin:2px 0 0}
+.cb .pl{font-size:12px;color:var(--muted)}
+/* bibliothèque liste */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{height:36px;padding:0 13px;border-radius:99px;border:1px solid var(--border-strong);display:inline-flex;align-items:center;gap:6px;font:650 13px var(--font);color:var(--text-2)}
+.chip.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.chip em{font-style:normal;color:var(--muted);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden}
+.seg span{height:36px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font:650 13px var(--font);color:var(--text-2)}
+.seg span.on{background:var(--surface-3);color:var(--text)}
+.sel{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)}
+.table{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.tr{display:grid;grid-template-columns:44px minmax(220px,1.6fr) 120px minmax(200px,1.3fr) 70px 150px 96px;gap:16px;align-items:center;padding:10px 16px;border-top:1px solid var(--border)}
+.tr.h{border-top:0;padding:10px 16px;font:700 11.5px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg-elev)}
+.tr .po{aspect-ratio:2/3;border-radius:5px;width:44px}
+.tr .ti b{display:block;font-size:14.5px}.tr .ti small{color:var(--muted);font-size:12.5px}
+.tr .pg small{display:block;font-size:12.5px;color:var(--text-2)}
+.tr .pg .pbar{margin:5px 0 0}
+.note2{font:800 12.5px var(--font);padding:2px 8px;border-radius:7px;color:#0b1a07;width:max-content}
+.tr .act{display:flex;gap:6px;justify-content:flex-end}
+.tr .act span{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;border:1px solid var(--border-strong);color:var(--muted)}
+.tr .act span.f{color:var(--fav);border-color:rgba(255,107,154,.5);background:var(--fav-soft)}
+.tr .act span.w{color:var(--watch);border-color:rgba(177,151,252,.5);background:var(--watch-soft)}
+.tr .last{font-size:12.5px;color:var(--muted)}
+/* fiche */
+.dwrap{padding:24px 32px 40px;display:flex;flex-direction:column;gap:18px}
+.dgrid{display:grid;grid-template-columns:210px 1fr;gap:26px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:22px}
+.dpos{aspect-ratio:2/3;border-radius:12px;background:linear-gradient(160deg,#c2410c,#3b0764)}
+.left{display:flex;flex-direction:column;gap:12px}
+.rowl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag{font:650 12.5px var(--font);padding:3px 10px;border-radius:99px;border:1px solid rgba(90,209,230,.45);color:var(--accent)}
+.licb{display:flex;flex-direction:column;gap:6px}
+.lb{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:11px;border:1px solid var(--border-strong);background:transparent}
+.lb .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.lb b{display:block;font-size:13.5px}.lb small{color:var(--muted);font-size:12px}
+.dinfo h1{font-size:32px}
+.line{color:var(--text-2);font-size:14px;margin:4px 0 12px}
+.statusbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.segst{display:inline-flex;padding:3px;border-radius:12px;background:var(--bg-elev);border:1px solid var(--border-strong);gap:3px}
+.segst span{height:38px;padding:0 14px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;font:700 14px var(--font);color:var(--text-2)}
+.segst span.prog{background:var(--progress);color:#2b1a00}
+.cardsrow{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
+.dcard{border-radius:14px;border:1px solid var(--border);background:var(--bg-elev);padding:14px}
+.dcard h3{margin:0 0 10px;font:800 12px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:center}
+.dcard h3 .pill{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:650;font-size:12px;padding:2px 9px;border-radius:99px;background:var(--surface-2);color:var(--text-2)}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.cols small{color:var(--muted);font-size:12px;display:block}.cols b{display:block;font-size:16px}.cols span{font-size:12.5px;color:var(--text-2)}
+.dcard.orange{border-color:rgba(240,138,46,.35);background:var(--orange-soft)}
+.prov{display:flex;gap:8px;flex-wrap:wrap}
+.prov span{display:inline-flex;align-items:center;gap:7px;padding:5px 10px 5px 5px;border-radius:10px;background:var(--surface);font-size:13px;font-weight:650}
+.prov i{width:24px;height:24px;border-radius:6px;display:block}
+.prov em{font-style:normal;color:var(--muted);font-weight:500;font-size:12px}
+.dcard.blue{border-color:rgba(91,156,245,.3);background:var(--blue-soft)}
+.dcard.yellow{border-color:rgba(245,184,61,.35);background:var(--progress-soft)}
+.big{font-size:22px;font-weight:800}
+.seasons{display:flex;flex-direction:column;gap:10px}
+.season{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px}
+.season.prog{border-color:rgba(245,184,61,.4)}
+.sh{display:flex;align-items:center;gap:12px}
+.sh b{font-size:16px}.sh .m{color:var(--muted);font-size:13px}
+.sh .segst{margin-left:auto}
+.sh .segst span{height:32px;font-size:13px;padding:0 11px}
+.sh .segst span.seen{background:var(--seen);color:#03210e}
+.eps{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 16px;margin-top:12px}
+.ep{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:6px 8px;border-radius:10px;background:var(--bg-elev)}
+.ep .num{font-weight:800;color:var(--muted);text-align:center}
+.ep b{font-size:13.5px;display:block}.ep small{font-size:12px;color:var(--muted)}
+.mini{display:inline-flex;gap:3px}
+.mini span{height:30px;padding:0 9px;border-radius:8px;display:inline-flex;align-items:center;font:700 12px var(--font);border:1px solid var(--border-strong);color:var(--text-2)}
+.mini span.s{background:var(--seen);border-color:var(--seen);color:#03210e}
+.mini span.p{background:var(--progress);border-color:var(--progress);color:#2b1a00}
+.ep.next{outline:2px solid var(--accent);outline-offset:-2px}
+.new{display:inline-block;font:800 10.5px var(--font);letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--accent);color:var(--accent-ink);vertical-align:2px;margin-left:6px}
+.g1{background:linear-gradient(160deg,#ef4444,#7c2d12)}.g2{background:linear-gradient(160deg,#0ea5e9,#1e3a8a)}.g3{background:linear-gradient(160deg,#a855f7,#312e81)}.g4{background:linear-gradient(160deg,#10b981,#064e3b)}.g5{background:linear-gradient(160deg,#f59e0b,#78350f)}.g6{background:linear-gradient(160deg,#ec4899,#4c0519)}.g7{background:linear-gradient(160deg,#64748b,#0f172a)}.g8{background:linear-gradient(160deg,#22d3ee,#164e63)}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.6-3.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="resume" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 8.5 5.5 3.5-5.5 3.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></g></symbol>
+<symbol id="list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+<symbol id="heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+<symbol id="heartf" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z" fill="currentColor"/></symbol>
+<symbol id="saga" viewBox="0 0 24 24"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="book" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-6-4-6 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+<symbol id="bookf" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-6-4-6 4z" fill="currentColor"/></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M5 20v-8M11 20V5M17 20v-5M3 20h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="set" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></g></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></symbol>
+<symbol id="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</defs></svg>
+
+<!-- ============ 1. ACCUEIL ============ -->
+<p class="label">1 · Accueil = ton tableau de suivi<span>Ce que tu regardes passe en premier (reprendre, prochain épisode, sorties de ta liste), puis les tendances TMDB pour découvrir. Le panneau de droite (stats + reprendre), répété sur chaque page, disparaît : son contenu est ici, et toutes les pages gagnent 330 px de large.</span></p>
+<div class="frame"><div class="app">
+  <aside class="side">
+    <div class="brand"><span class="logo">CL</span><div><b>Crazy Liste</b><small>Films · Séries · Anime</small></div></div>
+    <div><p class="navt">Mon suivi</p><nav class="nav">
+      <a class="on"><svg class="icon"><use href="#home"/></svg>Accueil</a>
+      <a><svg class="icon"><use href="#resume"/></svg>Reprendre<span class="n">4</span></a>
+      <a><svg class="icon"><use href="#cal"/></svg>À venir<span class="n">3</span></a>
+      <a><svg class="icon"><use href="#grid"/></svg>Bibliothèque<span class="n">214</span></a>
+      <a><svg class="icon"><use href="#heart"/></svg>Favoris<span class="n">31</span></a>
+      <a><svg class="icon"><use href="#book"/></svg>Watchlist<span class="n">48</span></a>
+      <a><svg class="icon"><use href="#chart"/></svg>Statistiques</a>
+    </nav></div>
+    <div><p class="navt">Explorer</p><nav class="nav">
+      <a><svg class="icon"><use href="#search"/></svg>Recherche</a>
+      <a><svg class="icon"><use href="#saga"/></svg>Licences</a>
+    </nav></div>
+    <div class="side-foot">
+      <nav class="nav"><a><svg class="icon"><use href="#set"/></svg>Réglages</a></nav>
+      <div class="sync"><i></i>Synchronisé · thème sombre</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="top">
+      <div class="search"><svg class="icon"><use href="#search"/></svg><span>Rechercher un film, une série, un anime…</span><span class="kbd">/</span></div>
+    </div>
+    <div class="content">
+      <div><h1>Mon suivi</h1><p class="sub">Où tu en es dans tes films, séries et anime.</p></div>
+      <div class="kpis">
+        <div class="kpi"><span class="ic" style="background:var(--seen-soft);color:var(--seen)"><svg class="icon"><use href="#check"/></svg></span><div><b>162</b><small>Vus</small></div></div>
+        <div class="kpi"><span class="ic" style="background:var(--progress-soft);color:var(--progress)"><svg class="icon"><use href="#resume"/></svg></span><div><b>4</b><small>En cours</small></div></div>
+        <div class="kpi"><span class="ic" style="background:var(--watch-soft);color:var(--watch)"><svg class="icon"><use href="#book"/></svg></span><div><b>48</b><small>Watchlist</small></div></div>
+        <div class="kpi"><span class="ic" style="background:var(--fav-soft);color:var(--fav)"><svg class="icon"><use href="#heart"/></svg></span><div><b>31</b><small>Favoris</small></div></div>
+        <div class="kpi"><span class="ic" style="background:var(--accent-soft);color:var(--accent)"><svg class="icon"><use href="#clock"/></svg></span><div><b>612 h</b><small>devant l'écran</small></div></div>
+      </div>
+      <section>
+        <div class="sec-h"><h2>Reprendre</h2><span class="c">4 en cours</span><a class="more">Tout voir ›</a></div>
+        <div class="resume">
+          <div class="rc"><div class="po g8"></div><div><b>One Piece</b><span class="meta">Anime · en diffusion</span><div class="pbar"><i style="width:82%"></i></div><span class="nextep">1 088 / 1 122 épisodes · Prochain : <strong>É1089</strong></span><div class="acts"><span class="btn sm seen"><svg class="icon" style="width:15px;height:15px"><use href="#check"/></svg>É1089 vu</span><span class="btn sm ghost">Fiche</span></div></div></div>
+          <div class="rc"><div class="po g2"></div><div><b>Série Alpha</b><span class="meta">Série · terminée</span><div class="pbar"><i style="width:54%"></i></div><span class="nextep">13 / 24 épisodes · Prochain : <strong>S2 · É4</strong></span><div class="acts"><span class="btn sm seen"><svg class="icon" style="width:15px;height:15px"><use href="#check"/></svg>S2·É4 vu</span><span class="btn sm ghost">Fiche</span></div></div></div>
+          <div class="rc"><div class="po g3"></div><div><b>Anime Bêta</b><span class="meta">Anime · saison 2 annoncée</span><div class="pbar"><i style="width:30%"></i></div><span class="nextep">7 / 24 épisodes · Prochain : <strong>É8</strong></span><div class="acts"><span class="btn sm seen"><svg class="icon" style="width:15px;height:15px"><use href="#check"/></svg>É8 vu</span><span class="btn sm ghost">Fiche</span></div></div></div>
+        </div>
+      </section>
+      <section class="two">
+        <div class="box"><div class="sec-h"><h2>Bientôt dans ta liste</h2><a class="more">À venir ›</a></div>
+          <div class="ag"><div class="d"><b>Demain</b><small>24 nov.</small></div><div class="po g8"></div><div class="t"><b>One Piece</b><small>Nouvel épisode · É1123</small></div><span class="st prog">En cours</span></div>
+          <div class="ag"><div class="d"><b>2 déc.</b><small>dans 10 jours</small></div><div class="po g5"></div><div class="t"><b>Film attendu</b><small>Sortie au cinéma</small></div><span class="st todo" style="color:var(--watch);background:var(--watch-soft)">Watchlist</span></div>
+          <div class="ag"><div class="d"><b>15 janv.</b><small>dans 8 semaines</small></div><div class="po g2"></div><div class="t"><b>Série Alpha</b><small>Saison 3 · É1</small></div><span class="st prog">En cours</span></div>
+        </div>
+        <div class="box"><div class="sec-h"><h2>Terminés récemment</h2><a class="more">Statistiques ›</a></div>
+          <div class="ag"><div class="d"><b>18 nov.</b><small>il y a 4 jours</small></div><div class="po g4"></div><div class="t"><b>Série Gamma</b><small>Série · 3 saisons</small></div><span class="note2" style="background:var(--r-top)">8,6</span></div>
+          <div class="ag"><div class="d"><b>9 nov.</b><small>il y a 2 sem.</small></div><div class="po g1"></div><div class="t"><b>Film Delta</b><small>Film · 2h28</small></div><span class="note2" style="background:var(--r-good)">7,6</span></div>
+          <div class="ag"><div class="d"><b>2 nov.</b><small>il y a 3 sem.</small></div><div class="po g6"></div><div class="t"><b>Anime Epsilon</b><small>Anime · 24 épisodes</small></div><span class="note2" style="background:var(--r-mid)">6,9</span></div>
+        </div>
+      </section>
+      <section>
+        <div class="sec-h"><h2>Tendances de la semaine</h2><a class="more">Découvrir ›</a></div>
+        <div class="grid">
+          <div class="card"><div class="poster g1"><span class="note" style="background:var(--r-good)">7,9</span><span class="avail">Disponible</span><span class="quick"><span class="on-f"><svg class="icon" style="width:16px;height:16px"><use href="#heartf"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></span></div><div class="cb"><b>Film Un</b><span class="m">2026 · Film</span><span class="st seen">✓ Vu</span></div></div>
+          <div class="card"><div class="poster g2"><span class="note" style="background:var(--r-top)">8,4</span><span class="type">Série</span><span class="avail">Disponible</span><span class="quick"><span><svg class="icon" style="width:16px;height:16px"><use href="#heart"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></span></div><div class="cb"><b>Série Alpha</b><span class="m">2019 · Série</span><span class="st prog">En cours</span><div class="pbar"><i style="width:54%"></i></div><span class="pl">13 / 24 épisodes</span></div></div>
+          <div class="card"><div class="poster g3"><span class="note" style="background:var(--r-mid)">6,9</span><span class="type">Anime</span><span class="avail soon">À venir · 2 déc.</span><span class="quick"><span><svg class="icon" style="width:16px;height:16px"><use href="#heart"/></svg></span><span class="on-w"><svg class="icon" style="width:16px;height:16px"><use href="#bookf"/></svg></span></span></div><div class="cb"><b>Anime Trois</b><span class="m">2026 · Anime</span><span class="st todo">À voir</span></div></div>
+          <div class="card"><div class="poster g4"><span class="note" style="background:var(--r-good)">7,6</span><span class="avail">Disponible</span><span class="quick"><span><svg class="icon" style="width:16px;height:16px"><use href="#heart"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></span></div><div class="cb"><b>Film Quatre</b><span class="m">2025 · Film</span><span class="st todo">À voir</span></div></div>
+          <div class="card"><div class="poster g5"><span class="note" style="background:var(--r-top)">8,1</span><span class="type">Série</span><span class="avail">Disponible</span><span class="quick"><span><svg class="icon" style="width:16px;height:16px"><use href="#heart"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></span></div><div class="cb"><b>Série Cinq</b><span class="m">2024 · Série</span><span class="st seen">✓ Vu</span><div class="pbar seen"><i style="width:100%"></i></div><span class="pl">36 / 36 épisodes</span></div></div>
+          <div class="card"><div class="poster g6"><span class="note" style="background:var(--r-good)">7,2</span><span class="avail">Disponible</span><span class="quick"><span><svg class="icon" style="width:16px;height:16px"><use href="#heart"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></span></div><div class="cb"><b>Film Six</b><span class="m">2026 · Film</span><span class="st todo">À voir</span></div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div></div>
+
+<!-- ============ 2. BIBLIOTHÈQUE ============ -->
+<p class="label">2 · Bibliothèque en mode liste (nouveau, au choix avec la grille)<span>Une ligne par titre : statut, progression épisode par épisode, prochain à voir, note TMDB, favori / watchlist et dernière activité. Les filtres actuels restent (statut, type, tri).</span></p>
+<div class="frame"><div class="app" style="min-height:0">
+  <aside class="side">
+    <div class="brand"><span class="logo">CL</span><div><b>Crazy Liste</b><small>Films · Séries · Anime</small></div></div>
+    <div><p class="navt">Mon suivi</p><nav class="nav">
+      <a><svg class="icon"><use href="#home"/></svg>Accueil</a><a><svg class="icon"><use href="#resume"/></svg>Reprendre<span class="n">4</span></a><a><svg class="icon"><use href="#cal"/></svg>À venir<span class="n">3</span></a>
+      <a class="on"><svg class="icon"><use href="#grid"/></svg>Bibliothèque<span class="n">214</span></a><a><svg class="icon"><use href="#heart"/></svg>Favoris<span class="n">31</span></a><a><svg class="icon"><use href="#book"/></svg>Watchlist<span class="n">48</span></a><a><svg class="icon"><use href="#chart"/></svg>Statistiques</a></nav></div>
+    <div><p class="navt">Explorer</p><nav class="nav"><a><svg class="icon"><use href="#search"/></svg>Recherche</a><a><svg class="icon"><use href="#saga"/></svg>Licences</a></nav></div>
+  </aside>
+  <div class="main">
+    <div class="top"><div class="search"><svg class="icon"><use href="#search"/></svg><span>Rechercher un film, une série, un anime…</span><span class="kbd">/</span></div></div>
+    <div class="content" style="gap:16px">
+      <div style="display:flex;align-items:end;gap:12px"><div><h1>Bibliothèque</h1><p class="sub">Tous tes contenus suivis, favoris et watchlist · 214 titres</p></div></div>
+      <div class="toolbar">
+        <span class="chip on">Tous <em>214</em></span><span class="chip">✓ Vu <em>162</em></span><span class="chip">En cours <em>4</em></span><span class="chip">À voir <em>48</em></span>
+        <span style="margin-left:auto"></span>
+        <span class="sel">Tous types <svg class="icon" style="width:14px;height:14px"><use href="#chev"/></svg></span>
+        <span class="sel">Activité récente <svg class="icon" style="width:14px;height:14px"><use href="#chev"/></svg></span>
+        <span class="seg"><span><svg class="icon" style="width:16px;height:16px"><use href="#grid"/></svg>Grille</span><span class="on"><svg class="icon" style="width:16px;height:16px"><use href="#list"/></svg>Liste</span></span>
+      </div>
+      <div class="table">
+        <div class="tr h"><span></span><span>Titre</span><span>Statut</span><span>Progression</span><span>Note</span><span>Dernière activité</span><span style="text-align:right">Listes</span></div>
+        <div class="tr"><div class="po g8"></div><div class="ti"><b>One Piece</b><small>Anime · 1999 · en diffusion</small></div><span class="st prog">En cours</span><div class="pg"><small>1 088 / 1 122 · prochain É1089</small><div class="pbar"><i style="width:97%"></i></div></div><span class="note2" style="background:var(--r-top)">8,7</span><span class="last">aujourd'hui</span><div class="act"><span class="f"><svg class="icon" style="width:16px;height:16px"><use href="#heartf"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></div></div>
+        <div class="tr"><div class="po g2"></div><div class="ti"><b>Série Alpha</b><small>Série · 2019 · 3 saisons</small></div><span class="st prog">En cours</span><div class="pg"><small>13 / 24 · prochain S2 · É4</small><div class="pbar"><i style="width:54%"></i></div></div><span class="note2" style="background:var(--r-good)">7,9</span><span class="last">hier</span><div class="act"><span class="f"><svg class="icon" style="width:16px;height:16px"><use href="#heartf"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></div></div>
+        <div class="tr"><div class="po g4"></div><div class="ti"><b>Série Gamma</b><small>Série · 2021 · 3 saisons</small></div><span class="st seen">✓ Vu</span><div class="pg"><small>30 / 30 · terminée le 18 nov.</small><div class="pbar seen"><i style="width:100%"></i></div></div><span class="note2" style="background:var(--r-top)">8,6</span><span class="last">il y a 4 jours</span><div class="act"><span><svg class="icon" style="width:16px;height:16px"><use href="#heart"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></div></div>
+        <div class="tr"><div class="po g1"></div><div class="ti"><b>Film Delta</b><small>Film · 2024 · 2h28</small></div><span class="st seen">✓ Vu</span><div class="pg"><small>vu le 9 nov.</small></div><span class="note2" style="background:var(--r-good)">7,6</span><span class="last">il y a 2 sem.</span><div class="act"><span class="f"><svg class="icon" style="width:16px;height:16px"><use href="#heartf"/></svg></span><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg></span></div></div>
+        <div class="tr"><div class="po g5"></div><div class="ti"><b>Film attendu</b><small>Film · 2026 · à venir le 2 déc.</small></div><span class="st todo">À voir</span><div class="pg"><small>pas encore sorti</small></div><span class="note2" style="background:var(--surface-3);color:var(--text-2)">—</span><span class="last">il y a 1 mois</span><div class="act"><span><svg class="icon" style="width:16px;height:16px"><use href="#heart"/></svg></span><span class="w"><svg class="icon" style="width:16px;height:16px"><use href="#bookf"/></svg></span></div></div>
+        <div class="tr"><div class="po g3"></div><div class="ti"><b>Anime Bêta</b><small>Anime · 2022 · 2 saisons</small></div><span class="st prog">En cours</span><div class="pg"><small>7 / 24 · prochain É8</small><div class="pbar"><i style="width:30%"></i></div></div><span class="note2" style="background:var(--r-mid)">6,9</span><span class="last">il y a 1 mois</span><div class="act"><span><svg class="icon" style="width:16px;height:16px"><use href="#heart"/></svg></span><span class="w"><svg class="icon" style="width:16px;height:16px"><use href="#bookf"/></svg></span></div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- ============ 3. FICHE ============ -->
+<p class="label">3 · Fiche : la disposition que tu avais choisie, en plus clair<span>Affiche + Saga / Licence à gauche ; à droite le statut en un clic, la diffusion, où regarder (orange), le résumé (bleu), ta progression (jaune) ; saisons et épisodes juste en dessous, toujours visibles, avec le prochain épisode à voir encadré. Les images, les films liés et « Dans le même esprit » restent comme aujourd'hui.</span></p>
+<div class="frame"><div class="app" style="min-height:0">
+  <aside class="side">
+    <div class="brand"><span class="logo">CL</span><div><b>Crazy Liste</b><small>Films · Séries · Anime</small></div></div>
+    <div><p class="navt">Mon suivi</p><nav class="nav">
+      <a><svg class="icon"><use href="#home"/></svg>Accueil</a><a class="on"><svg class="icon"><use href="#resume"/></svg>Reprendre<span class="n">4</span></a><a><svg class="icon"><use href="#cal"/></svg>À venir<span class="n">3</span></a><a><svg class="icon"><use href="#grid"/></svg>Bibliothèque<span class="n">214</span></a><a><svg class="icon"><use href="#heart"/></svg>Favoris<span class="n">31</span></a><a><svg class="icon"><use href="#book"/></svg>Watchlist<span class="n">48</span></a><a><svg class="icon"><use href="#chart"/></svg>Statistiques</a></nav></div>
+    <div><p class="navt">Explorer</p><nav class="nav"><a><svg class="icon"><use href="#search"/></svg>Recherche</a><a><svg class="icon"><use href="#saga"/></svg>Licences</a></nav></div>
+  </aside>
+  <div class="main">
+    <div class="top"><div class="search"><svg class="icon"><use href="#search"/></svg><span>Rechercher un film, une série, un anime…</span><span class="kbd">/</span></div></div>
+    <div class="dwrap">
+      <div class="dgrid">
+        <div class="left">
+          <div class="dpos"></div>
+          <div class="rowl"><span class="note2" style="background:var(--r-good);font-size:15px">7,9</span><span style="color:var(--muted);font-size:13px">701 votes TMDB</span></div>
+          <div class="rowl"><span class="tag">Drame</span><span class="tag">Mystère</span><span class="tag">Science-fiction</span></div>
+          <div class="licb">
+            <div class="lb"><span class="ic"><svg class="icon"><use href="#saga"/></svg></span><div><b>Saga « Alpha »</b><small>2 séries · 1 film</small></div></div>
+            <div class="lb"><span class="ic"><svg class="icon"><use href="#grid"/></svg></span><div><b>Licence « Univers Alpha »</b><small>4 séries · 3 films · 2 OVA</small></div></div>
+          </div>
+        </div>
+        <div class="dinfo">
+          <h1>Série Alpha</h1>
+          <p class="line">Alpha Series · Série · 3 saisons · 24 épisodes · 42 min / ép. · depuis le 25 juillet 2019</p>
+          <div class="statusbar">
+            <div class="segst"><span><svg class="icon" style="width:16px;height:16px"><use href="#book"/></svg>À voir</span><span class="prog"><svg class="icon" style="width:16px;height:16px"><use href="#resume"/></svg>En cours</span><span><svg class="icon" style="width:16px;height:16px"><use href="#check"/></svg>Vu</span></div>
+            <span class="btn iconbtn fav" title="En favori"><svg class="icon"><use href="#heartf"/></svg></span>
+            <span class="btn iconbtn" title="Ajouter à la watchlist"><svg class="icon"><use href="#book"/></svg></span>
+            <span class="btn"><svg class="icon"><use href="#play"/></svg>Bande-annonce (VO)</span>
+          </div>
+          <div class="dcard" style="margin-bottom:12px"><h3>Diffusion · saison 3<span class="pill">Suite annoncée · reprise le 15 janvier 2027</span></h3>
+            <div class="cols"><div><small>Prochain épisode</small><b>S3 · É6</b><span>15 janv. 2027 · <span style="color:var(--accent);font-weight:700">dans 8 semaines</span></span></div><div><small>Saison 3</small><b>5 / 6 diffusés</b><div class="pbar" style="margin:6px 0"><i style="width:83%;background:var(--accent)"></i></div><span>Dernier diffusé : É5 · 1er nov.</span></div><div><small>Dernier épisode prévu</small><b>É6 · 15 janv. 2027</b><span>fin de la saison 3</span></div></div></div>
+          <div class="cardsrow">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="dcard orange"><h3 style="color:var(--orange)">Abonnement</h3><div class="prov"><span><i style="background:#e50914"></i>Netflix</span><span><i style="background:#00a8e1"></i>Prime Video <em>location</em></span></div></div>
+              <div class="dcard blue"><h3 style="color:var(--blue)">Résumé</h3><p style="margin:0;color:var(--text-2);font-size:14px">Le synopsis TMDB, sur quatre lignes au plus, avec « Lire la suite » s'il est plus long.</p></div>
+            </div>
+            <div class="dcard yellow"><h3 style="color:var(--progress)">Ma progression <span class="pill" style="background:var(--progress);color:#2b1a00">En cours</span></h3>
+              <span class="big">13 / 24</span> <span style="color:var(--text-2)">épisodes vus · 54 %</span>
+              <div class="pbar" style="height:8px;margin:10px 0"><i style="width:54%"></i></div>
+              <p style="margin:0 0 12px;font-size:14px">Prochain à voir : <strong>S2 · É4 — « Le Phare »</strong></p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="btn sm seen"><svg class="icon" style="width:15px;height:15px"><use href="#check"/></svg>Marquer S2·É4 vu</span><span class="btn sm">Tout marquer vu</span><span class="btn sm ghost">Tout remettre à « À voir »</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sec-h" style="margin:6px 0 0"><h2>Saisons et épisodes</h2></div>
+      <div class="seasons">
+        <div class="season"><div class="sh"><svg class="icon"><use href="#chev"/></svg><b>Saison 1</b><span class="m">2019 · 10 épisodes · 10 / 10 vus</span><div class="segst"><span>À voir</span><span>En cours</span><span class="seen">✓ Vu</span></div></div><div class="pbar seen" style="margin:10px 0 0"><i style="width:100%"></i></div></div>
+        <div class="season prog"><div class="sh"><svg class="icon"><use href="#chev"/></svg><b>Saison 2</b><span class="m">2022 · 8 épisodes · 3 / 8 vus</span><div class="segst"><span>À voir</span><span class="prog">En cours</span><span>Vu</span></div></div><div class="pbar" style="margin:10px 0 0"><i style="width:37%"></i></div>
+          <div class="eps">
+            <div class="ep"><span class="num">1</span><div><b>Le Départ</b><small>10 janv. 2022 · 44 min</small></div><span class="mini"><span>À voir</span><span>En cours</span><span class="s">Vu</span></span></div>
+            <div class="ep"><span class="num">2</span><div><b>La Traversée</b><small>17 janv. 2022 · 41 min</small></div><span class="mini"><span>À voir</span><span>En cours</span><span class="s">Vu</span></span></div>
+            <div class="ep"><span class="num">3</span><div><b>L'Île</b><small>24 janv. 2022 · 43 min</small></div><span class="mini"><span>À voir</span><span>En cours</span><span class="s">Vu</span></span></div>
+            <div class="ep next"><span class="num">4</span><div><b>Le Phare <span class="new">Prochain</span></b><small>31 janv. 2022 · 45 min · Vu jusqu'ici ›</small></div><span class="mini"><span>À voir</span><span>En cours</span><span>Vu</span></span></div>
+            <div class="ep"><span class="num">5</span><div><b>La Tempête</b><small>7 févr. 2022 · 42 min</small></div><span class="mini"><span>À voir</span><span>En cours</span><span>Vu</span></span></div>
+            <div class="ep"><span class="num">6</span><div><b>Le Retour</b><small>14 févr. 2022 · 47 min</small></div><span class="mini"><span>À voir</span><span>En cours</span><span>Vu</span></span></div>
+          </div>
+        </div>
+        <div class="season"><div class="sh"><svg class="icon" style="transform:rotate(-90deg)"><use href="#chev"/></svg><b>Saison 3</b><span class="m">2023 · 6 épisodes · 0 / 6 vus</span><div class="segst"><span style="background:var(--surface-3);color:var(--text)">À voir</span><span>En cours</span><span>Vu</span></div></div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+</body></html>

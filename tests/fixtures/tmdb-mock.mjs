@@ -55,9 +55,9 @@ export const PROVIDERS = {
     flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }, { provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg', display_priority: 1 }, { provider_id: 1796, provider_name: 'Netflix Standard with Ads', logo_path: '/netflix-ads.jpg', display_priority: 9 }],
     rent: [{ provider_id: 2, provider_name: 'Apple TV', logo_path: '/apple.jpg', display_priority: 3 }], buy: [] }, US: { flatrate: [{ provider_id: 9, provider_name: 'Prime Video US', logo_path: '/p.jpg', display_priority: 1 }] } }
 };
-// Licence de test (titres hors découverte) : un film et quatre séries dont le titre commence par « Licence Test », plus un faux ami.
+// Licence de test (titres hors découverte) : un film et trois séries de la franchise Wikidata « Licence Test », plus un faux ami.
 SHOWS[216] = { base: show(216, 'Licence Test : Première partie', { first_air_date: '2017-04-05' }), status: 'Ended', seasons: [[1, range(1, 3)]], hidden: true };
-SHOWS[217] = { base: show(217, 'Licence Test : Seconde partie', { first_air_date: '' }), status: 'In Production', seasons: [], hidden: true };
+SHOWS[217] = { base: show(217, 'Licence Test Deux : Seconde partie', { first_air_date: '' }), status: 'In Production', seasons: [], hidden: true };
 SHOWS[218] = { base: show(218, 'Licencieux', { first_air_date: '2020-01-01' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 SHOWS[219] = { base: show(219, 'Licence Test Origines', { first_air_date: '2010-01-01' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 MOVIES[140] = movie(140, 'Licence Test : le film', { release_date: '2015-08-01', original_language: 'en', _hidden: true });
@@ -73,41 +73,122 @@ MOVIES[155] = movie(155, 'Maze Runner : le documentaire', { original_title: 'Maz
 SHOWS[220] = { base: show(220, 'Chaîne Un', { first_air_date: '2005-01-01', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 SHOWS[221] = { base: show(221, 'Chaîne Deux autre nom', { first_air_date: '2010-01-01', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 SHOWS[222] = { base: show(222, 'Troisième Volet', { first_air_date: '2015-01-01', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
-// Wikidata simulé : « suivi par » / « précédé par » avec numéros TMDB (série 201 → série 202) et numéros AniList.
-export const WIKIDATA = { 201: { next: [['tv', 202]], prev: [] }, 202: { next: [], prev: [['tv', 201]] }, 220: { anilist: 11 }, 221: { anilist: 12 }, 222: { anilist: 13 } };
-const WIKIDATA_MOVIES = { 142: { anilist: 60 } };
-// Séries / franchises Wikidata (P179 / P8345) : membres avec numéros TMDB
-const FRANCHISES = { Q900: { label: 'Licence Test', prop: 'series', keys: [['tv', 216], ['tv', 217], ['tv', 219], ['movie', 140]] }, Q950: { label: 'Le Labyrinthe', prop: 'series', keys: [['movie', 150], ['movie', 151], ['movie', 152]] } };
-const franchiseOf = (type, id) => Object.keys(FRANCHISES).filter((q) => FRANCHISES[q].keys.some(([t, i]) => t === type && i === Number(id)));
-const WIKIDATA_ANILIST = { 11: ['tv', 220], 12: ['tv', 221], 13: ['tv', 222], 60: ['movie', 142] };
-// Film de la chaîne au titre sans rapport (relié seulement par AniList : « série parente » 12)
+// Film de la chaîne au titre sans rapport (relié seulement par AniList : « histoire parallèle » de 12)
 MOVIES[142] = movie(142, 'Volet spécial : le film', { release_date: '2012-05-05', original_language: 'ja', genre_ids: [16], _hidden: true });
+// Pièges Wikidata (films) : « Jouets Test » (série de 3 films) est aussi dans une liste du studio, un catalogue du studio, une franchise
+// démesurée, un univers et a pour origine un conte ; « Là-haut Test » n'est que dans la liste et le catalogue du studio.
+const toon = (id, title, date) => movie(id, title, { release_date: date, original_language: 'en', genre_ids: [16, 10751], _hidden: true });
+MOVIES[160] = toon(160, 'Jouets Test', '2005-11-22');
+MOVIES[161] = toon(161, 'Jouets Test 2', '2009-11-24');
+MOVIES[162] = toon(162, 'Jouets Test 3', '2013-06-18');
+MOVIES[163] = toon(163, 'Là-haut Test', '2010-05-29');
+MOVIES[164] = toon(164, 'Studio Test : Poisson', '2008-05-30');
+MOVIES[165] = toon(165, 'Studio Test : Voiture', '2011-06-09');
+MOVIES[166] = movie(166, 'Le Conte du jouet', { release_date: '1960-01-01', original_language: 'fr', genre_ids: [18], _hidden: true });
+MOVIES[167] = toon(167, 'Jouets Test : court métrage', '2014-01-01');
+// Univers seul lien entre deux séries (secours) ; « suivi par » validé par le titre (226 → 227) ou ignoré (ordre de sortie d'un univers : 228 → 229).
+SHOWS[230] = { base: show(230, 'Trône Test', { first_air_date: '2011-04-17' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[231] = { base: show(231, 'Maison Test', { first_air_date: '2022-08-21' }), status: 'Returning Series', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[233] = { base: show(233, 'Trône : une autre adaptation', { first_air_date: '2013-03-01' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true }; // même univers, autre chaîne
+SHOWS[226] = { base: show(226, 'Dextre', { first_air_date: '2006-10-01' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[227] = { base: show(227, 'Dextre : Nouveau sang', { first_air_date: '2021-11-07' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[228] = { base: show(228, 'Loka', { first_air_date: '2021-06-09' }), status: 'Returning Series', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[229] = { base: show(229, 'Et si… ?', { first_air_date: '2021-08-11' }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+// Anime relié seulement par ARM (absent de Wikidata) : série TMDB 225 (saisons AniList 70, 71 et 76), film-pont 72 (rangé par ARM en « saison 0 »,
+// fiche film retrouvée par son numéro IMDb dans Wikidata), OVA 73 (épisode spécial), film dérivé 74 (fiche 173), film 79 mal relié par ARM
+// (fiche 174, d'une autre époque), saison 4 annoncée (77) et un crossover (78, personnages communs) à ignorer.
+SHOWS[225] = { base: show(225, 'Anime Pont', { first_air_date: '2018-04-01', original_name: 'アニメ橋', original_language: 'ja', genre_ids: [16], origin_country: ['JP'] }), status: 'Returning Series', seasons: [[1, range(1, 2)], [2, range(1, 2)], [3, range(1, 2)]], hidden: true };
+SHOWS[232] = { base: show(232, 'Crossover Quartet', { first_air_date: '2019-04-09', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+MOVIES[172] = movie(172, 'Anime Pont : le film', { release_date: '2021-07-01', original_language: 'ja', genre_ids: [16], _hidden: true });
+MOVIES[173] = movie(173, 'Gaiden Pont', { release_date: '2022-03-01', original_language: 'ja', genre_ids: [16], _hidden: true });
+MOVIES[174] = movie(174, 'Film sans rapport', { release_date: '1995-01-01', original_language: 'ja', genre_ids: [16], _hidden: true });
+// Franchise Wikidata de l'anime : un film live (gardé) et le crossover (anime absent du graphe AniList : écarté)
+MOVIES[175] = movie(175, 'Pont : le film live', { release_date: '2024-05-01', original_language: 'en', genre_ids: [28], _hidden: true });
+// Identifiants externes donnés par TMDB (append_to_response=external_ids)
+const EXTERNAL = { 'tv-225': { imdb_id: 'tt9000225', wikidata_id: null } };
+
+// ----- Wikidata simulé -----
+// Œuvres : « suivi par » / « précédé par » (numéros TMDB), numéro AniList, sociétés de production.
+export const WIKIDATA = {
+  'tv-201': { next: [['tv', 202]] }, 'tv-202': { prev: [['tv', 201]] },
+  'tv-220': { anilist: 11 }, 'tv-221': { anilist: 12 }, 'tv-222': { anilist: 13 }, 'movie-142': { anilist: 60 },
+  'tv-226': { next: [['tv', 227]] }, 'tv-227': { prev: [['tv', 226]] }, 'tv-228': { next: [['tv', 229]] }, 'tv-229': { prev: [['tv', 228]] },
+  'movie-160': { companies: ['Studio Test Animation, Inc.'] }, 'movie-163': { companies: ['Studio Test Animation, Inc.'] }
+};
+// Groupes : nature (P31), lien de l'œuvre vers le groupe (rel) et membres [type, numéro TMDB].
+const WD_GROUPS = {
+  Q900: { label: 'Licence Test', en: 'Licence Test', types: ['Q196600'], rel: 'franchise', members: [['tv', 216], ['tv', 217], ['tv', 219], ['movie', 140]] },
+  Q950: { label: 'Le Labyrinthe', en: 'Maze Runner', types: ['Q24856'], rel: 'series', members: [['movie', 150], ['movie', 151], ['movie', 152]] },
+  Q960: { label: 'Jouets Test', en: 'Jouets Test', types: ['Q196600', 'Q56884562'], rel: 'series', members: [['movie', 160], ['movie', 161], ['movie', 162]] },
+  Q961: { label: 'liste des films du Studio Test', en: 'list of Studio Test Animation films', types: ['Q13406463'], rel: 'series', members: [['movie', 160], ['movie', 163], ['movie', 164], ['movie', 165]] },
+  Q962: { label: 'Classiques du Studio Test', en: 'Studio Test Animation classics', types: ['Q56884562'], rel: 'series', members: [['movie', 160], ['movie', 163], ['movie', 164]] },
+  Q963: { label: 'Le Conte du jouet', en: 'The Toy Tale', types: ['Q699'], rel: 'source', members: [['movie', 160], ['movie', 166]] },
+  Q964: { label: 'Énorme franchise', en: 'Huge franchise', types: ['Q196600'], rel: 'franchise', members: [['movie', 160], ...range(5000, 5129).map((id) => ['movie', id])] },
+  Q965: { label: 'univers de Jouets Test', en: 'Jouets Test universe', types: ['Q559618'], rel: 'universe', members: [['movie', 160], ['movie', 161], ['movie', 167]] },
+  Q970: { label: 'univers de Trône Test', en: 'Trône Test universe', types: ['Q559618'], rel: 'universe', members: [['tv', 230], ['tv', 231], ['tv', 233]] },
+  Q973: { label: 'Univers Marvelo', en: 'Marvelo Universe', types: ['Q196600'], rel: 'franchise', members: [['tv', 228], ['tv', 229]] },
+  Q974: { label: 'Pont', en: 'Pont', types: ['Q196600'], rel: 'franchise', members: [['tv', 225], ['tv', 232], ['movie', 175]] }
+};
+// Chaîne de diffusion (P449) : un univers ne relie que les œuvres de la même chaîne, du même studio ou du même créateur
+const WD_NETWORK = { 'tv-230': 'Q23633', 'tv-231': 'Q23633', 'tv-233': 'Q1137' };
+const keyOfFakeQ = (q) => { const mm = /^Q([78])(\d{6})$/.exec(q || ''); return mm ? (mm[1] === '7' ? 'tv-' : 'movie-') + Number(mm[2]) : ''; };
+// Numéros AniList des membres (P8729)
+const WD_MEMBER_AL = { 'tv-225': 70, 'tv-232': 78 };
+const WIKIDATA_ANILIST = { 11: ['tv', 220], 12: ['tv', 221], 13: ['tv', 222], 60: ['movie', 142] };
+const WIKIDATA_IMDB = { tt9000172: ['movie', 172] };
 const lit = (v) => ({ type: 'literal', value: String(v) });
+const uri = (q) => ({ type: 'uri', value: 'http://www.wikidata.org/entity/' + q });
+const fakeQ = (type, id) => (type === 'tv' ? 'Q7' : 'Q8') + String(id).padStart(6, '0');
+const inGroup = (g, key) => g.members.some(([t, i]) => t + '-' + i === key);
+function relationRows(key) {
+  const rel = WIKIDATA[key] || {};
+  const rows = [];
+  for (const r of ['next', 'prev']) for (const [t, i] of rel[r] || []) rows.push({ rel: lit(r), x: uri(fakeQ(t, i)), xLabel: lit('Titre ' + i), [t]: lit(i) });
+  if (rel.anilist) rows.push({ rel: lit('anilist'), al: lit(rel.anilist) });
+  for (const [qid, g] of Object.entries(WD_GROUPS)) {
+    if (!inGroup(g, key)) continue;
+    for (const t of g.types) rows.push({ rel: lit(g.rel), x: uri(qid), xLabel: lit(g.label), en: lit(g.en), t: uri(t) });
+  }
+  (rel.companies || []).forEach((c, i) => rows.push({ rel: lit('company'), x: uri('Q99000' + i), xLabel: lit(c), en: lit(c) }));
+  const [t0, i0] = key.split('-');
+  if (i0) rows.push({ rel: lit('self'), x: uri(fakeQ(t0, Number(i0))) });
+  return rows;
+}
+export const wikidataState = { queries: [] };
 export async function handleWikidata(route) {
   const q = new URL(route.request().url()).searchParams.get('query') || '';
+  wikidataState.queries.push(q);
   let bindings = [];
-  const values = /VALUES \?al \{([^}]*)\}/.exec(q);
-  const fq = /wdt:(P4983|P4947) "(\d+)"[\s\S]*wdt:P179/.exec(q);
-  if (fq) {
-    bindings = franchiseOf(fq[1] === 'P4947' ? 'movie' : 'tv', fq[2]).flatMap((qid) => FRANCHISES[qid].keys.map(([t, i]) => ({ prop: lit(FRANCHISES[qid].prop), group: { type: 'uri', value: 'http://www.wikidata.org/entity/' + qid }, groupLabel: lit(FRANCHISES[qid].label), [t]: lit(i) })));
-  } else if (values) {
-    bindings = [...values[1].matchAll(/"(\d+)"/g)].map((m) => m[1]).filter((al) => WIKIDATA_ANILIST[al])
-      .map((al) => ({ al: lit(al), [WIKIDATA_ANILIST[al][0] === 'tv' ? 'tv' : 'movie']: lit(WIKIDATA_ANILIST[al][1]) }));
-  } else {
-    const m = /wdt:(P4983|P4947) "(\d+)"/.exec(q);
-    const rel = (m && (m[1] === 'P4947' ? WIKIDATA_MOVIES : WIKIDATA)[m[2]]) || {};
-    bindings = ['next', 'prev'].flatMap((r) => (rel[r] || []).map(([type, id]) => ({ rel: lit(r), [type === 'tv' ? 'tv' : 'movie']: lit(id) })));
-    if (rel.anilist) bindings.push({ rel: lit('anilist'), al: lit(rel.anilist) });
+  if (q.includes('BIND("next" AS ?rel)')) { // relations d'une œuvre (trouvée par son numéro TMDB)
+    const m = /\?item wdt:(P4983|P4947) "(\d+)"/.exec(q);
+    bindings = m ? relationRows((m[1] === 'P4947' ? 'movie-' : 'tv-') + m[2]) : [];
+  } else if (/BIND\("Q\d+" AS \?g\)/.test(q)) { // membres des groupes, bornés par sous-requête
+    for (const [, qid, part, limit] of [...q.matchAll(/BIND\("(Q\d+)" AS \?g\)([\s\S]*?)LIMIT (\d+)/g)]) {
+      const g = WD_GROUPS[qid];
+      // univers : seulement les membres de la même chaîne que l'œuvre ouverte
+      const self = /FILTER EXISTS[\s\S]*?wd:(Q\d+) wdt:P449/.exec(part);
+      const net = self ? WD_NETWORK[keyOfFakeQ(self[1])] : null;
+      const members = g ? g.members.filter(([t, i]) => !self || (net && WD_NETWORK[t + '-' + i] === net)) : [];
+      if (g) for (const [t, i] of members.slice(0, Number(limit))) bindings.push({ g: lit(qid), m: uri(fakeQ(t, i)), [t]: lit(i), ...(WD_MEMBER_AL[t + '-' + i] ? { al: lit(WD_MEMBER_AL[t + '-' + i]) } : {}) });
+    }
+  } else { // numéros AniList / IMDb → fiches TMDB
+    const al = /VALUES \?al \{([^}]*)\}/.exec(q), im = /VALUES \?imdb \{([^}]*)\}/.exec(q);
+    if (al) for (const [, v] of al[1].matchAll(/"(\d+)"/g)) { const k = WIKIDATA_ANILIST[v]; if (k) bindings.push({ al: lit(v), [k[0]]: lit(k[1]) }); }
+    if (im) for (const [, v] of im[1].matchAll(/"(tt\d+)"/g)) { const k = WIKIDATA_IMDB[v]; if (k) bindings.push({ imdb: lit(v), [k[0]]: lit(k[1]) }); }
   }
   return route.fulfill({ status: 200, contentType: 'application/sparql-results+json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ head: { vars: [] }, results: { bindings } }) });
 }
-// AniList simulé (GraphQL) : 13 a aussi un spécial « suite », qui doit être ignoré.
-const al = (id, title, year, status = 'FINISHED', format = 'TV') => ({ id, type: 'ANIME', format, status, title: { romaji: title, english: null }, startDate: { year, month: 1, day: 1 } });
-// Anime absent de Wikidata (série 224), retrouvé par la recherche AniList (titre original + année) : OVA et suite annoncée
+// ----- AniList simulé (GraphQL, plusieurs médias par requête) : 13 a aussi un spécial « suite », rangé sous sa série -----
+const al = (id, title, year, status = 'FINISHED', format = 'TV') => ({ id, type: 'ANIME', format, status, title: { romaji: title, english: null, native: null }, startDate: { year, month: 1, day: 1 } });
+// Anime absent de Wikidata et d'ARM (série 224), retrouvé par la recherche AniList (titre original + année) : OVA et suite annoncée
 SHOWS[224] = { base: show(224, 'Recherche Test', { first_air_date: '2016-04-03', original_name: 'テスト検索', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 const AL_SEARCH = { 'テスト検索': [{ id: 33, format: 'TV', startDate: { year: 2014 }, title: { romaji: 'Tesuto Kensaku', english: null, native: 'テスト検索' } }, { id: 30, format: 'TV', startDate: { year: 2016 }, title: { romaji: 'Tesuto Kensaku', english: 'Search Test', native: 'テスト検索' } }] };
-const AL_NODES = { 30: al(30, 'Search Test', 2016), 31: al(31, 'Search Test 2', null, 'NOT_YET_RELEASED'), 32: al(32, 'Search Test OVA', 2017, 'FINISHED', 'OVA'), 60: al(60, 'Chaine Movie', 2012, 'FINISHED', 'MOVIE'), 11: al(11, 'Chaine Ichi', 2005), 12: al(12, 'Chaine Ni', 2010), 13: al(13, 'Chaine San', 2015), 14: al(14, 'Chaine Yon : le retour', null, 'NOT_YET_RELEASED'), 16: al(16, 'Chaine San Season 2', 2018), 17: al(17, 'Chaine San OVA', 2019, 'FINISHED', 'OVA'), 99: al(99, 'Spécial', 2016, 'FINISHED', 'SPECIAL') };
-const AL_REL = { 30: [['SEQUEL', 31], ['SIDE_STORY', 32]], 31: [['PREQUEL', 30]], 60: [['PARENT', 12]], 11: [['SEQUEL', 12]], 12: [['PREQUEL', 11], ['SEQUEL', 13], ['SIDE_STORY', 60]], 13: [['PREQUEL', 12], ['SEQUEL', 99], ['SEQUEL', 16]], 16: [['PREQUEL', 13], ['SEQUEL', 14], ['SIDE_STORY', 17]], 14: [['PREQUEL', 16]] };
+const AL_NODES = { 30: al(30, 'Search Test', 2016), 31: al(31, 'Search Test 2', null, 'NOT_YET_RELEASED'), 32: al(32, 'Search Test OVA', 2017, 'FINISHED', 'OVA'), 60: al(60, 'Chaine Movie', 2012, 'FINISHED', 'MOVIE'), 11: al(11, 'Chaine Ichi', 2005), 12: al(12, 'Chaine Ni', 2010), 13: al(13, 'Chaine San', 2015), 14: al(14, 'Chaine Yon : le retour', null, 'NOT_YET_RELEASED'), 16: al(16, 'Chaine San Season 2', 2018), 17: al(17, 'Chaine San OVA', 2019, 'FINISHED', 'OVA'), 99: al(99, 'Spécial', 2016, 'FINISHED', 'SPECIAL'),
+  70: al(70, 'Pont Saison 1', 2018), 71: al(71, 'Pont Saison 2', 2020), 72: al(72, 'Pont le film', 2021, 'FINISHED', 'MOVIE'), 73: al(73, 'Pont OVA', 2019, 'FINISHED', 'OVA'), 74: al(74, 'Pont Gaiden', 2022, 'FINISHED', 'MOVIE'),
+  76: al(76, 'Pont Saison 3', 2023), 77: al(77, 'Pont Saison 4', null, 'NOT_YET_RELEASED'), 78: al(78, 'Crossover Quartet', 2019), 79: al(79, 'Pont Mystère', 2022, 'FINISHED', 'MOVIE') };
+const AL_REL = { 30: [['SEQUEL', 31], ['SIDE_STORY', 32]], 31: [['PREQUEL', 30]], 60: [['PARENT', 12]], 11: [['SEQUEL', 12]], 12: [['PREQUEL', 11], ['SEQUEL', 13], ['SIDE_STORY', 60]], 13: [['PREQUEL', 12], ['SEQUEL', 99], ['SEQUEL', 16]], 16: [['PREQUEL', 13], ['SEQUEL', 14], ['SIDE_STORY', 17]], 14: [['PREQUEL', 16]],
+  70: [['SEQUEL', 71], ['SIDE_STORY', 73], ['CHARACTER', 78]], 71: [['PREQUEL', 70], ['SEQUEL', 72], ['SPIN_OFF', 74], ['SIDE_STORY', 79]], 72: [['PREQUEL', 71], ['SEQUEL', 76]], 76: [['PREQUEL', 72], ['SEQUEL', 77]], 77: [['PREQUEL', 76]],
+  73: [['PARENT', 70]], 74: [['PARENT', 71]], 78: [['CHARACTER', 70]], 79: [['PARENT', 71]] };
 export const anilistState = { calls: 0 };
 export async function handleAnilist(route) {
   const req = route.request();
@@ -117,10 +198,39 @@ export async function handleAnilist(route) {
   const query = JSON.parse(req.postData() || '{}').query || '';
   const search = /media\(search: ("(?:[^"\\]|\\.)*")/.exec(query);
   if (search) return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ data: { Page: { media: AL_SEARCH[JSON.parse(search[1])] || [] } } }) });
-  const m = /Media\(id: (\d+)/.exec(query);
-  const id = m ? Number(m[1]) : 0;
-  const media = AL_NODES[id] ? { ...AL_NODES[id], relations: { edges: (AL_REL[id] || []).map(([t, n]) => ({ relationType: t, node: AL_NODES[n] })) } } : null;
-  return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ data: { Media: media } }) });
+  const asked = [...query.matchAll(/(a\d+): Media\(id: (\d+)/g)];
+  const media = (id) => (AL_NODES[id] ? { ...AL_NODES[id], relations: { edges: (AL_REL[id] || []).map(([t, n]) => ({ relationType: t, node: AL_NODES[n] })) } } : null);
+  // comme AniList : un seul numéro inconnu → « introuvable » (404) pour tout le lot
+  if (asked.some(([, , id]) => !AL_NODES[id])) return route.fulfill({ status: 404, contentType: 'application/json', headers: cors, body: JSON.stringify({ data: Object.fromEntries(asked.map(([, a]) => [a, null])), errors: [{ message: 'Not Found.', status: 404 }] }) });
+  return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify({ data: Object.fromEntries(asked.map(([, a, id]) => [a, media(Number(id))])) }) });
+}
+// ----- ARM simulé (arm.haglund.dev) : correspondances AniList ↔ TMDB / IMDb -----
+const ARM = [
+  { anilist: 70, media: 'TV', themoviedb: 225, 'themoviedb-season': 1, imdb: 'tt9000225' },
+  { anilist: 71, media: 'TV', themoviedb: 225, 'themoviedb-season': 2, imdb: 'tt9000225' },
+  { anilist: 72, media: 'MOVIE', themoviedb: 225, 'themoviedb-season': 0, imdb: 'tt9000172' },
+  { anilist: 73, media: 'OVA', themoviedb: 225, 'themoviedb-season': 0, imdb: 'tt9000225' },
+  { anilist: 74, media: 'MOVIE', themoviedb: 173, 'themoviedb-season': null, imdb: 'tt9000173' },
+  { anilist: 79, media: 'MOVIE', themoviedb: 174, 'themoviedb-season': null, imdb: null },
+  { anilist: 78, media: 'TV', themoviedb: 232, 'themoviedb-season': 1, imdb: null },
+  { anilist: 75, media: 'MOVIE', themoviedb: 225, 'themoviedb-season': null, imdb: 'tt9000175' } // film dont le numéro TMDB (film) vaut 225 : pas la série 225
+];
+export const armState = { calls: 0, asked: [] };
+export async function handleArm(route) {
+  const req = route.request();
+  const url = new URL(req.url());
+  const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET, POST, OPTIONS' };
+  if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors, body: '' });
+  armState.calls++;
+  const send = (body) => route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(body) });
+  if (url.pathname === '/api/v2/ids' && req.method() === 'POST') {
+    const list = JSON.parse(req.postData() || '[]');
+    armState.asked.push(...list.map((x) => x.anilist));
+    return send(list.map((x) => ARM.find((e) => e.anilist === x.anilist) || null));
+  }
+  if (url.pathname === '/api/v2/themoviedb') return send(ARM.filter((e) => e.themoviedb === Number(url.searchParams.get('id'))));
+  if (url.pathname === '/api/v2/imdb') return send(ARM.filter((e) => e.imdb === url.searchParams.get('id')));
+  return route.fulfill({ status: 404, contentType: 'application/json', headers: cors, body: '{}' });
 }
 const STATUS_CODES = { 'Returning Series': '0', Planned: '1', 'In Production': '2', Ended: '3', Canceled: '4', Pilot: '5' };
 // Applique les paramètres de /discover comme TMDB (sous-ensemble utilisé par l'application).
@@ -259,6 +369,7 @@ export function createMock(options = {}) {
       if (append.includes('videos')) out.videos = { results: VIDEOS[key] || [] };
       if (append.includes('watch/providers')) out['watch/providers'] = { id: body.id, results: PROVIDERS[key] || {} };
       if (append.includes('images')) out.images = IMAGES[key] || { backdrops: [], posters: [], logos: [] };
+      if (append.includes('external_ids')) out.external_ids = EXTERNAL[key] || { imdb_id: null, wikidata_id: null };
       return out;
     };
     if (options.generic && (m = /^\/tv\/(\d+)$/.exec(path)) && !SHOWS[m[1]]) return json(route, 200, genericShow(Number(m[1])));

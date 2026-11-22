@@ -309,15 +309,19 @@ describe('Licence : fiche', () => {
     const btns = page.locator('#detail-licence-btn .licbtn');
     await page.waitForFunction(() => document.querySelectorAll('#detail-licence-btn .licbtn[data-scope]').length === 2, null, { timeout: 15000 });
     assert.deepEqual(await btns.allTextContents(), ['▾ Saga « Homme de Fer »3 films', '▾ Licence « Univers Merveille »8 films']);
+    assert.deepEqual(await btns.evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor === 'rgba(0, 0, 0, 0)')), [true, true], 'aucun bouton coloré avant le clic');
     await btns.nth(0).click();
     await page.waitForSelector('#detail-licence:not([hidden]) .lera');
     assert.deepEqual(await films(page), ['movie-176', 'movie-177', 'movie-178'], 'Saga : seulement les 3 films');
     assert.match(await page.locator('#detail-licence .licence-head h2').textContent(), /^Saga « Homme de Fer »$/);
     assert.deepEqual(await btns.evaluateAll((els) => els.map((e) => e.getAttribute('aria-expanded'))), ['true', 'false']);
+    const bg = () => btns.evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor !== 'rgba(0, 0, 0, 0)'));
+    assert.deepEqual(await bg(), [true, false], 'seul le bouton ouvert est coloré');
     await btns.nth(1).click(); // panneau ouvert : passe directement à toute la licence
     await page.waitForFunction(() => document.querySelectorAll('#detail-licence .lfilm').length === 8);
     assert.match(await page.locator('#detail-licence .licence-head h2').textContent(), /^Licence « Univers Merveille »$/);
     assert.deepEqual(await btns.allTextContents(), ['▾ Saga « Homme de Fer »3 films', '▴ Licence « Univers Merveille »8 films']);
+    assert.deepEqual(await bg(), [false, true], 'après le clic sur Licence, Saga n’est plus coloré');
     await btns.nth(1).click(); // second clic sur le même bouton : referme
     assert.equal(await page.locator('#detail-licence').isHidden(), true);
     assert.deepEqual(jsErrors(errors), []);

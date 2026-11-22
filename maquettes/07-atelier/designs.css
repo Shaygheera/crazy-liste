@@ -427,3 +427,58 @@
 .dz .blk{grid-template-columns:minmax(0,1fr)}
 .dz .ca{display:grid;grid-template-columns:1fr 1fr;gap:4px}.dz .btn.xs{padding:0 4px;gap:4px;min-width:0;font-size:12px}
 .dz .em{overflow:hidden}
+
+/* ===== Passe skill UI/UX Pro Max : cibles 44 px, 8 px entre cibles, texte 12 px minimum ===== */
+.dz .btn,.dz .btn.sm,.dz .btn.xs,.dz .sg,.dz .nl,.dz .slb{min-height:44px}
+.dz .btn.icon{width:44px}
+.dz .sx{width:44px;height:44px}
+.dz .seg{gap:8px;padding:0;background:none;box-shadow:none}
+.dz .sg{box-shadow:inset 0 0 0 1px var(--line);background:var(--surf2);border-radius:var(--rb)}
+.dz .sg.on{box-shadow:none}
+.dz .acts,.dz .pacts,.dz .ca,.dz .sl,.dz .ec,.dz .nav-full .ng,.dz .nfoot,.dz .rfoot,.dz .nav-rail .ng,.L-dock .dock .ng,.dz .nav-top .ng,.dz .rl{gap:8px}
+.dz .nav-top{gap:8px}
+.dz .ca{gap:8px}
+.dz .jw{min-height:44px}
+.dz .bh a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;margin:-12px -4px}
+.dz .search{height:52px;padding-left:16px}.dz .search .btn{min-height:44px}
+.dz .search.compact{height:44px;max-width:200px}
+.dz .rr{min-height:56px}
+/* texte : 12 px minimum */
+.dz .nx,.dz .slb small,.dz .ctag,.dz .search kbd,.L-table .kv dt,.L-table .etab th,.dz .cav,.dz .em,.dz .tagS{font-size:12px}
+.dz .rate.sm{font-size:12px;height:22px;min-width:32px}
+.L-rail{grid-template-columns:96px minmax(0,1fr) 300px}
+.L-rail .rail .nl{width:84px;min-height:56px;font-size:12px}
+.L-dock .dock .nl{font-size:12px;min-width:68px;min-height:56px}
+.L-table .hd .slb{min-height:44px}.L-table .acts .btn{min-height:44px}
+.L-table .etab td{padding:6px 8px}
+.L-table .nl{min-height:44px}
+.dz .nav-top .nl{min-height:44px}
+/* voile sous le texte des bandeaux photo : il doit passer AU-DESSUS de l'image */
+.dz .bdh>.bd,.L-split .left>.bd{z-index:-2}
+.dz .bdh::before{background:linear-gradient(90deg,rgba(6,6,9,.93) 0%,rgba(6,6,9,.86) 50%,rgba(6,6,9,.55) 78%,rgba(6,6,9,.25) 100%),linear-gradient(0deg,rgba(6,6,9,.6),transparent 55%)}
+.dz .bdh .htx{max-width:640px}
+.L-bento .t-hero.bdh::before{background:linear-gradient(90deg,rgba(6,6,9,.93) 0%,rgba(6,6,9,.84) 55%,rgba(6,6,9,.35) 100%)}
+/* contraste : corrections après mesure */
+.dz .onimg{--mut:rgba(255,255,255,.8);--fav:#ff8fb0}
+.dz .onimg .mark{background:#fff;color:#0b0b0e}
+.dz .ep-v .no{background:color-mix(in srgb,var(--seen) 12%,transparent)}
+.dz .sx{flex:none}
+.dz .bh a{margin:0}
+.dz .nav-top .nc{font-size:12px}
+.s02{--surf:rgba(255,255,255,.8);--surf2:rgba(255,255,255,.84);--fg2:#2b2f3d;--mut:#454a5c;--prog:#92400e;--seen:#04694c;--fav:#a8104a;--amb:.42}
+.s02 .tbar{background:rgba(255,255,255,.55);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.s02 .ssh{padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.7)}
+.s06{--fav:#ad1050}
+.s10{--prog:#9a4800;--fav:#ad1150}
+.s11{--fav:#ff86a6}
+.s13{--mut:#b8b8c2}
+.s14{--fav:#a8104c}
+.s15{--fav:#ad1150;--seen:#06663f}
+.s16{--prog:#984600;--fav:#ad1150}
+.s02 .sim{padding:14px 16px 16px;border-radius:18px;background:rgba(255,255,255,.82);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);box-shadow:var(--sh),inset 0 0 0 1px rgba(255,255,255,.7)}
+.s02 .sim .ssh{padding:0;background:none}
+/* états : survol, clavier, mouvement réduit */
+.dz button,.dz a{cursor:pointer}
+.dz .btn:hover,.dz .sg:hover,.dz .nl:hover,.dz .slb:hover,.dz .rr:hover{filter:brightness(1.12)}
+.dz :focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){.dz .btn,.dz .sg,.dz .nl,.dz .slb,.dz .rr{transition:filter .15s ease-out,background-color .15s ease-out}}

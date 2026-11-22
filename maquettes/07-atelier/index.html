@@ -17,12 +17,12 @@ body{background:var(--a-bg);color:var(--a-fg);font:400 15px/1.5 var(--a-f)}
 .ah h1{margin:0;font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.035em;line-height:1.1;text-wrap:balance}
 .ah p{margin:6px 0 0;color:var(--a-fg2);max-width:70ch}
 .picked{font-size:14px;color:var(--a-fg2)}.picked b{color:var(--a-pick)}
-.tabs{display:flex;gap:4px;padding:4px;border-radius:10px;background:var(--a-panel);box-shadow:inset 0 0 0 1px var(--a-line);width:max-content;max-width:100%;overflow-x:auto;margin-bottom:18px}
-.tabs a{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:7px;color:var(--a-fg2);font-weight:600;text-decoration:none;white-space:nowrap}
+.tabs{display:flex;gap:8px;padding:4px;border-radius:10px;background:var(--a-panel);box-shadow:inset 0 0 0 1px var(--a-line);width:max-content;max-width:100%;overflow-x:auto;margin-bottom:18px}
+.tabs a{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:7px;color:var(--a-fg2);font-weight:600;text-decoration:none;white-space:nowrap}
 .tabs a[aria-current="page"]{background:var(--a-acc);color:var(--a-accfg)}
 .tabs small{font-weight:500;opacity:.75}
-.filters{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 16px}
-.filters button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-panel);font-size:13.5px;font-weight:600;cursor:pointer;color:var(--a-fg2)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 16px}
+.filters button{min-height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-panel);font-size:13.5px;font-weight:600;cursor:pointer;color:var(--a-fg2)}
 .filters button[aria-pressed="true"]{background:var(--a-acc);color:var(--a-accfg);border-color:var(--a-acc)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:16px}
 .pc{display:flex;flex-direction:column;border-radius:12px;background:var(--a-panel);box-shadow:inset 0 0 0 1px var(--a-line);overflow:hidden;min-width:0}
@@ -35,8 +35,8 @@ body{background:var(--a-bg);color:var(--a-fg);font:400 15px/1.5 var(--a-f)}
 .pct b{font-size:16.5px;letter-spacing:-.015em}.pct span{font:600 12.5px var(--a-f);color:var(--a-mut);font-variant-numeric:tabular-nums}
 .pcm{font-size:13px;color:var(--a-fg2)}
 .pcd{font-size:13.5px;color:var(--a-mut);line-height:1.45}
-.pca{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.ab{text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--a-line);background:none;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--a-fg)}
+.pca{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ab{text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--a-line);background:none;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--a-fg)}
 .ab.pri{background:var(--a-acc);color:var(--a-accfg);border-color:var(--a-acc)}
 .ab[aria-pressed="true"]{color:var(--a-pick);border-color:var(--a-pick)}
 .ab svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -55,9 +55,9 @@ body{background:var(--a-bg);color:var(--a-fg);font:400 15px/1.5 var(--a-f)}
 .note b{color:var(--a-fg)}
 .cmpbar{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;margin-bottom:12px}
 .cmpbar label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--a-fg2);min-width:0}
-.cmpbar select{min-height:42px;padding:0 10px;border-radius:8px;border:1px solid var(--a-line);background:var(--a-panel);width:100%;font-size:14.5px}
+.cmpbar select{min-height:44px;padding:0 10px;border-radius:8px;border:1px solid var(--a-line);background:var(--a-panel);width:100%;font-size:14.5px}
 .cmpopts{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:0 0 12px;font-size:14px;color:var(--a-fg2)}
-.cmpopts label{display:inline-flex;align-items:center;gap:8px;min-height:36px;cursor:pointer}
+.cmpopts label{display:inline-flex;align-items:center;gap:8px;min-height:44px;cursor:pointer}
 .cmpopts input{width:18px;height:18px;accent-color:var(--a-pick)}
 .panes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pane{display:grid;grid-template-rows:auto 1fr;min-width:0}
@@ -174,7 +174,7 @@ function detailNew(id) {
   view.innerHTML = '<div class="dbar"><a class="ab" href="#galerie">' + svg('left') + 'Galerie</a><div class="grow"><h2>' + d.id + ' · ' + d.n + '</h2><p>' + d.style + ' · ' + d.lay + ' · police ' + d.font + ' · thème ' + d.th.toLowerCase() + '</p></div>' +
     pickBtn('n' + d.id) + cmpBtn('n' + d.id) + '<a class="ab" href="#p-' + prev.id + '">' + svg('left') + prev.id + '</a><a class="ab" href="#p-' + next.id + '">' + next.id + svg('chevr') + '</a></div>' +
     '<div class="stagewrap">' + stageNew(d) + '</div>' +
-    '<p class="note"><b>' + d.d + '</b><br>Mêmes infos que le site sur chaque proposition : note TMDB colorée, disponibilité, statut, progression par épisode, Favori / Watchlist, boutons Saga et Licence sous l’affiche, diffusion, offres, résumé, saisons et épisodes (À voir / En cours / Vu, Vu jusqu’ici), prochain épisode, Mes statistiques et Reprendre. Règles du skill UI/UX appliquées : texte à 4,5:1 au moins, statut toujours écrit et accompagné d’une icône, boutons de 32 à 44 px, icônes SVG.</p>';
+    '<p class="note"><b>' + d.d + '</b><br>Mêmes infos que le site sur chaque proposition : note TMDB colorée, disponibilité, statut, progression par épisode, Favori / Watchlist, boutons Saga et Licence sous l’affiche, diffusion, offres, résumé, saisons et épisodes (À voir / En cours / Vu, Vu jusqu’ici), prochain épisode, Mes statistiques et Reprendre. Contrôlé avec le skill UI/UX Pro Max et un script de mesure : contraste du texte mesuré sur les pixels réels du fond (4,5:1 au moins, 3:1 pour les grands titres), toutes les cibles cliquables à 44 px au moins avec 8 px d’écart, texte à 12 px au moins, statut toujours écrit avec une icône, icônes SVG, contour visible au clavier. Résultat : 0 écart sur les 16 propositions.</p>';
   watch(view);
 }
 function detailOld(id) {

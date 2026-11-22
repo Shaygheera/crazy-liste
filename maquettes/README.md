@@ -20,5 +20,6 @@ Chaque dossier contient la maquette (`maquette.html`, à ouvrir dans un navigate
 - `outils/shot2.mjs` : capture chaque `.frame` d'une maquette (`node maquettes/outils/shot2.mjs <racine> <maquette.html> <préfixe>`).
 - `outils/capture-compare.mjs` : captures de toutes les pages du vrai site avec le TMDB simulé des tests (`node maquettes/outils/capture-compare.mjs <racine> <crazy-liste.html> <dossier>`).
 - `outils/compose.mjs` : assemble des comparaisons avant / après côte à côte.
+- `outils/audit-atelier.cjs` : audit des 16 propositions de l'atelier selon les règles du skill UI/UX : contraste mesuré sur les pixels réels du fond, cibles de 44 px, 8 px entre cibles, texte de 12 px minimum (`node maquettes/outils/audit-atelier.cjs <page de test.html>`).
 
 Le skill UI/UX Pro Max utilisé pour ces choix est dans `.claude/skills/ui-ux-pro-max/` (licence MIT).

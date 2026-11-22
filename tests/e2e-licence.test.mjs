@@ -105,6 +105,20 @@ describe('Licence : même univers', () => {
   });
 });
 
+describe('Licence : série / franchise Wikidata', () => {
+  it('membres avec numéros TMDB ; groupe trop vaste ignoré ; la série plutôt que la franchise pour le nom', () => {
+    const row = (q, label, prop, type, id) => ({ prop: { value: prop }, group: { value: 'http://www.wikidata.org/entity/' + q }, groupLabel: { value: label }, [type]: { value: String(id) } });
+    const rows = [row('Q1', 'Monde des sorciers', 'franchise', 'movie', 1), row('Q1', 'Monde des sorciers', 'franchise', 'movie', 2), row('Q1', 'Monde des sorciers', 'franchise', 'movie', 9),
+      row('Q2', 'Harry Potter', 'series', 'movie', 1), row('Q2', 'Harry Potter', 'series', 'movie', 2), row('Q3', 'Énorme univers', 'franchise', 'movie', 1)];
+    for (let i = 100; i < 170; i++) rows.push(row('Q3', 'Énorme univers', 'franchise', 'movie', i));
+    const r = C.parseWikidataFranchise({ results: { bindings: rows } }, 60);
+    assert.deepEqual(r.groups.map((g) => g.id), ['Q2', 'Q1'], 'univers de 70 œuvres ignoré');
+    assert.equal(r.label, 'Harry Potter');
+    assert.deepEqual(r.keys.sort(), ['movie-1', 'movie-2', 'movie-9']);
+    assert.match(C.wikidataFranchiseQuery('5 } DROP', 'movie'), /wdt:P4947 "NaN"/);
+  });
+});
+
 describe('Licence : OVA et spéciaux', () => {
   it('AniList : films, OVA et spéciaux reliés, sans adaptations ni résumés', () => {
     const n = (id, format, year) => ({ id, type: 'ANIME', format, title: { romaji: 'T' + id }, startDate: { year, month: 3, day: 4 } });
@@ -199,8 +213,7 @@ describe('Licence : carte Diffusion', () => {
     assert.equal(new URL(await search.getAttribute('href')).searchParams.get('q'), 'Quand regarder Licence Test : le film dans la série Licence Test : Première partie');
     assert.doesNotMatch(await page.locator('#detail-films').textContent(), /Histoire/, 'aucun avis « histoire / hors histoire »');
     assert.match(await page.locator('#detail-licence .lera.is-current').textContent(), /tu es ici/);
-    assert.ok(mock.state.requests.some((r) => r.startsWith('/search/multi') && /query=licence\+test/.test(r)));
-    assert.ok(mock.state.requests.some((r) => r.startsWith('/search/movie') && /query=licence\+test/.test(r)), 'films cherchés pour chaque série');
+    assert.equal(mock.state.requests.filter((r) => r.startsWith('/search/')).length, 0, 'hors anime : licence venue de Wikidata (série), aucune recherche par titre');
     await page.locator('#detail-licence .lfilm[data-item-key="movie-140"]').click();
     await page.waitForFunction(() => location.hash === '#detail/movie/140');
     assert.deepEqual(await duplicateIds(page), []);
@@ -215,6 +228,17 @@ describe('Licence : carte Diffusion', () => {
     await openLicence(page);
     assert.deepEqual(await page.$$eval('#detail-licence .lfilm', (els) => els.map((e) => e.dataset.itemKey)), ['movie-150', 'movie-151', 'movie-152'], 'pas « Le Labyrinthe » (1953), « Le Labyrinthe de Pan », ni le documentaire');
     assert.match(await page.locator('#detail-licence .lseries-title').textContent(), /^Films$/);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
+  it('aucun lien fiable (titre seulement proche, hors anime) : pas de bouton Licence', T, async () => {
+    const { page, errors, context, mock } = await openApp(browser, { hash: '#detail/movie/153' });
+    await page.waitForSelector('#detail-cards .dcard-head');
+    await page.waitForFunction(() => { const r = document.querySelector('#detail-licence-btn'); return r && !r.querySelector('[disabled]'); }, null, { timeout: 15000 });
+    await page.waitForTimeout(400);
+    assert.equal(await page.locator('#detail-licence-btn .licbtn').count(), 0, '« Le Labyrinthe » (1953) n’est relié à rien');
+    assert.equal(mock.state.requests.filter((r) => r.startsWith('/search/')).length, 0, 'hors anime : aucune recherche par titre');
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

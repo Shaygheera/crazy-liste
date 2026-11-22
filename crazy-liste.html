@@ -1333,6 +1333,32 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       '{ ?item wdt:P156 ?x. BIND("next" AS ?rel) ' + ids + ' } UNION { ?item wdt:P155 ?x. BIND("prev" AS ?rel) ' + ids + ' } ' +
       'UNION { ?item wdt:P8729 ?al. BIND("anilist" AS ?rel) } } LIMIT 30';
   }
+  /* Série (P179) et franchise (P8345) Wikidata de l'œuvre, avec toutes les œuvres qui en font partie et ont une fiche TMDB.
+     Source fiable (numéros exacts) : remplace le rapprochement par titre hors anime. */
+  function wikidataFranchiseQuery(tmdbId, type) {
+    return 'SELECT ?prop ?group ?groupLabel ?tv ?movie WHERE { ?item wdt:' + (type === 'movie' ? 'P4947' : 'P4983') + ' "' + Number(tmdbId) + '". ' +
+      '{ ?item wdt:P179 ?group. BIND("series" AS ?prop) } UNION { ?item wdt:P8345 ?group. BIND("franchise" AS ?prop) } ' +
+      '?m wdt:P179|wdt:P8345 ?group. OPTIONAL { ?m wdt:P4983 ?tv. } OPTIONAL { ?m wdt:P4947 ?movie. } FILTER(BOUND(?tv) || BOUND(?movie)) ' +
+      'SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en". } } LIMIT 600';
+  }
+  /* Groupes trop vastes (ex. un univers de 200 œuvres) ignorés ; nom : la série plutôt que la franchise, la plus petite d'abord. */
+  function parseWikidataFranchise(json, max) {
+    const rows = isObj(json) && isObj(json.results) && Array.isArray(json.results.bindings) ? json.results.bindings : [];
+    const groups = new Map();
+    for (const r of rows) {
+      const id = r && r.group && /\/(Q\d+)$/.exec(String(r.group.value || ''));
+      if (!id) continue;
+      const g = groups.get(id[1]) || { id: id[1], label: str(r.groupLabel && r.groupLabel.value, 120), prop: r.prop && r.prop.value === 'series' ? 'series' : 'franchise', keys: [] };
+      if (r.prop && r.prop.value === 'series') g.prop = 'series';
+      const tv = r.tv && /^\d{1,10}$/.test(r.tv.value) ? itemKey('tv', Number(r.tv.value)) : null;
+      const mv = r.movie && /^\d{1,10}$/.test(r.movie.value) ? itemKey('movie', Number(r.movie.value)) : null;
+      for (const k of [tv, mv]) if (k && !g.keys.includes(k)) g.keys.push(k);
+      groups.set(id[1], g);
+    }
+    const kept = [...groups.values()].filter((g) => g.keys.length >= 2 && g.keys.length <= (max || 60))
+      .sort((a, b) => (a.prop === b.prop ? 0 : a.prop === 'series' ? -1 : 1) || a.keys.length - b.keys.length);
+    return { groups: kept, keys: [...new Set(kept.flatMap((g) => g.keys))], label: kept.length ? kept[0].label : '', id: kept.length ? kept[0].id : '' };
+  }
   /* AniList (anime) : préquelles et suites, pour relier des titres aux noms différents (Naruto → Naruto Shippūden → Boruto). */
   function anilistQuery(id) {
     const f = 'id type format status title { romaji english } startDate { year month day }';
@@ -1718,7 +1744,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     emptyTrack, cloneTrack, writeEpisode, setMovieStatus, setEpisodeStatus, setSeasonStatus, setEpisodesUpTo, markShowSeen, resetShow,
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
-    normTitle, licenceBase, licenceBaseOf, inLicence, sameUniverse, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
+    normTitle, licenceBase, licenceBaseOf, inLicence, sameUniverse, wikidataFranchiseQuery, parseWikidataFranchise, licenceList, probableNext, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
     anilistQuery, anilistStep, anilistParent, anilistTitle, anilistSearchQuery, pickAnilistMatch, wikidataAnilistQuery, parseWikidataAnilistMap, anilistExtras, attachExtras, stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
@@ -2827,12 +2853,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   function loadLicenceStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(LICENCE_STORE) || 'null');
-      if (!C.isObj(raw) || raw.v !== 7 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
+      if (!C.isObj(raw) || raw.v !== 8 || !Array.isArray(raw.list)) return; // versions précédentes : calculées avec d'anciennes règles, ignorées
       for (const L of raw.list) { const c = cleanStoredLicence(L); if (c && Date.now() - c.at < LICENCE_TTL) registerLicence(c); }
     } catch (e) { /* stockage indisponible ou illisible : la licence sera recalculée */ }
   }
   function saveLicenceStore() {
-    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 7, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
+    try { localStorage.setItem(LICENCE_STORE, JSON.stringify({ v: 8, list: [...licences.values()].sort((a, b) => b.at - a.at).slice(0, 25) })); } catch (e) { /* stockage plein ou indisponible */ }
   }
   function wikiRelations(d) {
     if (!wikiCache.has(d.key)) {
@@ -2889,15 +2915,25 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const chainBases = chain.map((n) => C.licenceBase(C.anilistTitle(n))).concat(linked.filter((x) => x.type === 'tv').map((x) => (anime ? C.licenceBaseOf(x) : origBase(x))));
     const bases = [...new Set(anime ? (chain.length ? chainBases : [C.licenceBaseOf(d)].concat(chainBases)) : [origBase(d)].concat(chainBases))].filter(Boolean).slice(0, 4);
     // recherche : aussi avec le titre français (plus de résultats), mais le tri se fait sur les règles ci-dessus
-    const queries = [...new Set(bases.concat(anime ? [] : [C.licenceBase(d.title)]))].filter(Boolean).slice(0, 5);
-    // 4. Recherches TMDB (séries et films) pour chaque début de titre
+    // 4. Série / franchise Wikidata (numéros TMDB exacts) ; recherche par titre seulement pour les anime (titres souvent traduits sans rapport hors anime)
+    const fr = await fetch(WIKIDATA_SPARQL + '?format=json&query=' + encodeURIComponent(C.wikidataFranchiseQuery(d.id, d.type)), { headers: { Accept: 'application/sparql-results+json' } })
+      .then((r) => (r.ok ? r.json() : null)).then((j) => C.parseWikidataFranchise(j, 60)).catch(() => ({ groups: [], keys: [], label: '', id: '' }));
+    const queries = anime ? bases : [];
     const found = (await Promise.all(queries.flatMap((b) => [searchResults('/search/multi', b, null), searchResults('/search/movie', b, 'movie')]))).flat();
+    const franchiseItems = [];
+    { // fiches des œuvres de la franchise, 6 à la fois
+      const todo = fr.keys.filter((k) => k !== key).slice(0, 60);
+      let next = 0;
+      const worker = async () => { while (next < todo.length) { const k = todo[next++]; const x = await summaryOf(k).catch(() => null); if (x) franchiseItems.push(x); } };
+      await Promise.all(Array.from({ length: Math.min(6, todo.length) }, worker));
+    }
     // films d'une collection TMDB (saga officielle) : toujours de la licence
     const collection = d.type === 'movie' && d.collection ? await tmdb('/collection/' + d.collection.id, {}).catch(() => null) : null;
     const parts = collection && Array.isArray(collection.parts) ? collection.parts.map((x) => C.normalizeSummary(x, 'movie')).filter(Boolean) : [];
     const items = [current];
     const add = (x) => { if (x && !items.some((y) => y.key === x.key)) items.push(x); };
     parts.forEach(add);
+    franchiseItems.forEach(add);
     for (const x of found) if ((x.type === 'tv' || x.type === 'movie') && C.sameUniverse(current, x, bases, anime)) add(x);
     linked.forEach(add);
     const missing = extras.filter((e) => e.key && e.seriesKey && !items.some((y) => y.key === e.key)).slice(0, 15);
@@ -2906,7 +2942,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const root = chainInfo.length && chainInfo[0].key ? items.find((x) => x.key === chainInfo[0].key) : null;
     const colName = collection && collection.name ? String(collection.name).replace(/\s*[-–—:]?\s*(saga|collection)$/i, '').replace(/^(saga|collection)\s+/i, '').trim() : '';
     const named = root || items.filter((x) => x.type === 'tv' && C.licenceBaseOf(x)).sort((p, q) => (C.licenceBaseOf(p).length - C.licenceBaseOf(q).length) || ((p.date || '9999') < (q.date || '9999') ? -1 : 1))[0] || current;
-    return { partial: (!!alId && !chain.length) || unreadable > 0, id: chain.length ? 'al:' + chain[0].id : collection ? 'col:' + d.collection.id : 'base:' + (bases[0] || key), at: Date.now(), label: (!root && colName) || named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
+    return { partial: (!!alId && !chain.length) || unreadable > 0, id: chain.length ? 'al:' + chain[0].id : fr.id ? 'wd:' + fr.id : collection ? 'col:' + d.collection.id : 'base:' + (bases[0] || key), at: Date.now(), label: (!root && (fr.label || colName)) || named.title.split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0],
       items: items.slice(0, 80), extras: extras.filter((e) => e.seriesKey).map(({ seriesAl, ...e }) => e), chain: chainInfo };
   }
   /* Ce que la fiche ouverte affiche, d'après la licence partagée : suite (Wikidata, puis chaîne AniList, sinon suite probable), suite annoncée. */

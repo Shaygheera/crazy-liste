@@ -76,6 +76,9 @@ SHOWS[222] = { base: show(222, 'Troisième Volet', { first_air_date: '2015-01-01
 // Wikidata simulé : « suivi par » / « précédé par » avec numéros TMDB (série 201 → série 202) et numéros AniList.
 export const WIKIDATA = { 201: { next: [['tv', 202]], prev: [] }, 202: { next: [], prev: [['tv', 201]] }, 220: { anilist: 11 }, 221: { anilist: 12 }, 222: { anilist: 13 } };
 const WIKIDATA_MOVIES = { 142: { anilist: 60 } };
+// Séries / franchises Wikidata (P179 / P8345) : membres avec numéros TMDB
+const FRANCHISES = { Q900: { label: 'Licence Test', prop: 'series', keys: [['tv', 216], ['tv', 217], ['tv', 219], ['movie', 140]] }, Q950: { label: 'Le Labyrinthe', prop: 'series', keys: [['movie', 150], ['movie', 151], ['movie', 152]] } };
+const franchiseOf = (type, id) => Object.keys(FRANCHISES).filter((q) => FRANCHISES[q].keys.some(([t, i]) => t === type && i === Number(id)));
 const WIKIDATA_ANILIST = { 11: ['tv', 220], 12: ['tv', 221], 13: ['tv', 222], 60: ['movie', 142] };
 // Film de la chaîne au titre sans rapport (relié seulement par AniList : « série parente » 12)
 MOVIES[142] = movie(142, 'Volet spécial : le film', { release_date: '2012-05-05', original_language: 'ja', genre_ids: [16], _hidden: true });
@@ -84,7 +87,10 @@ export async function handleWikidata(route) {
   const q = new URL(route.request().url()).searchParams.get('query') || '';
   let bindings = [];
   const values = /VALUES \?al \{([^}]*)\}/.exec(q);
-  if (values) {
+  const fq = /wdt:(P4983|P4947) "(\d+)"[\s\S]*wdt:P179/.exec(q);
+  if (fq) {
+    bindings = franchiseOf(fq[1] === 'P4947' ? 'movie' : 'tv', fq[2]).flatMap((qid) => FRANCHISES[qid].keys.map(([t, i]) => ({ prop: lit(FRANCHISES[qid].prop), group: { type: 'uri', value: 'http://www.wikidata.org/entity/' + qid }, groupLabel: lit(FRANCHISES[qid].label), [t]: lit(i) })));
+  } else if (values) {
     bindings = [...values[1].matchAll(/"(\d+)"/g)].map((m) => m[1]).filter((al) => WIKIDATA_ANILIST[al])
       .map((al) => ({ al: lit(al), [WIKIDATA_ANILIST[al][0] === 'tv' ? 'tv' : 'movie']: lit(WIKIDATA_ANILIST[al][1]) }));
   } else {

@@ -105,6 +105,16 @@ MOVIES[173] = movie(173, 'Gaiden Pont', { release_date: '2022-03-01', original_l
 MOVIES[174] = movie(174, 'Film sans rapport', { release_date: '1995-01-01', original_language: 'ja', genre_ids: [16], _hidden: true });
 // Franchise Wikidata de l'anime : un film live (gardé) et le crossover (anime absent du graphe AniList : écarté)
 MOVIES[175] = movie(175, 'Pont : le film live', { release_date: '2024-05-01', original_language: 'en', genre_ids: [28], _hidden: true });
+// Saga dans une grande licence : « Homme de Fer » (collection TMDB 960, 3 films) dans l'univers « Merveille » (8 films)
+const hero = (id, title, date, col) => movie(id, title, { release_date: date, original_language: 'en', genre_ids: [28, 878], _hidden: true, ...(col ? { belongs_to_collection: { id: 960, name: 'Homme de Fer - Saga' } } : {}) });
+MOVIES[176] = hero(176, 'Homme de Fer', '2008-04-30', true);
+MOVIES[177] = hero(177, 'Homme de Fer 2', '2010-04-28', true);
+MOVIES[178] = hero(178, 'Homme de Fer 3', '2013-04-24', true);
+MOVIES[179] = hero(179, 'Dieu du Tonnerre', '2011-04-27');
+MOVIES[180] = hero(180, 'Capitaine Étoile', '2011-07-27');
+MOVIES[181] = hero(181, 'Les Vengeurs', '2012-04-25');
+MOVIES[182] = hero(182, 'Dieu du Tonnerre 2', '2013-10-30');
+MOVIES[183] = hero(183, 'Les Vengeurs 2', '2015-04-22');
 // Identifiants externes donnés par TMDB (append_to_response=external_ids)
 const EXTERNAL = { 'tv-225': { imdb_id: 'tt9000225', wikidata_id: null } };
 
@@ -128,6 +138,7 @@ const WD_GROUPS = {
   Q965: { label: 'univers de Jouets Test', en: 'Jouets Test universe', types: ['Q559618'], rel: 'universe', members: [['movie', 160], ['movie', 161], ['movie', 167]] },
   Q970: { label: 'univers de Trône Test', en: 'Trône Test universe', types: ['Q559618'], rel: 'universe', members: [['tv', 230], ['tv', 231], ['tv', 233]] },
   Q973: { label: 'Univers Marvelo', en: 'Marvelo Universe', types: ['Q196600'], rel: 'franchise', members: [['tv', 228], ['tv', 229]] },
+  Q976: { label: 'Univers Merveille', en: 'Merveille Universe', types: ['Q196600'], rel: 'franchise', members: [176, 177, 178, 179, 180, 181, 182, 183].map((id) => ['movie', id]) },
   Q974: { label: 'Pont', en: 'Pont', types: ['Q196600'], rel: 'franchise', members: [['tv', 225], ['tv', 232], ['movie', 175]] },
   // œuvre d'origine (série de romans) : l'anime 225, et un crossover adapté de plusieurs séries (234, sans numéro AniList dans Wikidata)
   Q975: { label: 'Pont (romans)', en: 'Pont (novels)', types: ['Q104213567'], rel: 'source', members: [['tv', 225], ['tv', 234]], multiSource: ['tv-234'] }
@@ -291,7 +302,7 @@ function movieDetail(id) {
   return { ...m, status: id === 122 ? 'Post Production' : 'Released', runtime: 112, genres: [{ id: 18, name: 'Drame' }], tagline: '',
     belongs_to_collection: m.belongs_to_collection || null, recommendations: page([asMovie(id === 103 ? 104 : 103), asShow(201)]) };
 }
-const COLLECTIONS = { 900: { id: 900, name: 'Saga intégrale', parts: [MOVIES[122], MOVIES[120], MOVIES[121]] }, 950: { id: 950, name: 'Le Labyrinthe - Saga', parts: [MOVIES[152], MOVIES[150], MOVIES[151]] } };
+const COLLECTIONS = { 960: { id: 960, name: 'Homme de Fer - Saga', parts: [176, 177, 178].map((id) => MOVIES[id]) }, 900: { id: 900, name: 'Saga intégrale', parts: [MOVIES[122], MOVIES[120], MOVIES[121]] }, 950: { id: 950, name: 'Le Labyrinthe - Saga', parts: [MOVIES[152], MOVIES[150], MOVIES[151]] } };
 const SEARCH = {
   alpha: { multi: [asShow(201), PERSON, asMovie(101)], movie: [MOVIES[101]], tv: [SHOWS[201].base] },
   anime: { multi: [asShow(202), asShow(210), asShow(211), asShow(212), asMovie(104)], movie: [MOVIES[104]], tv: [SHOWS[202].base, SHOWS[210].base, SHOWS[211].base, SHOWS[212].base] },

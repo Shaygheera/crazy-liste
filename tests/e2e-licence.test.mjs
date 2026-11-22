@@ -132,6 +132,16 @@ describe('Licence : Wikidata', () => {
     assert.equal(C.licenceLabel([{ label: 'Saga cinématographique de la Terre du Milieu', size: 6 }], 'Le Seigneur des anneaux', 3), 'Le Seigneur des anneaux');
     assert.equal(C.licenceLabel([], '', 0), '');
   });
+  it('saga de la fiche : collection TMDB d’abord, sinon le plus petit groupe ; jamais toute la licence ni un seul titre', () => {
+    const all = ['movie-1', 'movie-2', 'movie-3', 'movie-4', 'movie-5', 'tv-6'];
+    const cands = [{ id: 'wd:Q1', label: 'Univers', keys: all }, { id: 'wd:Q2', label: 'Phase 1', keys: ['movie-1', 'movie-4'] }, { id: 'col:9', label: 'Iron Man', keys: ['movie-1', 'movie-2', 'movie-3', 'movie-99'] }];
+    assert.deepEqual(C.pickSaga('movie-1', cands, all), { label: 'Iron Man', keys: ['movie-1', 'movie-2', 'movie-3'] }, 'collection prioritaire ; titres hors licence ignorés');
+    assert.deepEqual(C.pickSaga('movie-4', cands, all), { label: 'Phase 1', keys: ['movie-1', 'movie-4'] });
+    assert.equal(C.pickSaga('tv-6', cands, all), null, 'seul groupe = toute la licence : pas de saga');
+    assert.equal(C.pickSaga('movie-5', [{ id: 'wd:Q3', label: 'Seul', keys: ['movie-5'] }], all), null);
+    assert.equal(C.collectionLabel('Iron Man - Saga'), 'Iron Man');
+    assert.equal(C.collectionLabel('Saga Astérix'), 'Astérix');
+  });
   it('numéros AniList et IMDb → fiches TMDB, en une requête bornée', () => {
     const q = C.wikidataIdsQuery([20, 1735, 'x', -3, 20], ['tt0476680', 'tt1" }']);
     assert.match(q, /VALUES \?al \{ "20" "1735" \} \?item wdt:P8729 \?al\./);
@@ -294,6 +304,31 @@ describe('Licence : fiche', () => {
     await context.close();
   });
 
+  it('film d’une saga dans une grande licence : la saga d’abord (Iron Man), toute la licence (Marvel) en un clic', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#detail/movie/176' });
+    await page.waitForFunction(() => /^▾ Saga « Homme de Fer »/.test((document.querySelector('#detail-licence-btn .licbtn') || {}).textContent || ''), null, { timeout: 15000 });
+    assert.equal(await button(page), '▾ Saga « Homme de Fer »3 films');
+    await openLicence(page);
+    assert.deepEqual(await films(page), ['movie-176', 'movie-177', 'movie-178'], 'seulement les 3 films de la saga');
+    assert.match(await page.locator('#detail-licence .licence-head h2').textContent(), /^Saga « Homme de Fer »$/);
+    const scope = page.locator('#detail-licence [data-action="licence-scope"]');
+    assert.deepEqual(await scope.allTextContents(), ['Saga « Homme de Fer » · 3', 'Toute la licence « Univers Merveille » · 8']);
+    assert.equal(await scope.first().getAttribute('aria-pressed'), 'true');
+    await scope.nth(1).click();
+    await page.waitForFunction(() => document.querySelectorAll('#detail-licence .lfilm').length === 8);
+    assert.match(await page.locator('#detail-licence .licence-head h2').textContent(), /^Licence « Univers Merveille »$/);
+    assert.equal(await button(page), '▴ Licence « Univers Merveille »8 films');
+    assert.equal(await page.locator('#detail-licence [data-action="licence-scope"][data-scope="all"]').getAttribute('aria-pressed'), 'true');
+    // choix gardé d'une fiche à l'autre ; un film hors de la saga (Dieu du Tonnerre) n'a pas de choix « Homme de Fer »
+    await page.evaluate(() => { location.hash = '#detail/movie/177'; });
+    await page.waitForFunction(() => /Licence « Univers Merveille »/.test((document.querySelector('#detail-licence-btn .licbtn') || {}).textContent || ''), null, { timeout: 15000 });
+    await page.locator('#detail-licence-btn .licbtn').click();
+    await page.locator('#detail-licence [data-action="licence-scope"][data-scope="saga"]').click();
+    await page.waitForFunction(() => document.querySelectorAll('#detail-licence .lfilm').length === 3);
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
   it('fiche d’un film : même licence, le film ouvert mis en avant sous sa série, nom de la franchise', T, async () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/movie/140' });
     await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
@@ -436,7 +471,7 @@ describe('Licence : fiche', () => {
     assert.equal(anilistState.calls, calls, 'licence réutilisée : aucune nouvelle requête AniList');
     assert.equal(await page.locator('#detail-licence .lfilm.is-current').getAttribute('data-item-key'), 'movie-142', 'le film ouvert est mis en avant');
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('crazy-liste-licences')));
-    assert.equal(stored.v, 9, 'nouvelle version : les licences calculées avec les anciennes règles sont refaites');
+    assert.equal(stored.v, 10, 'nouvelle version : les licences calculées avec les anciennes règles sont refaites');
     assert.equal(stored.list[0].id, 'al:11', 'identifiée par sa série racine');
     await page.reload();
     await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])');

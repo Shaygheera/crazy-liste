@@ -238,6 +238,9 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .licence-head h2 { margin: 0; font-size: 1.1rem; } .licence-head .hint { margin: 0; } .licence-head .btn { margin-left: auto; }
 .lera { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--border); align-items: start; }
 .licence-head + .lera { border-top: 0; }
+.lscope { display: flex; gap: 6px; flex-wrap: wrap; flex-basis: 100%; }
+.lscope button { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-2); font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer; }
+.lscope button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 750; }
 .lseries { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; align-items: start; color: inherit; text-decoration: none; }
 a.lseries:hover .lseries-title { color: var(--accent); }
 .lseries-poster { width: 62px; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; }
@@ -1436,6 +1439,24 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       .replace(/^univers (de |d'|d’|du |des )/i, '').replace(/\s+universe$/i, '').replace(/^franchise (de |d'|d’|du |des )?/i, '').trim();
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
   }
+  /* Saga de la fiche ouverte, à l'intérieur de sa licence : collection TMDB du film (« Iron Man » dans l'univers Marvel), sinon le plus petit
+     groupe Wikidata qui la contient. Seulement si elle compte au moins 2 titres et moins que la licence entière. */
+  function pickSaga(key, candidates, allKeys) {
+    const all = new Set(Array.isArray(allKeys) ? allKeys : []);
+    let best = null;
+    for (const c of Array.isArray(candidates) ? candidates : []) {
+      if (!isObj(c) || !Array.isArray(c.keys) || !str(c.label, 120)) continue;
+      const keys = [...new Set(c.keys)].filter((k) => all.has(k));
+      if (!keys.includes(key) || keys.length < 2 || keys.length >= all.size) continue;
+      const col = String(c.id || '').startsWith('col:');
+      if (!best || (col && !best.col) || (col === best.col && keys.length < best.keys.length)) best = { label: str(c.label, 120), keys, col };
+    }
+    return best ? { label: best.label, keys: best.keys } : null;
+  }
+  /* Nom d'une collection TMDB sans « Saga » / « Collection » (« Iron Man - Saga » → « Iron Man »). */
+  function collectionLabel(name) {
+    return str(name, 200).replace(/\s*[-–—:]?\s*(saga|collection)$/i, '').replace(/^(saga|collection)\s+/i, '').trim();
+  }
   function licenceLabel(groups, colName, colSize) {
     const g = (Array.isArray(groups) ? groups : []).slice().sort((a, b) => b.size - a.size)[0];
     if (colName && (!g || g.size <= num(colSize) + 3)) return colName;
@@ -1974,7 +1995,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     startShow, toggleFlag, dismissLegacy, isPersonal,
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
     normTitle, licenceBase, licenceBaseOf, inLicence, sameLine, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
-    wikidataGroupPlan, wikidataMembersQuery, parseWikidataMembers, pickWikidataGroups, cleanGroupLabel, licenceLabel, wikidataIdsQuery, parseWikidataIds,
+    wikidataGroupPlan, wikidataMembersQuery, parseWikidataMembers, pickWikidataGroups, cleanGroupLabel, licenceLabel, pickSaga, collectionLabel, wikidataIdsQuery, parseWikidataIds,
     ANILIST_BATCH, anilistBatchQuery, normalizeAnilistMedia, anilistStep, anilistLinks, anilistTitle, anilistSearchQuery, pickAnilistMatch, armStart, anilistTmdbMap, yearsAgree, anilistLicence, attachExtras,
     stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
@@ -2449,6 +2470,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       detail: { key: null, status: 'idle', error: null },
       expanded: {},               // clé -> Set des saisons ouvertes
       licenceOpen: null,          // clé de la fiche dont le panneau « Licence » est ouvert
+      licenceScope: 'saga',       // « saga » (Iron Man seulement) ou « all » (toute la licence Marvel)
       seasonLoad: {},             // "clé#n" -> { status, error }
       busy: {}                    // opérations longues en cours
     },
@@ -3142,7 +3164,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
      même contenu partout, et affichage immédiat. Gardée 3 jours dans ce navigateur. */
   const LICENCE_STORE = 'crazy-liste-licences';
   const LICENCE_TTL = 3 * 86400000;
-  const LICENCE_VERSION = 9; // règles changées : les licences gardées avec d'anciennes règles sont recalculées
+  const LICENCE_VERSION = 10; // règles changées : les licences gardées avec d'anciennes règles sont recalculées
   const licences = new Map();   // id -> { id, at, label, items, extras, chain }
   const licenceOf = new Map();  // clé de fiche -> id de licence
   const wikiCache = new Map();  // clé de fiche -> relations Wikidata
@@ -3162,7 +3184,9 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const chain = (Array.isArray(L.chain) ? L.chain : []).filter((c) => C.isObj(c) && Number.isInteger(c.al))
       .map((c) => ({ al: c.al, key: C.parseKey(c.key) ? c.key : null, show: C.parseKey(c.show) ? c.show : null, format: String(c.format || '').slice(0, 20), status: String(c.status || '').slice(0, 30),
         title: String(c.title || '').slice(0, 200), date: /^\d{4}-\d{2}-\d{2}$/.test(c.date || '') ? c.date : '', next: Number.isInteger(c.next) ? c.next : 0 }));
-    return { id: L.id, at: L.at, label: String(L.label || '').slice(0, 120), items, extras, chain };
+    const groups = (Array.isArray(L.groups) ? L.groups : []).filter((g) => C.isObj(g) && typeof g.id === 'string' && typeof g.label === 'string' && Array.isArray(g.keys))
+      .map((g) => ({ id: g.id.slice(0, 40), label: g.label.slice(0, 120), keys: g.keys.filter((k) => C.parseKey(k)).slice(0, 120) }));
+    return { id: L.id, at: L.at, label: String(L.label || '').slice(0, 120), items, extras, chain, groups };
   }
   function loadLicenceStore() {
     try {
@@ -3281,12 +3305,17 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     for (const k of wanted) add(got.map.get(k));
     // nom : la série racine d'un anime ; sinon le groupe Wikidata le plus général (ou la collection TMDB s'il est à peine plus grand)
     const head = (t) => String(t || '').split(/\s*[:：]\s*|\s+[-–—]|\s*\(/)[0];
-    const colName = collection && collection.name ? String(collection.name).replace(/\s*[-–—:]?\s*(saga|collection)$/i, '').replace(/^(saga|collection)\s+/i, '').trim() : '';
+    const colName = collection && collection.name ? C.collectionLabel(collection.name) : '';
     const rootItem = A && A.rootKey ? items.find((x) => x.key === A.rootKey) : null;
     const label = (rootItem && head(rootItem.title)) || C.licenceLabel(G.groups, colName, parts.length) || head(current.title);
     const biggest = G.groups.slice().sort((a, b) => b.size - a.size)[0];
     const id = A && A.root ? 'al:' + A.root : biggest ? 'wd:' + biggest.id : collection ? 'col:' + d.collection.id : 'key:' + key;
-    return { partial, id, at: Date.now(), label, items: items.slice(0, 80), extras: A ? A.extras.filter((e) => e.seriesKey || e.key) : [], chain: A ? A.chain : [] };
+    // sous-groupes (sagas possibles) : collection TMDB et groupes Wikidata, limités aux titres de la licence
+    const kept = new Set(items.slice(0, 80).map((x) => x.key));
+    const groups = (collection ? [{ id: 'col:' + d.collection.id, label: colName, keys: parts.map((x) => x.key) }] : [])
+      .concat(G.groups.map((g) => ({ id: 'wd:' + g.id, label: C.cleanGroupLabel(g.label), keys: g.keys })))
+      .map((g) => Object.assign(g, { keys: g.keys.filter((k) => kept.has(k)) })).filter((g) => g.label && g.keys.length >= 2);
+    return { partial, id, at: Date.now(), label, items: items.slice(0, 80), extras: A ? A.extras.filter((e) => e.seriesKey || e.key) : [], chain: A ? A.chain : [], groups };
   }
   /* Ce que la fiche ouverte affiche, d'après la licence partagée : suite (AniList, sinon « suivi par » de Wikidata validé par le titre), suite annoncée.
      Plus de « suite probable » devinée d'après les dates. */
@@ -3306,6 +3335,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     // suite pas encore sur TMDB : fait partie de la licence, quelle que soit la fiche ouverte
     const up = L.chain.filter((c) => !c.key && !c.show && ['TV', 'TV_SHORT', 'ONA'].includes(c.format) && ['NOT_YET_RELEASED', 'RELEASING'].includes(c.status)).sort(byDateOrLast).pop();
     return { status: 'ready', upcoming: up ? { title: up.title, status: up.status } : null, all: L.items, extras: L.extras, label: L.label, licenceId: L.id,
+      groups: L.groups || [], anime: L.chain.length > 0,
       confirmed: !!next, announced, next };
   }
   async function loadRelations(key, force) {
@@ -3717,6 +3747,12 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       link.textContent = 'Ouvrir sur YouTube';
       byId('trailer-foot').replaceChildren((t.lang === 'fr' ? 'Vidéo YouTube proposée par TMDB. ' : 'Pas de version française sur TMDB : version originale. ') + 'Si elle ne se lance pas : ', link);
       byId('trailer-dialog').showModal();
+    },
+    'licence-scope'(el) {
+      state.ui.licenceScope = el.dataset.scope === 'all' ? 'all' : 'saga';
+      renderLicence(el.dataset.key);
+      const btn = document.querySelector('#detail-licence [data-action="licence-scope"][data-scope="' + state.ui.licenceScope + '"]');
+      if (btn) btn.focus();
     },
     'licence-toggle'(el) {
       const key = el.dataset.key;
@@ -4596,25 +4632,45 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   const licenceOpen = (key) => state.ui.licenceOpen === key;
   const KIND_LABELS = { MOVIE: 'Film', OVA: 'OVA', SPECIAL: 'Spécial' };
   const anilistUrl = (id) => 'https://anilist.co/anime/' + Number(id);
-  function licenceData(key) {
+  /* Saga de la fiche dans sa licence (hors anime, dont la licence suit déjà AniList) : collection TMDB du film, sinon plus petit groupe Wikidata. */
+  function sagaOf(key, rel) {
+    if (!rel || rel.status !== 'ready' || rel.anime) return null;
+    const d = state.cache.details.get(key);
+    const cands = (rel.groups || []).slice();
+    const c = d && d.type === 'movie' && d.collection ? state.cache.collections.get(d.collection.id) : null;
+    if (c && c.status === 'ready') cands.unshift({ id: 'col:' + d.collection.id, label: C.collectionLabel(c.name || d.collection.name), keys: c.parts.map((p) => 'movie-' + p.id) });
+    return C.pickSaga(key, cands, (rel.all || []).map((x) => x.key));
+  }
+  function licenceData(key, scopeArg) {
     const rel = state.cache.relations.get(key);
     if (!rel || rel.status !== 'ready') return null;
-    const base = C.licenceGroups(rel.all || rel.list);
-    const { groups, orphans } = C.attachExtras(base.groups, base.orphans, rel.extras || []);
+    const saga = sagaOf(key, rel);
+    const scope = saga ? scopeArg || state.ui.licenceScope : 'all';
+    let all = rel.all || [], extras = rel.extras || [], upcoming = rel.upcoming, label = rel.label;
+    if (scope === 'saga') {
+      const keep = new Set(saga.keys);
+      all = all.filter((x) => keep.has(x.key));
+      extras = extras.filter((e) => (e.key && keep.has(e.key)) || keep.has(e.seriesKey));
+      upcoming = null;
+      label = saga.label;
+    }
+    const base = C.licenceGroups(all);
+    const { groups, orphans } = C.attachExtras(base.groups, base.orphans, extras);
     const items = groups.flatMap((g) => g.films).concat(orphans);
     const films = items.filter((f) => f.kind === 'MOVIE').length;
     const ovas = items.length - films;
-    if (groups.length + items.length + (rel.upcoming ? 1 : 0) < 2) return null;
-    return { rel, groups, orphans, films, ovas };
+    if (groups.length + items.length + (upcoming ? 1 : 0) < 2) return null;
+    return { rel, groups, orphans, films, ovas, upcoming, label, scope, saga, count: all.length + (upcoming ? 1 : 0) };
   }
+  const scopeWord = (L) => (L.scope === 'saga' ? 'Saga' : 'Licence');
   function licenceButtonHtml(key) {
     const rel = state.cache.relations.get(key);
     if (rel && rel.status === 'loading') return '<button type="button" class="licbtn" disabled aria-busy="true"><span>Licence</span><small>Recherche des séries, films et OVA…</small></button>';
     const L = licenceData(key);
     if (!L) return '';
-    const n = L.groups.length + (L.rel.upcoming ? 1 : 0);
+    const n = L.groups.length + (L.upcoming ? 1 : 0);
     return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '" aria-expanded="' + licenceOpen(key) + '" aria-controls="detail-licence">' +
-      '<span>' + (licenceOpen(key) ? '▴' : '▾') + ' Licence « ' + esc(L.rel.label || '') + ' »</span><small>' + [n ? n + ' série' + (n > 1 ? 's' : '') : '', L.films ? L.films + ' film' + (L.films > 1 ? 's' : '') : (n ? '0 film' : ''), L.ovas ? L.ovas + ' OVA / spécia' + (L.ovas > 1 ? 'ux' : 'l') : ''].filter(Boolean).join(' · ') + '</small></button>';
+      '<span>' + (licenceOpen(key) ? '▴' : '▾') + ' ' + scopeWord(L) + ' « ' + esc(L.label || '') + ' »</span><small>' + [n ? n + ' série' + (n > 1 ? 's' : '') : '', L.films ? L.films + ' film' + (L.films > 1 ? 's' : '') : (n ? '0 film' : ''), L.ovas ? L.ovas + ' OVA / spécia' + (L.ovas > 1 ? 'ux' : 'l') : ''].filter(Boolean).join(' · ') + '</small></button>';
   }
   function seriesProgress(key) {
     const t = getTrack(key);
@@ -4642,10 +4698,14 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
         (cur ? '<div class="lseries" aria-current="true">' + head + '</div>' : '<a class="lseries" href="' + C.detailHash('tv', x.id) + '">' + head + '</a>') +
         '<div class="lfilms">' + (g.films.length ? g.films.map(film).join('') : '<span class="hint">Aucun film ni OVA</span>') + '</div></div>';
     };
-    const ann = L.rel.upcoming ? '<div class="lera is-announced"><div class="lseries"><span class="lseries-poster lseries-ghost" aria-hidden="true"></span><span class="lseries-text"><span class="lseries-title">' + esc(L.rel.upcoming.title) + '</span>' +
-      '<span class="lseries-year">Série · ' + (L.rel.upcoming.status === 'NOT_YET_RELEASED' ? 'en production' : 'en cours') + '</span><span class="tagc t-ann">annoncée · pas encore sur TMDB</span></span></div><div class="lfilms"></div></div>' : '';
-    return '<div class="licence-head"><h2>Licence « ' + esc(L.rel.label || '') + ' »</h2><span class="hint">Ordre de sortie · chaque série suivie de ses films et OVA</span>' +
-      '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button></div>' +
+    const ann = L.upcoming ? '<div class="lera is-announced"><div class="lseries"><span class="lseries-poster lseries-ghost" aria-hidden="true"></span><span class="lseries-text"><span class="lseries-title">' + esc(L.upcoming.title) + '</span>' +
+      '<span class="lseries-year">Série · ' + (L.upcoming.status === 'NOT_YET_RELEASED' ? 'en production' : 'en cours') + '</span><span class="tagc t-ann">annoncée · pas encore sur TMDB</span></span></div><div class="lfilms"></div></div>' : '';
+    const full = L.saga ? licenceData(key, 'all') : null;
+    const scopes = L.saga && full ? '<div class="lscope" role="group" aria-label="Afficher la saga ou toute la licence">' +
+      '<button type="button" data-action="licence-scope" data-scope="saga" data-key="' + key + '" aria-pressed="' + (L.scope === 'saga') + '">Saga « ' + esc(L.saga.label) + ' » · ' + L.saga.keys.length + '</button>' +
+      '<button type="button" data-action="licence-scope" data-scope="all" data-key="' + key + '" aria-pressed="' + (L.scope === 'all') + '">Toute la licence « ' + esc(full.label || '') + ' » · ' + full.count + '</button></div>' : '';
+    return '<div class="licence-head"><h2>' + scopeWord(L) + ' « ' + esc(L.label || '') + ' »</h2><span class="hint">Ordre de sortie · chaque série suivie de ses films et OVA</span>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button>' + scopes + '</div>' +
       L.groups.map(era).join('') + ann + (L.orphans.length ? '<div class="lera"><div class="lseries"><span class="lseries-text"><span class="lseries-title">' + (L.groups.length ? 'Autres films' : 'Films') + '</span></span></div><div class="lfilms">' + L.orphans.map(film).join('') + '</div></div>' : '');
   }
   /* Films rangés avec cette série dans sa licence, avec une recherche « Quand le regarder ? » pour chacun. */

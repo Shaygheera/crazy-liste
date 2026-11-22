@@ -99,6 +99,7 @@ SHOWS[229] = { base: show(229, 'Et si… ?', { first_air_date: '2021-08-11' }), 
 // (fiche 174, d'une autre époque), saison 4 annoncée (77) et un crossover (78, personnages communs) à ignorer.
 SHOWS[225] = { base: show(225, 'Anime Pont', { first_air_date: '2018-04-01', original_name: 'アニメ橋', original_language: 'ja', genre_ids: [16], origin_country: ['JP'] }), status: 'Returning Series', seasons: [[1, range(1, 2)], [2, range(1, 2)], [3, range(1, 2)]], hidden: true };
 SHOWS[232] = { base: show(232, 'Crossover Quartet', { first_air_date: '2019-04-09', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
+SHOWS[234] = { base: show(234, 'Crossover Quintet', { first_air_date: '2021-01-12', original_language: 'ja', genre_ids: [16] }), status: 'Ended', seasons: [[1, range(1, 2)]], hidden: true };
 MOVIES[172] = movie(172, 'Anime Pont : le film', { release_date: '2021-07-01', original_language: 'ja', genre_ids: [16], _hidden: true });
 MOVIES[173] = movie(173, 'Gaiden Pont', { release_date: '2022-03-01', original_language: 'ja', genre_ids: [16], _hidden: true });
 MOVIES[174] = movie(174, 'Film sans rapport', { release_date: '1995-01-01', original_language: 'ja', genre_ids: [16], _hidden: true });
@@ -127,7 +128,9 @@ const WD_GROUPS = {
   Q965: { label: 'univers de Jouets Test', en: 'Jouets Test universe', types: ['Q559618'], rel: 'universe', members: [['movie', 160], ['movie', 161], ['movie', 167]] },
   Q970: { label: 'univers de Trône Test', en: 'Trône Test universe', types: ['Q559618'], rel: 'universe', members: [['tv', 230], ['tv', 231], ['tv', 233]] },
   Q973: { label: 'Univers Marvelo', en: 'Marvelo Universe', types: ['Q196600'], rel: 'franchise', members: [['tv', 228], ['tv', 229]] },
-  Q974: { label: 'Pont', en: 'Pont', types: ['Q196600'], rel: 'franchise', members: [['tv', 225], ['tv', 232], ['movie', 175]] }
+  Q974: { label: 'Pont', en: 'Pont', types: ['Q196600'], rel: 'franchise', members: [['tv', 225], ['tv', 232], ['movie', 175]] },
+  // œuvre d'origine (série de romans) : l'anime 225, et un crossover adapté de plusieurs séries (234, sans numéro AniList dans Wikidata)
+  Q975: { label: 'Pont (romans)', en: 'Pont (novels)', types: ['Q104213567'], rel: 'source', members: [['tv', 225], ['tv', 234]], multiSource: ['tv-234'] }
 };
 // Chaîne de diffusion (P449) : un univers ne relie que les œuvres de la même chaîne, du même studio ou du même créateur
 const WD_NETWORK = { 'tv-230': 'Q23633', 'tv-231': 'Q23633', 'tv-233': 'Q1137' };
@@ -168,7 +171,8 @@ export async function handleWikidata(route) {
       // univers : seulement les membres de la même chaîne que l'œuvre ouverte
       const self = /FILTER EXISTS[\s\S]*?wd:(Q\d+) wdt:P449/.exec(part);
       const net = self ? WD_NETWORK[keyOfFakeQ(self[1])] : null;
-      const members = g ? g.members.filter(([t, i]) => !self || (net && WD_NETWORK[t + '-' + i] === net)) : [];
+      const notCrossover = part.includes('FILTER NOT EXISTS { ?m wdt:P144 ?other.');
+      const members = g ? g.members.filter(([t, i]) => (!self || (net && WD_NETWORK[t + '-' + i] === net)) && !(notCrossover && (g.multiSource || []).includes(t + '-' + i))) : [];
       if (g) for (const [t, i] of members.slice(0, Number(limit))) bindings.push({ g: lit(qid), m: uri(fakeQ(t, i)), [t]: lit(i), ...(WD_MEMBER_AL[t + '-' + i] ? { al: lit(WD_MEMBER_AL[t + '-' + i]) } : {}) });
     }
   } else { // numéros AniList / IMDb → fiches TMDB

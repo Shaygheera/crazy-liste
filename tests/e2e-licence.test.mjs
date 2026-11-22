@@ -95,6 +95,8 @@ describe('Licence : Wikidata', () => {
     const q = C.wikidataMembersQuery([{ id: 'Q1', props: ['P179', 'P8345'], cap: 120 }, { id: 'Q1 }', props: ['P179'], cap: 5 }, { id: 'Q7', props: ['P144'], cap: 40 }]);
     assert.match(q, /\{ \?m wdt:P179 wd:Q1\. \} UNION \{ \?m wdt:P8345 wd:Q1\. \} BIND\("Q1" AS \?g\).* LIMIT 121 \}/);
     assert.match(q, /\{ \?m wdt:P144 wd:Q7\. \} BIND\("Q7" AS \?g\).* LIMIT 41 \}/);
+    assert.match(q, /FILTER NOT EXISTS \{ \?m wdt:P144 \?other\. FILTER\(\?other != wd:Q7\) \?other wdt:P31 \?otherType\. VALUES \?otherType \{ wd:Q21198342 /, 'adapté aussi d’une autre série : crossover écarté');
+    assert.doesNotMatch(q.split('BIND("Q7"')[0], /FILTER NOT EXISTS/, 'pas pour une franchise');
     assert.doesNotMatch(q, /Q1 \}/, 'numéro invalide ignoré');
     assert.match(C.wikidataMembersQuery([]), /FILTER\(false\)/);
     const uni = { id: 'Q8', props: ['P1434'], cap: 120, fallback: true };
@@ -143,11 +145,16 @@ describe('Licence : Wikidata', () => {
 describe('Licence : AniList et ARM', () => {
   const n = (id, format, year, rels = [], status = 'FINISHED') => ({ id, type: 'ANIME', format, status, title: { romaji: 'T' + id, english: null }, startDate: { year, month: 3, day: 4 },
     relations: { edges: rels.map(([r, x]) => ({ relationType: r, node: x })) } });
-  it('liens suivis (suites, préquelles, parente) et rattachés (parallèles, dérivés, alternatives) ; jamais les crossovers ni les adaptations', () => {
+  it('liens suivis (suites, préquelles, parente) et rattachés (parallèles, dérivés, alternatives, résumés) ; jamais les crossovers ni les adaptations', () => {
     const s2 = n(2, 'TV', 2018), film = n(3, 'MOVIE', 2019), ova = n(4, 'OVA', 2017), cross = n(5, 'TV', 2020), manga = Object.assign(n(6, 'MANGA', 2010), { type: 'MANGA' });
     const show = n(1, 'TV', 2016, [['SEQUEL', s2], ['SEQUEL', film], ['SIDE_STORY', ova], ['CHARACTER', cross], ['ADAPTATION', manga], ['OTHER', n(7, 'SPECIAL', 2013)],
       ['SUMMARY', n(8, 'SPECIAL', 2022)], ['SPIN_OFF', n(9, 'TV', 2021)], ['SIDE_STORY', ova]]);
-    assert.deepEqual(C.anilistLinks(show).map((l) => l.node.id + ':' + l.kind), ['2:follow', '3:follow', '4:leaf', '9:leaf']);
+    assert.deepEqual(C.anilistLinks(show).map((l) => l.node.id + ':' + l.kind), ['2:follow', '3:follow', '4:leaf', '8:leaf', '9:leaf'], 'résumé officiel (film « Episode of… ») rattaché');
+    const announced = C.normalizeAnilistMedia({ id: 1, type: 'ANIME', format: 'TV', status: 'FINISHED', relations: { edges: [{ relationType: 'ALTERNATIVE', node: { id: 20, type: 'ANIME', format: null, status: 'NOT_YET_RELEASED' } }, { relationType: 'SEQUEL', node: { id: 21, type: 'ANIME', format: null, status: 'FINISHED' } }] } });
+    assert.deepEqual(C.anilistLinks(announced).map((l) => l.node.id + ':' + l.node.format + ':' + l.kind), ['20:TV:follow'], 'œuvre annoncée sans format : série (ici une autre version, donc suivie) ; format inconnu d’une œuvre sortie : ignorée');
+    assert.equal(C.normalizeAnilistMedia(null), null);
+    const fmab = n(5114, 'TV', 2009, [['ALTERNATIVE', n(121, 'TV', 2003)], ['ALTERNATIVE', n(908, 'MOVIE', 2017)]]);
+    assert.deepEqual(C.anilistLinks(fmab).map((l) => l.node.id + ':' + l.kind), ['121:follow', '908:leaf'], 'autre version en série : suivie (même licence, ses films compris)');
     const fromFilm = n(3, 'MOVIE', 2019, [['SEQUEL', n(10, 'MOVIE', 2021)], ['SEQUEL', n(11, 'TV', 2022)], ['PARENT', n(1, 'TV', 2016)]]);
     assert.deepEqual(C.anilistLinks(fromFilm).map((l) => l.node.id + ':' + l.kind), ['10:leaf', '11:follow', '1:follow'], 'd’un film : vers une série seulement, jamais de film en film');
     assert.equal(C.anilistStep(show, 'SEQUEL').id, 2);
@@ -401,6 +408,7 @@ describe('Licence : fiche', () => {
     assert.deepEqual(await films(page, 'tv-225'), ['anilist-73', 'movie-172', 'anilist-79', 'movie-173'], 'OVA (spécial de la série), film-pont, film mal relié (lien AniList seulement), film dérivé');
     assert.equal(await page.locator('#detail-licence [data-item-key="movie-174"]').count(), 0, 'fiche TMDB d’une autre époque : écartée');
     assert.equal(await page.locator('#detail-licence [data-series="tv-232"]').count(), 0, 'crossover : ignoré, même s’il est dans la franchise Wikidata (anime absent du graphe AniList)');
+    assert.equal(await page.locator('#detail-licence [data-series="tv-234"]').count(), 0, 'crossover adapté de plusieurs séries (sans numéro AniList) : ignoré');
     assert.deepEqual(await films(page).then((all) => all.filter((k) => !k.startsWith('anilist-') && !['movie-172', 'movie-173'].includes(k))), ['movie-175'], 'film live de la franchise : gardé (« Autres films »)');
     assert.ok(!armState.asked.includes(78), 'le crossover n’est même pas recherché');
     assert.deepEqual(await page.$$eval('#detail-films .film-row', (els) => els.map((e) => e.dataset.kind)), ['OVA', 'MOVIE', 'MOVIE', 'MOVIE']);

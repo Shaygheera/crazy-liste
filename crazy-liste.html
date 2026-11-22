@@ -1386,12 +1386,15 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   }
   /* Membres ayant une fiche TMDB, avec leur numéro AniList : une sous-requête bornée par groupe (taille maximale + 1, pour reconnaître un groupe trop grand).
      Univers (en secours) : seulement les œuvres qui partagent avec l'œuvre ouverte (item) sa chaîne, son studio ou son créateur — « Game of Thrones » ↔
-     « House of the Dragon » (HBO), mais pas les adaptations indépendantes d'un personnage du domaine public (Sherlock Holmes, Dracula…). */
+     « House of the Dragon » (HBO), mais pas les adaptations indépendantes d'un personnage du domaine public (Sherlock Holmes, Dracula…).
+     Œuvre d'origine : pas les œuvres adaptées aussi d'une autre série (crossover comme « Isekai Quartet », adapté de quatre séries de romans). */
+  const WD_SERIES_SOURCES = ['Q21198342', 'Q104213567', 'Q14406742', 'Q1667921', 'Q277759', 'Q867335', 'Q7058673'];
   function wikidataMembersQuery(plan, item) {
     const self = /^Q\d{1,10}$/.test(item || '') ? item : '';
     const parts = (Array.isArray(plan) ? plan : []).filter((g) => isObj(g) && /^Q\d{1,10}$/.test(g.id || '') && Array.isArray(g.props) && (!g.fallback || self)).slice(0, 8).map((g) => {
       const links = g.props.filter((p) => ['P179', 'P8345', 'P1434', 'P144'].includes(p)).map((p) => '{ ?m wdt:' + p + ' wd:' + g.id + '. }').join(' UNION ');
-      const same = g.fallback ? ' FILTER EXISTS { ' + ['P449', 'P272', 'P170'].map((p) => '{ ?m wdt:' + p + ' ?same. wd:' + self + ' wdt:' + p + ' ?same. }').join(' UNION ') + ' }' : '';
+      const same = (g.fallback ? ' FILTER EXISTS { ' + ['P449', 'P272', 'P170'].map((p) => '{ ?m wdt:' + p + ' ?same. wd:' + self + ' wdt:' + p + ' ?same. }').join(' UNION ') + ' }' : '') +
+        (g.props.includes('P144') ? ' FILTER NOT EXISTS { ?m wdt:P144 ?other. FILTER(?other != wd:' + g.id + ') ?other wdt:P31 ?otherType. VALUES ?otherType { ' + WD_SERIES_SOURCES.map((t) => 'wd:' + t).join(' ') + ' } }' : '');
       return '{ SELECT DISTINCT ?g ?m ?tv ?movie ?al WHERE { ' + links + ' BIND("' + g.id + '" AS ?g) OPTIONAL { ?m wdt:P4983 ?tv. } OPTIONAL { ?m wdt:P4947 ?movie. } ' +
         'FILTER(BOUND(?tv) || BOUND(?movie))' + same + ' OPTIONAL { ?m wdt:P8729 ?al. } } LIMIT ' + (Math.min(200, Math.max(1, Math.trunc(num(g.cap)))) + 1) + ' }';
     });
@@ -1478,6 +1481,14 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
   const anilistDate = (n) => (n && n.startDate && n.startDate.year ? n.startDate.year * 10000 + (n.startDate.month || 12) * 100 + (n.startDate.day || 28) : 99999999);
   const alEdges = (media) => (isObj(media) && isObj(media.relations) && Array.isArray(media.relations.edges) ? media.relations.edges : [])
     .filter((e) => isObj(e) && isObj(e.node) && e.node.type === 'ANIME' && isPosInt(e.node.id));
+  /* Média AniList tel que reçu : une œuvre annoncée sans format encore connu est traitée comme une série (« THE ONE PIECE », remake annoncé). */
+  function normalizeAnilistMedia(m) {
+    const fix = (n) => (isObj(n) && !n.format && n.status === 'NOT_YET_RELEASED' ? Object.assign({}, n, { format: 'TV' }) : n);
+    if (!isObj(m)) return null;
+    const out = fix(m);
+    if (isObj(m.relations) && Array.isArray(m.relations.edges)) out.relations = { edges: m.relations.edges.map((e) => (isObj(e) ? Object.assign({}, e, { node: fix(e.node) }) : e)) };
+    return out;
+  }
   /* Maillon suivant (SEQUEL) ou précédent (PREQUEL) : série d'abord, sinon film (saison 2 → film → saison 3). */
   function anilistStep(media, dir, allowMovie) {
     const pick = (formats) => {
@@ -1486,9 +1497,11 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     };
     return pick(ANILIST_MAIN_FORMATS) || (allowMovie ? pick(['MOVIE']) : null);
   }
-  /* Liens suivis : suites, préquelles et série parente depuis une série ; depuis un film / OVA, seulement vers une série
-     (« Konosuba » saison 2 → film → saison 3), jamais de film en film. Rattachés sans être suivis : histoires parallèles, dérivés, versions alternatives
-     (et films reliés entre eux). Jamais : personnages communs (crossovers), adaptations, résumés, compilations, « autres ». */
+  /* Liens suivis : suites, préquelles, série parente et version alternative d'une série (« Fullmetal Alchemist » ↔ « Brotherhood ») depuis une série ;
+     depuis un film / OVA, seulement vers une série
+     (« Konosuba » saison 2 → film → saison 3), jamais de film en film. Rattachés sans être suivis : histoires parallèles, dérivés, versions alternatives,
+     résumés et compilations officiels (« One Piece : Episode of Chopper ») et films reliés entre eux. Jamais : personnages communs (crossovers),
+     adaptations (manga, roman), « autres ». */
   function anilistLinks(media) {
     const fromShow = isObj(media) && ANILIST_MAIN_FORMATS.includes(media.format);
     const seen = new Set();
@@ -1498,7 +1511,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       const toShow = ANILIST_MAIN_FORMATS.includes(e.node.format);
       let kind = null;
       if (['PREQUEL', 'SEQUEL', 'PARENT'].includes(e.relationType)) kind = fromShow || toShow ? 'follow' : 'leaf';
-      else if (['SIDE_STORY', 'SPIN_OFF', 'ALTERNATIVE'].includes(e.relationType)) kind = 'leaf';
+      else if (e.relationType === 'ALTERNATIVE' && fromShow && toShow) kind = 'follow';
+      else if (['SIDE_STORY', 'SPIN_OFF', 'ALTERNATIVE', 'SUMMARY', 'COMPILATION'].includes(e.relationType)) kind = 'leaf';
       if (!kind) continue;
       seen.add(e.node.id);
       out.push({ kind, rel: e.relationType, node: e.node });
@@ -1961,7 +1975,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     personalEntries, computeResume, computeStats, computeLibrary, collectionNeighbors,
     normTitle, licenceBase, licenceBaseOf, inLicence, sameLine, licenceGroups, watchWhenSearchUrl, parseWikidataRelations, wikidataQuery,
     wikidataGroupPlan, wikidataMembersQuery, parseWikidataMembers, pickWikidataGroups, cleanGroupLabel, licenceLabel, wikidataIdsQuery, parseWikidataIds,
-    ANILIST_BATCH, anilistBatchQuery, anilistStep, anilistLinks, anilistTitle, anilistSearchQuery, pickAnilistMatch, armStart, anilistTmdbMap, yearsAgree, anilistLicence, attachExtras,
+    ANILIST_BATCH, anilistBatchQuery, normalizeAnilistMedia, anilistStep, anilistLinks, anilistTitle, anilistSearchQuery, pickAnilistMatch, armStart, anilistTmdbMap, yearsAgree, anilistLicence, attachExtras,
     stampSeen, computeInsights, relativeDay, computeAgenda, agendaGroups,
     parseRoute, buildHash, detailHash
   });
@@ -3052,7 +3066,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       for (const id of ids) one.push((await anilistFetch([id]))[0]);
       return one;
     }
-    return ids.map((id) => { const m = res.data['a' + id]; return C.isObj(m) && m.id === id ? m : null; });
+    return ids.map((id) => { const m = res.data['a' + id]; return C.isObj(m) && m.id === id ? C.normalizeAnilistMedia(m) : null; });
   }
   function anilistMany(ids) {
     const want = [...new Set((ids || []).filter((x) => Number.isInteger(x) && x > 0))];
@@ -3227,7 +3241,7 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     }
     const lic = C.anilistLicence(g.nodes, g.followed, g.leaves, map, g.via);
     const keys = [...new Set(lic.chain.flatMap((c) => [c.key, c.show]).concat(lic.series, lic.extras.map((e) => e.key)).filter((k) => k && k !== key))];
-    return { partial, chain: lic.chain, extras: lic.extras, keys, root: lic.root, rootKey: lic.rootKey, alIds: all.map((n) => n.id) };
+    return { partial, chain: lic.chain, extras: lic.extras, keys, root: lic.root, rootKey: lic.rootKey, alIds: all.map((n) => n.id), cut: g.cut };
   }
   /* Partie Wikidata : groupes retenus (C.wikidataGroupPlan), membres comptés et bornés ; les univers seuls ne servent qu'en secours. */
   async function wikidataGroupPart(key, w) {
@@ -3257,9 +3271,10 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     const add = (x) => { if (x && (x.type === 'tv' || x.type === 'movie') && !items.some((y) => y.key === x.key)) items.push(x); };
     parts.forEach(add);
     // anime : une œuvre de la franchise qui est elle-même un anime doit être dans le graphe AniList de la licence (sinon : crossover comme
-    // « Isekai Quartet », ou autre continuité) ; les adaptations hors anime (film live…) restent
+    // « Isekai Quartet », ou autre continuité) ; les adaptations hors anime (film live…) restent. Graphe coupé (franchise immense comme Pokémon) :
+    // on ne peut pas conclure, la franchise Wikidata est gardée telle quelle.
     const inGraph = new Set(A && A.alIds ? A.alIds : []);
-    const groupKeys = A && A.alIds && A.alIds.length ? G.keys.filter((k) => !(G.al && G.al[k]) || G.al[k].some((id) => inGraph.has(id))) : G.keys;
+    const groupKeys = A && A.alIds && A.alIds.length && !A.cut ? G.keys.filter((k) => !(G.al && G.al[k]) || G.al[k].some((id) => inGraph.has(id))) : G.keys;
     const wanted = [...new Set([...(A ? A.keys : []), ...groupKeys, ...w.next, ...w.prev])].filter((k) => k !== key && !items.some((y) => y.key === k)).slice(0, 100);
     const got = await summariesOf(wanted);
     if (got.failed) partial = true;

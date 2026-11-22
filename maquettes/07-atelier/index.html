@@ -1,0 +1,229 @@
+<title>Atelier Crazy Liste</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700;800&family=Archivo:wght@400;500;600;700;800;900&family=Roboto+Flex:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,800&family=Sora:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=Albert+Sans:wght@400;500;600;700;800&family=Red+Hat+Display:wght@400;500;600;700;800&family=Familjen+Grotesk:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="designs.css">
+<style>
+/* Atelier : une table lumineuse neutre pour regarder des maquettes, sans couleur propre qui ferait concurrence aux designs. */
+:root{--a-bg:#ececef;--a-panel:#fff;--a-fg:#141418;--a-fg2:#45454e;--a-mut:#686873;--a-line:#d6d6dc;--a-acc:#141418;--a-accfg:#fff;--a-pick:#c81d5e;--a-stage:#d9d9de;
+  --a-f:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--a-bg:#121215;--a-panel:#1b1b20;--a-fg:#f1f1f4;--a-fg2:#c3c3cb;--a-mut:#9a9aa5;--a-line:#2e2e36;--a-acc:#f1f1f4;--a-accfg:#121215;--a-pick:#ff6b9d;--a-stage:#0a0a0c;color-scheme:dark}}
+:root[data-theme="dark"]{--a-bg:#121215;--a-panel:#1b1b20;--a-fg:#f1f1f4;--a-fg2:#c3c3cb;--a-mut:#9a9aa5;--a-line:#2e2e36;--a-acc:#f1f1f4;--a-accfg:#121215;--a-pick:#ff6b9d;--a-stage:#0a0a0c;color-scheme:dark}
+body{background:var(--a-bg);color:var(--a-fg);font:400 15px/1.5 var(--a-f)}
+.app{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;max-width:1500px;margin:0 auto}
+.app button,.app select{font:inherit;color:inherit}
+.app :focus-visible{outline:2px solid var(--a-pick);outline-offset:2px}
+.ah{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px;margin-bottom:16px}
+.ah h1{margin:0;font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.035em;line-height:1.1;text-wrap:balance}
+.ah p{margin:6px 0 0;color:var(--a-fg2);max-width:70ch}
+.picked{font-size:14px;color:var(--a-fg2)}.picked b{color:var(--a-pick)}
+.tabs{display:flex;gap:4px;padding:4px;border-radius:10px;background:var(--a-panel);box-shadow:inset 0 0 0 1px var(--a-line);width:max-content;max-width:100%;overflow-x:auto;margin-bottom:18px}
+.tabs a{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:7px;color:var(--a-fg2);font-weight:600;text-decoration:none;white-space:nowrap}
+.tabs a[aria-current="page"]{background:var(--a-acc);color:var(--a-accfg)}
+.tabs small{font-weight:500;opacity:.75}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 16px}
+.filters button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-panel);font-size:13.5px;font-weight:600;cursor:pointer;color:var(--a-fg2)}
+.filters button[aria-pressed="true"]{background:var(--a-acc);color:var(--a-accfg);border-color:var(--a-acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:16px}
+.pc{display:flex;flex-direction:column;border-radius:12px;background:var(--a-panel);box-shadow:inset 0 0 0 1px var(--a-line);overflow:hidden;min-width:0}
+.pc.is-picked{box-shadow:inset 0 0 0 2px var(--a-pick)}
+.thumb{position:relative;height:250px;overflow:hidden;background:var(--a-stage);cursor:zoom-in;border:0;padding:0;display:block;width:100%}
+.thumb .stage{pointer-events:none}
+.thumb img{width:100%;height:100%;object-fit:cover;object-position:top}
+.pcb{display:grid;gap:4px;padding:12px 14px 14px}.pcb p{margin:0}
+.pct{display:flex;align-items:baseline;gap:8px}
+.pct b{font-size:16.5px;letter-spacing:-.015em}.pct span{font:600 12.5px var(--a-f);color:var(--a-mut);font-variant-numeric:tabular-nums}
+.pcm{font-size:13px;color:var(--a-fg2)}
+.pcd{font-size:13.5px;color:var(--a-mut);line-height:1.45}
+.pca{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ab{text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--a-line);background:none;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--a-fg)}
+.ab.pri{background:var(--a-acc);color:var(--a-accfg);border-color:var(--a-acc)}
+.ab[aria-pressed="true"]{color:var(--a-pick);border-color:var(--a-pick)}
+.ab svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ab[aria-pressed="true"] svg{fill:currentColor}
+.stagewrap{border-radius:10px;overflow:hidden;background:var(--a-stage);box-shadow:inset 0 0 0 1px var(--a-line)}
+.stage{zoom:var(--z,1);width:1280px}
+.stage.old{width:1440px}
+.stage.old figure{margin:0}.stage.old figure+figure{margin-top:28px}
+.stage.old figcaption{font:600 26px/1.3 var(--a-f);padding:16px 20px;color:var(--a-fg);background:var(--a-panel)}
+.stage.old img{display:block;width:100%;height:auto}
+.dbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:12px}
+.dbar h2{margin:0;font-size:22px;letter-spacing:-.02em}
+.dbar .grow{flex:1;min-width:0}
+.dbar p{margin:2px 0 0;color:var(--a-fg2);font-size:14px}
+.note{margin:14px 0 0;padding:12px 14px;border-radius:10px;background:var(--a-panel);box-shadow:inset 0 0 0 1px var(--a-line);font-size:13.5px;color:var(--a-fg2)}
+.note b{color:var(--a-fg)}
+.cmpbar{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;margin-bottom:12px}
+.cmpbar label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--a-fg2);min-width:0}
+.cmpbar select{min-height:42px;padding:0 10px;border-radius:8px;border:1px solid var(--a-line);background:var(--a-panel);width:100%;font-size:14.5px}
+.cmpopts{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:0 0 12px;font-size:14px;color:var(--a-fg2)}
+.cmpopts label{display:inline-flex;align-items:center;gap:8px;min-height:36px;cursor:pointer}
+.cmpopts input{width:18px;height:18px;accent-color:var(--a-pick)}
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pane{display:grid;grid-template-rows:auto 1fr;min-width:0}
+.pane h3{margin:0 0 6px;font-size:15px;display:flex;gap:8px;align-items:baseline}.pane h3 span{font-weight:500;color:var(--a-mut);font-size:13px}
+.pane .stagewrap{height:min(78vh,1100px);overflow:auto}
+@media (max-width:760px){.panes{grid-template-columns:1fr}.pane .stagewrap{height:70vh}.cmpbar{grid-template-columns:1fr}.cmpbar .ab{justify-self:start}.thumb{height:200px}}
+@media (prefers-reduced-motion:no-preference){.pc{transition:box-shadow .15s}.ab,.tabs a{transition:background .15s,color .15s}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/></symbol>
+  <symbol id="i-resume" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-lib" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></symbol>
+  <symbol id="i-heartf" viewBox="0 0 24 24"><path fill="currentColor" d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"/></symbol>
+  <symbol id="i-stats" viewBox="0 0 24 24"><path d="M5 20v-8M11 20V5M17 20v-5"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v5M12 15.5v5M3.5 12h5M15.5 12h5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chevu" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-chevr" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-okc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.7 2.7L16.2 9.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.5v13l11-6.5z"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5V9h4.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-todo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></symbol>
+  <symbol id="i-prog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path fill="currentColor" d="M12 4a8 8 0 0 1 0 16z"/></symbol>
+  <symbol id="i-seen" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="currentColor"/><path d="M8 12.3l2.7 2.7L16.2 9.5" stroke="#fff" stroke-width="2.6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/></symbol>
+  <symbol id="i-cols" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h13M17 12l4 4-4 4M21 16H8"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="ah">
+    <div><h1>Atelier Crazy Liste</h1>
+      <p>Seize nouvelles propositions sur la même fiche d’Arcane, les anciennes maquettes et le site actuel. Ouvre une proposition en grand, marque celles qui te plaisent, puis compare-les deux par deux.</p></div>
+    <p class="picked" id="picked"></p>
+  </header>
+  <nav class="tabs" aria-label="Vues">
+    <a href="#galerie" data-v="galerie">Nouvelles <small>16</small></a>
+    <a href="#anciennes" data-v="anciennes">Anciennes et site actuel <small>7</small></a>
+    <a href="#comparer" data-v="comparer">Comparer</a>
+  </nav>
+  <main id="view"></main>
+</div>
+
+<script src="designs.js"></script>
+<script>
+(function () {
+const D = window.CL_DESIGNS, R = window.CL_render;
+const M = {"00-site-actuel":[["01-accueil",1440,3451],["02-fiche-serie",1440,2174],["03-fiche-film",1440,1378],["04-recherche",1440,1431],["05-bibliotheque",1440,1317],["06-reprendre",1440,900],["07-a-venir",1440,900],["08-statistiques",1440,900],["09-licences",1440,900],["10-licence-mcu",1440,3121],["11-reglages",1440,1105],["12-fenetre-licence",1440,900],["13-fiche-theme-clair",1440,1709],["14-accueil-theme-clair",1440,900],["15-mobile-fiche",390,2817]],"01-streaming-rejetee":[["maquette-1",1440,1434],["maquette-2",1440,956]],"02-suivi":[["suivi-1",1440,1335],["suivi-2",1440,834],["suivi-3",1440,1276]],"03-refonte-suisse":[["01-accueil",1440,3419],["02-fiche-serie",1440,2211],["03-fiche-film",1440,1415],["04-recherche",1440,1405],["05-bibliotheque",1440,1276],["06-reprendre",1440,900],["07-a-venir",1440,900],["08-statistiques",1440,900],["09-licences",1440,900],["10-licence-mcu",1440,3226],["11-reglages",1440,1231],["12-fenetre-licence",1440,900],["13-fiche-theme-clair",1440,1737],["14-accueil-theme-clair",1440,900],["15-mobile-fiche",390,2846]],"04-trois-directions":[["d-1",1440,900],["d-2",1440,1231],["d-3",1440,901],["d-4",1440,1210],["d-5",1440,901],["d-6",1440,1564]],"05-immersive-v1":[["m-1",1440,1010],["m-2",1440,1377],["m-3",1440,1011],["m-4",1440,1378]],"06-immersive-v2":[["m-1",1440,1000],["m-2",1440,1091],["m-3",1440,1000],["m-4",1440,1091]]};
+const CAP = { '01-accueil': 'Accueil', '02-fiche-serie': 'Fiche d’une série', '03-fiche-film': 'Fiche d’un film', '04-recherche': 'Recherche', '05-bibliotheque': 'Bibliothèque', '06-reprendre': 'Reprendre', '07-a-venir': 'À venir', '08-statistiques': 'Statistiques', '09-licences': 'Licences', '10-licence-mcu': 'Licence Marvel', '11-reglages': 'Réglages', '12-fenetre-licence': 'Fenêtre Licence', '13-fiche-theme-clair': 'Fiche, thème clair', '14-accueil-theme-clair': 'Accueil, thème clair', '15-mobile-fiche': 'Fiche sur téléphone',
+  'maquette-1': 'Accueil', 'maquette-2': 'Fiche', 'suivi-1': 'Mon suivi', 'suivi-2': 'Liste', 'suivi-3': 'Fiche', 'd-1': 'A Éditorial, accueil', 'd-2': 'A Éditorial, fiche', 'd-3': 'B Carnet, accueil', 'd-4': 'B Carnet, fiche', 'd-5': 'C Néo-brutal, accueil', 'd-6': 'C Néo-brutal, fiche', 'm-1': 'Accueil sombre', 'm-2': 'Fiche sombre', 'm-3': 'Accueil clair', 'm-4': 'Fiche clair' };
+const OLD = [
+  { id: 'site', dir: '00-site-actuel', n: 'Site actuel', a: 'La version en ligne aujourd’hui, avec les données de test. C’est la référence.', cover: 1 },
+  { id: 'o6', dir: '06-immersive-v2', n: 'Immersive v2', a: 'Ta préférée jusqu’ici : arrondis réduits, panneaux collés aux bords.', cover: 1 },
+  { id: 'o5', dir: '05-immersive-v1', n: 'Immersive v1', a: 'Tu as aimé la direction, mais trop d’arrondis et trop de place perdue.', cover: 1 },
+  { id: 'o4', dir: '04-trois-directions', n: 'Trois directions', a: 'Éditorial, Carnet, Néo-brutal : « pas très moderne, ça fait ancien ».', cover: 1 },
+  { id: 'o3', dir: '03-refonte-suisse', n: 'Refonte suisse', a: 'Le vrai site restylé en sombre : « ça fait très IA ».', cover: 1 },
+  { id: 'o2', dir: '02-suivi', n: 'Centrée sur le suivi', a: 'Il manquait encore beaucoup d’infos du site.', cover: 2 },
+  { id: 'o1', dir: '01-streaming-rejetee', n: 'Façon streaming', a: 'Rejetée : elle oubliait le suivi, les notes, etc.', cover: 1 }
+];
+const $ = (s, el) => (el || document).querySelector(s);
+const view = $('#view');
+const svg = (k) => '<svg aria-hidden="true"><use href="#i-' + k + '"/></svg>';
+let picked = [];
+try { picked = JSON.parse(localStorage.getItem('cl-retenus') || '[]'); } catch (e) { picked = []; }
+const save = () => { try { localStorage.setItem('cl-retenus', JSON.stringify(picked)); } catch (e) {} };
+const nameOf = (k) => { const d = D.find((x) => 'n' + x.id === k); if (d) return d.id + ' ' + d.n; const o = OLD.find((x) => x.id === k); return o ? o.n : k; };
+function showPicked() {
+  $('#picked').innerHTML = picked.length ? 'Tu as retenu : <b>' + picked.map(nameOf).join(', ') + '</b>' : 'Marque d’une étoile les propositions qui te plaisent.';
+}
+let cmp = { a: 'n09', b: 'o6', sync: true };
+try { Object.assign(cmp, JSON.parse(localStorage.getItem('cl-cmp') || '{}')); } catch (e) {}
+const saveCmp = () => { try { localStorage.setItem('cl-cmp', JSON.stringify(cmp)); } catch (e) {} };
+
+/* mise à l'échelle des scènes : chaque maquette est dessinée à 1280 px (1440 pour les captures) puis réduite à la largeur disponible */
+const ro = new ResizeObserver((entries) => entries.forEach((en) => { const st = en.target.querySelector(':scope > .stage'); if (st) st.style.setProperty('--z', (en.contentRect.width / (st.classList.contains('old') ? 1440 : 1280)).toFixed(4)); }));
+const watch = (root) => root.querySelectorAll('.thumb,.stagewrap').forEach((w) => ro.observe(w));
+const stageNew = (d) => '<div class="stage">' + R(d) + '</div>';
+const stageOld = (o) => '<div class="stage old">' + M[o.dir].filter(([n, w]) => w > 400).map(([n]) => '<figure><figcaption>' + (CAP[n] || n) + '</figcaption><img loading="lazy" src="img/' + o.dir + '/' + n + '.webp" alt="' + o.n + ' : ' + (CAP[n] || n) + '"></figure>').join('') + '</div>';
+const pickBtn = (k) => '<button class="ab" data-pick="' + k + '" aria-pressed="' + picked.includes(k) + '">' + svg('star') + (picked.includes(k) ? 'Retenue' : 'Retenir') + '</button>';
+const cmpBtn = (k) => '<button class="ab" data-cmp="' + k + '">' + svg('cols') + 'Comparer</button>';
+
+let filter = 'Toutes';
+function galerie() {
+  const F = ['Toutes', 'Sombre', 'Clair', 'Sans arrondi', 'Retenues'];
+  const list = D.filter((d) => filter === 'Toutes' || (filter === 'Retenues' ? picked.includes('n' + d.id) : filter === 'Sans arrondi' ? ['01', '04', '10'].includes(d.id) : d.th === filter));
+  view.innerHTML = '<div class="filters" role="group" aria-label="Filtrer">' + F.map((f) => '<button data-f="' + f + '" aria-pressed="' + (f === filter) + '">' + f + '</button>').join('') + '</div>' +
+    '<div class="grid">' + (list.length ? list.map((d) => '<article class="pc' + (picked.includes('n' + d.id) ? ' is-picked' : '') + '"><div class="thumb" role="link" tabindex="0" data-open="p-' + d.id + '" aria-label="Voir ' + d.n + ' en grand">' + stageNew(d) + '</div>' +
+      '<div class="pcb"><p class="pct"><span>' + d.id + '</span><b>' + d.n + '</b></p><p class="pcm">' + d.style + ' · ' + d.lay + ' · ' + d.font + '</p><p class="pcd">' + d.d + '</p>' +
+      '<div class="pca"><a class="ab pri" href="#p-' + d.id + '">Voir en grand</a>' + pickBtn('n' + d.id) + cmpBtn('n' + d.id) + '</div></div></article>').join('') : '<p>Aucune proposition retenue pour l’instant.</p>') + '</div>';
+  watch(view);
+}
+function anciennes() {
+  view.innerHTML = '<div class="grid">' + OLD.map((o) => { const c = M[o.dir][o.cover - 1][0]; return '<article class="pc' + (picked.includes(o.id) ? ' is-picked' : '') + '"><div class="thumb" role="link" tabindex="0" data-open="a-' + o.id + '" aria-label="Voir ' + o.n + '"><img loading="lazy" src="img/' + o.dir + '/' + c + '.webp" alt=""></div>' +
+    '<div class="pcb"><p class="pct"><b>' + o.n + '</b><span>' + M[o.dir].length + ' captures</span></p><p class="pcd">' + o.a + '</p><div class="pca"><a class="ab pri" href="#a-' + o.id + '">Voir les captures</a>' + pickBtn(o.id) + cmpBtn(o.id) + '</div></div></article>'; }).join('') + '</div>';
+}
+function detailNew(id) {
+  const i = D.findIndex((d) => d.id === id), d = D[i];
+  if (!d) return galerie();
+  const prev = D[(i + D.length - 1) % D.length], next = D[(i + 1) % D.length];
+  view.innerHTML = '<div class="dbar"><a class="ab" href="#galerie">' + svg('left') + 'Galerie</a><div class="grow"><h2>' + d.id + ' · ' + d.n + '</h2><p>' + d.style + ' · ' + d.lay + ' · police ' + d.font + ' · thème ' + d.th.toLowerCase() + '</p></div>' +
+    pickBtn('n' + d.id) + cmpBtn('n' + d.id) + '<a class="ab" href="#p-' + prev.id + '">' + svg('left') + prev.id + '</a><a class="ab" href="#p-' + next.id + '">' + next.id + svg('chevr') + '</a></div>' +
+    '<div class="stagewrap">' + stageNew(d) + '</div>' +
+    '<p class="note"><b>' + d.d + '</b><br>Mêmes infos que le site sur chaque proposition : note TMDB colorée, disponibilité, statut, progression par épisode, Favori / Watchlist, boutons Saga et Licence sous l’affiche, diffusion, offres, résumé, saisons et épisodes (À voir / En cours / Vu, Vu jusqu’ici), prochain épisode, Mes statistiques et Reprendre. Règles du skill UI/UX appliquées : texte à 4,5:1 au moins, statut toujours écrit et accompagné d’une icône, boutons de 32 à 44 px, icônes SVG.</p>';
+  watch(view);
+}
+function detailOld(id) {
+  const o = OLD.find((x) => x.id === id);
+  if (!o) return anciennes();
+  view.innerHTML = '<div class="dbar"><a class="ab" href="#anciennes">' + svg('left') + 'Anciennes</a><div class="grow"><h2>' + o.n + '</h2><p>' + o.a + '</p></div>' + pickBtn(o.id) + cmpBtn(o.id) + '</div><div class="stagewrap">' + stageOld(o) + '</div>';
+  watch(view);
+}
+const opts = () => '<optgroup label="Nouvelles propositions">' + D.map((d) => '<option value="n' + d.id + '">' + d.id + ' · ' + d.n + '</option>').join('') + '</optgroup><optgroup label="Anciennes et site actuel">' + OLD.map((o) => '<option value="' + o.id + '">' + o.n + '</option>').join('') + '</optgroup>';
+const paneHtml = (k) => { const d = D.find((x) => 'n' + x.id === k); if (d) return stageNew(d); const o = OLD.find((x) => x.id === k) || OLD[0]; return stageOld(o); };
+const paneSub = (k) => { const d = D.find((x) => 'n' + x.id === k); if (d) return d.style + ' · ' + d.lay; const o = OLD.find((x) => x.id === k); return o ? o.a : ''; };
+function comparer() {
+  view.innerHTML = '<div class="cmpbar"><label for="ca">À gauche<select id="ca">' + opts() + '</select></label><button class="ab" id="swap" aria-label="Inverser les deux côtés">' + svg('swap') + 'Inverser</button><label for="cb">À droite<select id="cb">' + opts() + '</select></label></div>' +
+    '<div class="cmpopts"><label><input type="checkbox" id="sync"' + (cmp.sync ? ' checked' : '') + '>Défilement lié</label><span>Astuce : le bouton Comparer d’une proposition la place à droite.</span></div>' +
+    '<div class="panes"><section class="pane"><h3 id="ha"></h3><div class="stagewrap" id="pa"></div></section><section class="pane"><h3 id="hb"></h3><div class="stagewrap" id="pb"></div></section></div>';
+  $('#ca').value = cmp.a; $('#cb').value = cmp.b;
+  const fill = (side) => { const k = cmp[side]; $('#p' + side).innerHTML = paneHtml(k); $('#h' + side).innerHTML = nameOf(k) + ' <span>' + paneSub(k) + '</span>'; };
+  fill('a'); fill('b'); watch(view);
+  $('#ca').onchange = (e) => { cmp.a = e.target.value; saveCmp(); fill('a'); };
+  $('#cb').onchange = (e) => { cmp.b = e.target.value; saveCmp(); fill('b'); };
+  $('#swap').onclick = () => { [cmp.a, cmp.b] = [cmp.b, cmp.a]; saveCmp(); comparer(); };
+  $('#sync').onchange = (e) => { cmp.sync = e.target.checked; saveCmp(); };
+  const pa = $('#pa'), pb = $('#pb'); let lock = false;
+  const link = (from, to) => from.addEventListener('scroll', () => { if (!cmp.sync || lock) return; lock = true; const r = from.scrollTop / Math.max(1, from.scrollHeight - from.clientHeight); to.scrollTop = r * (to.scrollHeight - to.clientHeight); requestAnimationFrame(() => { lock = false; }); });
+  link(pa, pb); link(pb, pa);
+}
+function route() {
+  const h = (location.hash || '#galerie').slice(1);
+  const v = h.startsWith('p-') ? 'galerie' : h.startsWith('a-') ? 'anciennes' : ['galerie', 'anciennes', 'comparer'].includes(h) ? h : 'galerie';
+  document.querySelectorAll('.tabs a').forEach((a) => a.setAttribute('aria-current', a.dataset.v === v ? 'page' : 'false'));
+  ro.disconnect();
+  if (h.startsWith('p-')) detailNew(h.slice(2)); else if (h.startsWith('a-')) detailOld(h.slice(2)); else if (v === 'anciennes') anciennes(); else if (v === 'comparer') comparer(); else galerie();
+  showPicked();
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-pick],[data-cmp],[data-open],[data-f],.dz a,.dz button');
+  if (!t) return;
+  if (t.closest('.dz') && !t.dataset.open) { e.preventDefault(); return; }
+  if (t.dataset.f) { filter = t.dataset.f; galerie(); return; }
+  if (t.dataset.open) { location.hash = t.dataset.open; return; }
+  if (t.dataset.cmp) { const k = t.dataset.cmp; if (cmp.b !== k) { if (cmp.a === k) cmp.a = cmp.b; cmp.b = k; } saveCmp(); location.hash = 'comparer'; return; }
+  if (t.dataset.pick) {
+    const k = t.dataset.pick; picked = picked.includes(k) ? picked.filter((x) => x !== k) : picked.concat(k); save();
+    document.querySelectorAll('[data-pick="' + k + '"]').forEach((b) => { const on = picked.includes(k); b.setAttribute('aria-pressed', on); b.innerHTML = svg('star') + (on ? 'Retenue' : 'Retenir'); const c = b.closest('.pc'); if (c) c.classList.toggle('is-picked', on); });
+    showPicked();
+  }
+});
+document.addEventListener('keydown', (e) => { const t = e.target.closest && e.target.closest('.thumb'); if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); location.hash = t.dataset.open; } });
+window.addEventListener('hashchange', () => { route(); window.scrollTo(0, 0); });
+route();
+})();
+</script>

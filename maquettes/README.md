@@ -13,6 +13,7 @@ Chaque dossier contient la maquette (`maquette.html`, à ouvrir dans un navigate
 | `04-trois-directions/` | A Éditorial (1-2), B Carnet (3-4), C Néo-brutal (5-6) | « Pas très moderne, ça fait ancien » |
 | `05-immersive-v1/` | Immersive : couleurs tirées de l'image du titre, verre translucide, logo officiel | « J'aime mieux », mais trop d'arrondis et trop de place perdue |
 | `06-immersive-v2/` | Immersive resserrée : arrondis réduits, panneaux collés aux bords | La préférée à ce jour |
+| `07-atelier/` | Page Artifact « Atelier Crazy Liste » : 16 nouvelles propositions sur la fiche d'Arcane (`designs.js`, `designs.css`), anciennes maquettes et comparateur. Les captures des anciennes sont reprises en WebP lors de la publication. En ligne : https://claude.ai/artifact/LViu9Ty3WREn2CxxDJMQTn | En cours de choix |
 
 ## Outils
 

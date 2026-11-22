@@ -238,9 +238,8 @@ h1, h2, h3, h4 { line-height: 1.2; }
 .licence-head h2 { margin: 0; font-size: 1.1rem; } .licence-head .hint { margin: 0; } .licence-head .btn { margin-left: auto; }
 .lera { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--border); align-items: start; }
 .licence-head + .lera { border-top: 0; }
-.lscope { display: flex; gap: 6px; flex-wrap: wrap; flex-basis: 100%; }
-.lscope button { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-2); font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer; }
-.lscope button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 750; }
+#detail-licence-btn { display: grid; gap: 6px; }
+.licbtn[aria-expanded="false"] + .licbtn[aria-expanded="false"], #detail-licence-btn .licbtn[data-scope="all"][aria-expanded="false"] { background: transparent; }
 .lseries { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; align-items: start; color: inherit; text-decoration: none; }
 a.lseries:hover .lseries-title { color: var(--accent); }
 .lseries-poster { width: 62px; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; }
@@ -3748,17 +3747,14 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
       byId('trailer-foot').replaceChildren((t.lang === 'fr' ? 'Vidéo YouTube proposée par TMDB. ' : 'Pas de version française sur TMDB : version originale. ') + 'Si elle ne se lance pas : ', link);
       byId('trailer-dialog').showModal();
     },
-    'licence-scope'(el) {
-      state.ui.licenceScope = el.dataset.scope === 'all' ? 'all' : 'saga';
-      renderLicence(el.dataset.key);
-      const btn = document.querySelector('#detail-licence [data-action="licence-scope"][data-scope="' + state.ui.licenceScope + '"]');
-      if (btn) btn.focus();
-    },
     'licence-toggle'(el) {
       const key = el.dataset.key;
-      state.ui.licenceOpen = licenceOpen(key) ? null : key;
+      const scope = el.dataset.scope === 'all' || el.dataset.scope === 'saga' ? el.dataset.scope : null;
+      // bouton « Saga » ou « Licence » : ouvre le panneau sur ce choix ; un second clic sur le même le referme
+      if (scope && licenceOpen(key) && state.ui.licenceScope !== scope) state.ui.licenceScope = scope;
+      else { if (scope) state.ui.licenceScope = scope; state.ui.licenceOpen = licenceOpen(key) ? null : key; }
       renderLicence(key);
-      const target = licenceOpen(key) ? document.getElementById('detail-licence') : document.querySelector('#detail-licence-btn .licbtn');
+      const target = licenceOpen(key) ? document.getElementById('detail-licence') : document.querySelector('#detail-licence-btn .licbtn' + (scope ? '[data-scope="' + scope + '"]' : ''));
       if (target) { if (licenceOpen(key)) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); else target.focus(); }
       checkAvailability();
     },
@@ -4668,9 +4664,16 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     if (rel && rel.status === 'loading') return '<button type="button" class="licbtn" disabled aria-busy="true"><span>Licence</span><small>Recherche des séries, films et OVA…</small></button>';
     const L = licenceData(key);
     if (!L) return '';
-    const n = L.groups.length + (L.upcoming ? 1 : 0);
-    return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '" aria-expanded="' + licenceOpen(key) + '" aria-controls="detail-licence">' +
-      '<span>' + (licenceOpen(key) ? '▴' : '▾') + ' ' + scopeWord(L) + ' « ' + esc(L.label || '') + ' »</span><small>' + [n ? n + ' série' + (n > 1 ? 's' : '') : '', L.films ? L.films + ' film' + (L.films > 1 ? 's' : '') : (n ? '0 film' : ''), L.ovas ? L.ovas + ' OVA / spécia' + (L.ovas > 1 ? 'ux' : 'l') : ''].filter(Boolean).join(' · ') + '</small></button>';
+    // une saga plus petite que la licence (Iron Man dans l'univers Marvel) : deux boutons, « Saga » puis « Licence »
+    const one = (X, scope) => {
+      const n = X.groups.length + (X.upcoming ? 1 : 0);
+      const open = licenceOpen(key) && (!scope || state.ui.licenceScope === scope);
+      return '<button type="button" class="licbtn" data-action="licence-toggle" data-key="' + key + '"' + (scope ? ' data-scope="' + scope + '"' : '') + ' aria-expanded="' + open + '" aria-controls="detail-licence">' +
+        '<span>' + (open ? '▴' : '▾') + ' ' + scopeWord(X) + ' « ' + esc(X.label || '') + ' »</span><small>' + [n ? n + ' série' + (n > 1 ? 's' : '') : '', X.films ? X.films + ' film' + (X.films > 1 ? 's' : '') : (n ? '0 film' : ''), X.ovas ? X.ovas + ' OVA / spécia' + (X.ovas > 1 ? 'ux' : 'l') : ''].filter(Boolean).join(' · ') + '</small></button>';
+    };
+    if (!L.saga) return one(L, null);
+    const S = licenceData(key, 'saga'), A = licenceData(key, 'all');
+    return (S ? one(S, 'saga') : '') + (A ? one(A, 'all') : '');
   }
   function seriesProgress(key) {
     const t = getTrack(key);
@@ -4700,12 +4703,8 @@ dialog.dialog::backdrop { background: rgba(4,6,10,.6); }
     };
     const ann = L.upcoming ? '<div class="lera is-announced"><div class="lseries"><span class="lseries-poster lseries-ghost" aria-hidden="true"></span><span class="lseries-text"><span class="lseries-title">' + esc(L.upcoming.title) + '</span>' +
       '<span class="lseries-year">Série · ' + (L.upcoming.status === 'NOT_YET_RELEASED' ? 'en production' : 'en cours') + '</span><span class="tagc t-ann">annoncée · pas encore sur TMDB</span></span></div><div class="lfilms"></div></div>' : '';
-    const full = L.saga ? licenceData(key, 'all') : null;
-    const scopes = L.saga && full ? '<div class="lscope" role="group" aria-label="Afficher la saga ou toute la licence">' +
-      '<button type="button" data-action="licence-scope" data-scope="saga" data-key="' + key + '" aria-pressed="' + (L.scope === 'saga') + '">Saga « ' + esc(L.saga.label) + ' » · ' + L.saga.keys.length + '</button>' +
-      '<button type="button" data-action="licence-scope" data-scope="all" data-key="' + key + '" aria-pressed="' + (L.scope === 'all') + '">Toute la licence « ' + esc(full.label || '') + ' » · ' + full.count + '</button></div>' : '';
     return '<div class="licence-head"><h2>' + scopeWord(L) + ' « ' + esc(L.label || '') + ' »</h2><span class="hint">Ordre de sortie · chaque série suivie de ses films et OVA</span>' +
-      '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button>' + scopes + '</div>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-action="licence-toggle" data-key="' + key + '">✕ Fermer</button></div>' +
       L.groups.map(era).join('') + ann + (L.orphans.length ? '<div class="lera"><div class="lseries"><span class="lseries-text"><span class="lseries-title">' + (L.groups.length ? 'Autres films' : 'Films') + '</span></span></div><div class="lfilms">' + L.orphans.map(film).join('') + '</div></div>' : '');
   }
   /* Films rangés avec cette série dans sa licence, avec une recherche « Quand le regarder ? » pour chacun. */

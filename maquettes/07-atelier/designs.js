@@ -67,7 +67,7 @@ const progress = (o) => blk('prog', 'Ma progression ' + st('p'),
   '<div class="pv">' + (o.ring ? ring() : '') + '<div class="pvt"><p class="pn"><b>13</b> / 18 épisodes vus</p><p class="pnx">Prochain à voir : <b>S2 · É5</b> « Blisters and Bedrock »</p><p class="pmut">Hors épisodes spéciaux</p></div></div>' + ticks() +
   '<div class="pacts"><button class="btn sm">' + I('check') + 'Tout marquer comme vu</button><button class="btn sm">' + I('reset') + 'Tout remettre à « À voir »</button><button class="btn sm danger">' + I('x') + 'Retirer de ma liste</button></div>');
 const seg = (on) => '<div class="seg" role="group" aria-label="Statut">' + ['t', 'p', 'v'].map((k) => '<button class="sg sg-' + k + (on === k ? ' on' : '') + '" aria-pressed="' + (on === k) + '">' + I(on === k ? 'check' : STI[k]) + STL[k] + '</button>').join('') + '</div>';
-const epState = (s) => (s === 'v' ? 'v' : 't');
+const epState = (s) => (s === 'v' ? 'v' : s === 'p' ? 'p' : 't');
 /* ---------- jeux de saisons pour tester la place prise (seule la partie Saisons et épisodes change) ---------- */
 const fmtD = (d) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 const gen = (n, seen, start, opt) => Array.from({ length: n }, (_, i) => { const no = (opt && opt.from || 1) + i; const d = new Date(start); d.setDate(d.getDate() + 7 * Math.max(0, i - ((opt && opt.first) || 0)));
@@ -102,36 +102,62 @@ function episodes(v, eps) {
   }
   return '<div class="eps eps-' + v + '">' + E.map(epItem).join('') + '</div>' + capNote(eps);
 }
-/* grille compacte : une case par épisode, détail de l'épisode choisi, tranches de 100 au-delà de 120 épisodes */
-function grid(setKey, si, sel, rng) {
-  const eps = SETS[setKey].seasons[si].eps, big = eps.length > 120, R = 100;
+/* épisodes compacts : liste sur plusieurs colonnes (titre, date, note, statut) ou grille ; tranches au-delà de 60 (liste) / 120 (grille) */
+const ST_ORDER = ['t', 'p', 'v'];
+function stMenu(i) {
+  return '<div class="emenu" role="menu">' + ST_ORDER.map((k) => '<button class="mi mi-' + k + '" role="menuitem" data-st="' + i + ':' + k + '">' + I(STI[k]) + STL[k] + '</button>').join('') +
+    (i ? '<button class="mi" role="menuitem" data-st="' + i + ':upto">' + I('check') + 'Vu jusqu’ici</button>' : '') + '</div>';
+}
+function epBlock(setKey, si, S) {
+  const eps = SETS[setKey].seasons[si].eps;
+  S = Object.assign({ mode: 'list', sel: null, rng: null, menu: -1 }, S || {});
   const nextI = Math.max(0, eps.findIndex((e) => e.s === 'next'));
-  if (sel == null) sel = nextI;
-  if (rng == null) rng = big ? Math.floor(sel / R) : 0;
-  const from = big ? rng * R : 0, show = big ? eps.slice(from, from + R) : eps;
-  let h = '<div class="eg" data-set="' + setKey + '" data-si="' + si + '" data-sel="' + sel + '" data-rng="' + rng + '">';
-  if (big) {
-    h += '<div class="erng" role="group" aria-label="Tranches d’épisodes">';
-    for (let k = 0; k * R < eps.length; k++) { const part = eps.slice(k * R, k * R + R), ss = sState(part);
-      h += '<button class="rg rg-' + ss + (k === rng ? ' on' : '') + '" data-rng="' + k + '" aria-pressed="' + (k === rng) + '">' + I(k === rng && ss === 'v' ? 'check' : STI[ss]) + part[0].no + '–' + part[part.length - 1].no + '</button>'; }
-    h += '</div>';
+  const R = S.mode === 'list' ? 50 : 100, paged = eps.length > (S.mode === 'list' ? 60 : 120);
+  if (S.sel == null) S.sel = nextI;
+  if (S.rng == null) S.rng = paged ? Math.floor(S.sel / R) : 0;
+  const from = paged ? S.rng * R : 0, show = paged ? eps.slice(from, from + R) : eps, nR = Math.ceil(eps.length / R);
+  let h = '<div class="eg eg-' + S.mode + '" data-set="' + setKey + '" data-si="' + si + '" data-state=\'' + JSON.stringify(S) + '\'>';
+  h += '<div class="etop">';
+  if (paged && S.mode === 'list') h += '<div class="enav"><button class="btn sm icon" data-nav="-1" aria-label="Tranche précédente">' + I('left') + '</button><span class="enl">Épisodes <b>' + show[0].no.toLocaleString('fr-FR') + ' – ' + show[show.length - 1].no.toLocaleString('fr-FR') + '</b> sur ' + eps.length.toLocaleString('fr-FR') + '</span><button class="btn sm icon" data-nav="1" aria-label="Tranche suivante">' + I('chevr') + '</button>' +
+    (Math.floor(nextI / R) !== S.rng ? '<button class="btn sm" data-gonext="1">' + I('arrow') + 'Aller au prochain · É' + eps[nextI].no + '</button>' : '') + '</div>';
+  else if (paged) { h += '<div class="erng" role="group" aria-label="Tranches d’épisodes">';
+    for (let k = 0; k < nR; k++) { const part = eps.slice(k * R, k * R + R), ss = sState(part);
+      h += '<button class="rg rg-' + ss + (k === S.rng ? ' on' : '') + '" data-rng="' + k + '" aria-pressed="' + (k === S.rng) + '">' + I(k === S.rng && ss === 'v' ? 'check' : STI[ss]) + part[0].no + '–' + part[part.length - 1].no + '</button>'; }
+    h += '</div>'; }
+  else h += '<span></span>';
+  h += '<div class="emode" role="group" aria-label="Affichage des épisodes"><button class="mo' + (S.mode === 'list' ? ' on' : '') + '" data-mode="list" aria-pressed="' + (S.mode === 'list') + '">' + I('lines') + 'Liste</button><button class="mo' + (S.mode === 'grid' ? ' on' : '') + '" data-mode="grid" aria-pressed="' + (S.mode === 'grid') + '">' + I('lib') + 'Grille</button></div></div>';
+  if (S.mode === 'list') {
+    h += '<div class="elist">' + show.map((e, j) => { const i = from + j, es = epState(e.s);
+      return '<div class="er er-' + e.s + '"><span class="no">' + e.no + '</span><div class="et"><h4>' + e.t + '</h4><p class="em">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b>' : '') + '<span>' + e.d + '</span>' + (e.r ? rate(e.r, 'sm') : '') + '</p></div>' +
+        '<button class="stb stb-' + es + '" data-menu="' + i + '" aria-haspopup="menu" aria-expanded="' + (S.menu === i) + '" aria-label="Statut de l’épisode ' + e.no + ' : ' + STL[es] + '">' + I(es === 'v' ? 'check' : STI[es]) + STL[es] + I('chev', 'chv') + '</button>' + (S.menu === i ? stMenu(i) : '') + '</div>'; }).join('') + '</div>';
+  } else {
+    h += '<div class="etiles' + (eps.length > 999 ? ' wide' : '') + '" role="group" aria-label="Épisodes">' + show.map((e, j) => { const i = from + j;
+      return '<button class="tile-ep te-' + e.s + (i === S.sel ? ' sel' : '') + '" data-ep="' + i + '" aria-pressed="' + (i === S.sel) + '" aria-label="Épisode ' + e.no + ' : ' + (e.s === 'next' ? 'prochain à voir' : STL[epState(e.s)]) + '"><span>' + e.no + '</span>' + (e.s === 'v' ? I('check') : e.s === 'next' ? I('arrow') : e.s === 'p' ? I('prog') : '') + '</button>'; }).join('') + '</div>';
+    const e = eps[S.sel];
+    h += '<div class="esel"><div class="esm"><p class="esk">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain à voir</b>' : 'Épisode choisi') + '</p><h4>É' + e.no + ' · ' + e.t + '</h4><p class="em"><span>' + e.d + '</span><span>40 min</span>' + (e.r ? rate(e.r, 'sm') : '') + '</p></div>' +
+      '<div class="ec">' + seg(epState(e.s)) + (S.sel ? '<button class="btn sm upto" data-st="' + S.sel + ':upto">Vu jusqu’ici</button>' : '') + '</div></div>';
   }
-  h += '<div class="etiles' + (eps.length > 999 ? ' wide' : '') + '" role="group" aria-label="Épisodes">' + show.map((e, j) => { const i = from + j;
-    return '<button class="tile-ep te-' + e.s + (i === sel ? ' sel' : '') + '" data-ep="' + i + '" aria-pressed="' + (i === sel) + '" aria-label="Épisode ' + e.no + ' : ' + (e.s === 'next' ? 'prochain à voir' : STL[epState(e.s)]) + '">' +
-      '<span>' + e.no + '</span>' + (e.s === 'v' ? I('check') : e.s === 'next' ? I('arrow') : '') + '</button>'; }).join('') + '</div>';
-  const e = eps[sel];
-  h += '<div class="esel"><div class="esm"><p class="esk">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain à voir</b>' : 'Épisode choisi') + '</p><h4>É' + e.no + ' · ' + e.t + '</h4><p class="em"><span>' + e.d + '</span><span>40 min</span>' + (e.r ? rate(e.r, 'sm') : '') + '</p></div>' +
-    '<div class="ec">' + seg(epState(e.s)) + (sel ? '<button class="btn sm upto">Vu jusqu’ici</button>' : '') + '</div></div>';
-  h += '<p class="elg"><span>' + I('check') + 'Vu</span><span>' + I('arrow') + 'Prochain</span><span><i class="sq"></i>À voir</span><span>Clique une case pour voir l’épisode.</span></p></div>';
+  h += '<p class="elg"><span>' + I('check') + 'Vu</span><span>' + I('arrow') + 'Prochain</span><span>' + I('prog') + 'En cours</span><span>' + I('todo') + 'À voir</span><span>' + (S.mode === 'list' ? 'Le bouton de statut ouvre À voir / En cours / Vu / Vu jusqu’ici.' : 'Clique une case pour voir l’épisode.') + ' Démo : rien n’est enregistré.</span></p></div>';
   return h;
 }
+const grid = (k, si) => epBlock(k, si, { mode: 'list' });
+const fixNext = (eps) => { eps.forEach((e) => { if (e.s === 'next') e.s = 't'; }); const n = eps.findIndex((e) => e.s !== 'v'); if (n >= 0 && eps[n].s === 't') eps[n].s = 'next'; };
 window.CL_epClick = (btn) => {
   const g = btn.closest('.eg'); if (!g) return false;
-  let sel = +g.dataset.sel, rng = +g.dataset.rng;
-  if (btn.dataset.ep != null) sel = +btn.dataset.ep;
-  else if (btn.dataset.rng != null) { rng = +btn.dataset.rng; sel = rng * 100; const eps = SETS[g.dataset.set].seasons[+g.dataset.si].eps; const n = eps.findIndex((e, i) => i >= sel && e.s === 'next'); if (n >= 0 && n < sel + 100) sel = n; }
+  const S = JSON.parse(g.dataset.state), eps = SETS[g.dataset.set].seasons[+g.dataset.si].eps, d = btn.dataset;
+  const R = S.mode === 'list' ? 50 : 100, nR = Math.ceil(eps.length / R);
+  if (d.mode) { S.mode = d.mode; S.rng = null; S.menu = -1; }
+  else if (d.menu != null) { S.menu = S.menu === +d.menu ? -1 : +d.menu; }
+  else if (d.st) { const [i, k] = d.st.split(':'); const n = +i;
+    if (k === 'upto') eps.forEach((e, j) => { if (j <= n) e.s = 'v'; }); else eps[n].s = k;
+    fixNext(eps); S.menu = -1; S.sel = n; }
+  else if (d.ep != null) S.sel = +d.ep;
+  else if (d.rng != null) { S.rng = +d.rng; S.sel = S.rng * R; }
+  else if (d.nav) { S.rng = (S.rng + +d.nav + nR) % nR; S.menu = -1; }
+  else if (d.gonext) { S.rng = null; S.sel = null; S.menu = -1; }
+  else if (btn.classList.contains('sg')) { const k = ['t', 'p', 'v'].find((x) => btn.classList.contains('sg-' + x)); if (S.mode === 'grid' && k) { eps[S.sel].s = k; fixNext(eps); } }
   else return false;
-  g.outerHTML = grid(g.dataset.set, +g.dataset.si, sel, rng);
+  g.outerHTML = epBlock(g.dataset.set, +g.dataset.si, S);
   return true;
 };
 const seasons = (v) => { const k = curSet(), S = SETS[k];

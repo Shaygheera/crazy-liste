@@ -510,3 +510,29 @@
 .s13{--fav:#ff8fb0;--danger:#ff9494}.s13 .ssh p{color:var(--fg2)}
 .L-split .left::before{background:linear-gradient(180deg,rgba(6,6,9,.55) 0,rgba(6,6,9,.9) 330px,rgba(6,6,9,.96) 620px)}
 .s13 .ssh{padding:8px 12px;border-radius:12px;background:rgba(20,20,26,.72)}
+
+/* ===== Liste compacte des épisodes, menu de statut, bascule Liste / Grille ===== */
+.dz .etop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dz .emode{display:inline-flex;gap:8px;margin-left:auto}
+.dz .mo{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:var(--rb);font-weight:600;font-size:13px;color:var(--fg2);background:var(--surf2);box-shadow:inset 0 0 0 1px var(--line)}
+.dz .mo .i{width:16px;height:16px}.dz .mo.on{background:var(--fg);color:var(--bg);box-shadow:none}
+.dz .enav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dz .enl{font-size:13px;color:var(--fg2);font-variant-numeric:tabular-nums}.dz .enl b{color:var(--fg)}
+.dz .elist{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:8px}
+.dz .er{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:58px;padding:6px 6px 6px 8px;border-radius:var(--rs);background:var(--surf2);box-shadow:inset 0 0 0 1px var(--line)}
+.dz .er .no{width:40px;height:40px;border-radius:var(--rs);display:grid;place-items:center;font:700 13px var(--fn);background:var(--line);color:var(--fg2);font-variant-numeric:tabular-nums}
+.dz .er-v .no{background:color-mix(in srgb,var(--seen) 14%,transparent);color:var(--seen)}
+.dz .er-next{box-shadow:inset 0 0 0 2px var(--prog)}.dz .er-next .no{background:var(--prog);color:var(--onprog)}
+.dz .er-p .no{background:color-mix(in srgb,var(--prog) 16%,transparent);color:var(--prog)}
+.dz .er h4{font-size:13.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dz .stb{display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:112px;padding:0 8px 0 10px;border-radius:var(--rb);font-size:13px;font-weight:650;background:var(--surf);box-shadow:inset 0 0 0 1px var(--line);white-space:nowrap}
+.dz .stb .i{width:16px;height:16px}.dz .stb .chv{margin-left:auto;width:14px;height:14px;opacity:.7}
+.dz .stb-v{color:var(--seen)}.dz .stb-p{color:var(--prog)}.dz .stb-t{color:var(--todo)}
+.dz .stb[aria-expanded="true"]{box-shadow:inset 0 0 0 2px var(--fg)}
+.dz .emenu{position:absolute;right:6px;top:calc(100% - 4px);z-index:6;display:grid;gap:8px;min-width:200px;padding:8px;border-radius:var(--r);background:var(--menubg,var(--bg));box-shadow:0 18px 40px -12px rgba(0,0,0,.45),inset 0 0 0 1px var(--line)}
+.dz .mi{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border-radius:var(--rb);font-weight:600;font-size:13.5px;color:var(--fg)}
+.dz .mi .i{width:16px;height:16px}.dz .mi-v .i{color:var(--seen)}.dz .mi-p .i{color:var(--prog)}
+.dz .mi:hover{background:var(--surf2)}
+.dz .eg-list .elg span:last-child{margin-left:0;flex-basis:100%}
+.s02{--menubg:#fff}.s01{--menubg:#15171a}
+.dz .er .em{flex-wrap:wrap;row-gap:2px;white-space:normal}.dz .er .em>*{white-space:nowrap}

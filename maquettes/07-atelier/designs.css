@@ -536,3 +536,21 @@
 .dz .eg-list .elg span:last-child{margin-left:0;flex-basis:100%}
 .s02{--menubg:#fff}.s01{--menubg:#15171a}
 .dz .er .em{flex-wrap:wrap;row-gap:2px;white-space:normal}.dz .er .em>*{white-space:nowrap}
+
+/* ===== Épisode déplié ===== */
+.dz .er{grid-template-columns:minmax(0,1fr) auto;padding:6px}
+.dz .ehd{display:grid;grid-template-columns:40px minmax(0,1fr) 16px;gap:10px;align-items:center;min-height:44px;padding:0 4px 0 2px;border-radius:var(--rs);text-align:left;width:100%}
+.dz .ehd .et{display:block;min-width:0}
+.dz .ehd .h4{display:block;font-size:13.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dz .ehd .em{display:flex}
+.dz .ehd .echv{width:16px;height:16px;color:var(--mut)}
+.dz .er.open{grid-column:1/-1;box-shadow:inset 0 0 0 2px var(--fg2)}
+.dz .er-next.open{box-shadow:inset 0 0 0 2px var(--prog)}
+.dz .er.open .h4{white-space:normal;font-size:15px}
+.dz .edet{grid-column:1/-1;display:grid;gap:12px;margin:6px 0 4px;padding:12px 6px 4px 54px;border-top:1px solid var(--line)}
+.dz .emeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:13px;color:var(--fg2)}
+.dz .emeta span{display:inline-flex;align-items:center;gap:6px}.dz .emeta .i{width:16px;height:16px;color:var(--mut)}
+.dz .syn2{font-size:14px;line-height:1.6;color:var(--fg2);max-width:78ch}.dz .syn2 b{color:var(--fg)}.dz .syn2 em{font-size:12.5px;color:var(--mut)}
+.dz .eact{display:flex;flex-wrap:wrap;gap:8px}
+.dz .esel{display:block}.dz .esel h4{font-size:15px;font-weight:700;margin:2px 0 0}
+.dz .esel .edet{padding-left:0;border-top:0;margin-top:6px}

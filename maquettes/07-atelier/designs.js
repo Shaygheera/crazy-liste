@@ -108,9 +108,13 @@ function stMenu(i) {
   return '<div class="emenu" role="menu">' + ST_ORDER.map((k) => '<button class="mi mi-' + k + '" role="menuitem" data-st="' + i + ':' + k + '">' + I(STI[k]) + STL[k] + '</button>').join('') +
     (i ? '<button class="mi" role="menuitem" data-st="' + i + ':upto">' + I('check') + 'Vu jusqu’ici</button>' : '') + '</div>';
 }
+const votes = (e) => (180 + (e.no * 53) % 900).toLocaleString('fr-FR');
+const epDetail = (e, i) => '<div class="edet" data-i="' + i + '"><p class="emeta"><span>' + I('cal') + 'Diffusé le ' + e.d + '</span><span>' + I('resume') + '40 min</span>' + (e.r ? '<span>' + rate(e.r, 'sm') + votes(e) + ' votes TMDB</span>' : '') + '</p>' +
+  '<p class="syn2"><b>Résumé</b> <em>(exemple : sur le site, il viendra de TMDB)</em><br>' + (e.syn || 'Après les événements de l’épisode précédent, les alliances se fissurent : chacun doit choisir son camp pendant que la tension monte entre les deux villes. Un épisode charnière, riche en révélations.') + '</p>' +
+  '<div class="eact">' + seg(epState(e.s)) + (i ? '<button class="btn sm upto" data-st="' + i + ':upto">' + I('check') + 'Vu jusqu’ici</button>' : '') + '</div></div>';
 function epBlock(setKey, si, S) {
   const eps = SETS[setKey].seasons[si].eps;
-  S = Object.assign({ mode: 'list', sel: null, rng: null, menu: -1 }, S || {});
+  S = Object.assign({ mode: 'list', sel: null, rng: null, menu: -1, open: -1 }, S || {});
   const nextI = Math.max(0, eps.findIndex((e) => e.s === 'next'));
   const R = S.mode === 'list' ? 50 : 100, paged = eps.length > (S.mode === 'list' ? 60 : 120);
   if (S.sel == null) S.sel = nextI;
@@ -128,16 +132,16 @@ function epBlock(setKey, si, S) {
   h += '<div class="emode" role="group" aria-label="Affichage des épisodes"><button class="mo' + (S.mode === 'list' ? ' on' : '') + '" data-mode="list" aria-pressed="' + (S.mode === 'list') + '">' + I('lines') + 'Liste</button><button class="mo' + (S.mode === 'grid' ? ' on' : '') + '" data-mode="grid" aria-pressed="' + (S.mode === 'grid') + '">' + I('lib') + 'Grille</button></div></div>';
   if (S.mode === 'list') {
     h += '<div class="elist">' + show.map((e, j) => { const i = from + j, es = epState(e.s);
-      return '<div class="er er-' + e.s + '"><span class="no">' + e.no + '</span><div class="et"><h4>' + e.t + '</h4><p class="em">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b>' : '') + '<span>' + e.d + '</span>' + (e.r ? rate(e.r, 'sm') : '') + '</p></div>' +
-        '<button class="stb stb-' + es + '" data-menu="' + i + '" aria-haspopup="menu" aria-expanded="' + (S.menu === i) + '" aria-label="Statut de l’épisode ' + e.no + ' : ' + STL[es] + '">' + I(es === 'v' ? 'check' : STI[es]) + STL[es] + I('chev', 'chv') + '</button>' + (S.menu === i ? stMenu(i) : '') + '</div>'; }).join('') + '</div>';
+      const op = S.open === i;
+      return '<div class="er er-' + e.s + (op ? ' open' : '') + '"><button class="ehd" data-exp="' + i + '" aria-expanded="' + op + '" aria-label="Épisode ' + e.no + ', ' + (op ? 'replier' : 'déplier') + '"><span class="no">' + e.no + '</span><span class="et"><span class="h4">' + e.t + '</span><span class="em">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b>' : '') + '<span>' + e.d + '</span>' + (e.r ? rate(e.r, 'sm') : '') + '</span></span>' + I(op ? 'chevu' : 'chev', 'echv') + '</button>' +
+        '<button class="stb stb-' + es + '" data-menu="' + i + '" aria-haspopup="menu" aria-expanded="' + (S.menu === i) + '" aria-label="Statut de l’épisode ' + e.no + ' : ' + STL[es] + '">' + I(es === 'v' ? 'check' : STI[es]) + STL[es] + I('chev', 'chv') + '</button>' + (S.menu === i ? stMenu(i) : '') + (op ? epDetail(e, i) : '') + '</div>'; }).join('') + '</div>';
   } else {
     h += '<div class="etiles' + (eps.length > 999 ? ' wide' : '') + '" role="group" aria-label="Épisodes">' + show.map((e, j) => { const i = from + j;
       return '<button class="tile-ep te-' + e.s + (i === S.sel ? ' sel' : '') + '" data-ep="' + i + '" aria-pressed="' + (i === S.sel) + '" aria-label="Épisode ' + e.no + ' : ' + (e.s === 'next' ? 'prochain à voir' : STL[epState(e.s)]) + '"><span>' + e.no + '</span>' + (e.s === 'v' ? I('check') : e.s === 'next' ? I('arrow') : e.s === 'p' ? I('prog') : '') + '</button>'; }).join('') + '</div>';
     const e = eps[S.sel];
-    h += '<div class="esel"><div class="esm"><p class="esk">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain à voir</b>' : 'Épisode choisi') + '</p><h4>É' + e.no + ' · ' + e.t + '</h4><p class="em"><span>' + e.d + '</span><span>40 min</span>' + (e.r ? rate(e.r, 'sm') : '') + '</p></div>' +
-      '<div class="ec">' + seg(epState(e.s)) + (S.sel ? '<button class="btn sm upto" data-st="' + S.sel + ':upto">Vu jusqu’ici</button>' : '') + '</div></div>';
+    h += '<div class="esel"><p class="esk">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain à voir</b>' : 'Épisode choisi') + '</p><h4>É' + e.no + ' · ' + e.t + '</h4>' + epDetail(e, S.sel) + '</div>';
   }
-  h += '<p class="elg"><span>' + I('check') + 'Vu</span><span>' + I('arrow') + 'Prochain</span><span>' + I('prog') + 'En cours</span><span>' + I('todo') + 'À voir</span><span>' + (S.mode === 'list' ? 'Le bouton de statut ouvre À voir / En cours / Vu / Vu jusqu’ici.' : 'Clique une case pour voir l’épisode.') + ' Démo : rien n’est enregistré.</span></p></div>';
+  h += '<p class="elg"><span>' + I('check') + 'Vu</span><span>' + I('arrow') + 'Prochain</span><span>' + I('prog') + 'En cours</span><span>' + I('todo') + 'À voir</span><span>' + (S.mode === 'list' ? 'Clique un épisode pour le déplier (résumé, note, date). Le bouton de statut ouvre À voir / En cours / Vu / Vu jusqu’ici.' : 'Clique une case pour voir l’épisode.') + ' Démo : rien n’est enregistré.</span></p></div>';
   return h;
 }
 const grid = (k, si) => epBlock(k, si, { mode: 'list' });
@@ -147,6 +151,7 @@ window.CL_epClick = (btn) => {
   const S = JSON.parse(g.dataset.state), eps = SETS[g.dataset.set].seasons[+g.dataset.si].eps, d = btn.dataset;
   const R = S.mode === 'list' ? 50 : 100, nR = Math.ceil(eps.length / R);
   if (d.mode) { S.mode = d.mode; S.rng = null; S.menu = -1; }
+  else if (d.exp != null) { S.open = S.open === +d.exp ? -1 : +d.exp; S.menu = -1; }
   else if (d.menu != null) { S.menu = S.menu === +d.menu ? -1 : +d.menu; }
   else if (d.st) { const [i, k] = d.st.split(':'); const n = +i;
     if (k === 'upto') eps.forEach((e, j) => { if (j <= n) e.s = 'v'; }); else eps[n].s = k;
@@ -155,7 +160,7 @@ window.CL_epClick = (btn) => {
   else if (d.rng != null) { S.rng = +d.rng; S.sel = S.rng * R; }
   else if (d.nav) { S.rng = (S.rng + +d.nav + nR) % nR; S.menu = -1; }
   else if (d.gonext) { S.rng = null; S.sel = null; S.menu = -1; }
-  else if (btn.classList.contains('sg')) { const k = ['t', 'p', 'v'].find((x) => btn.classList.contains('sg-' + x)); if (S.mode === 'grid' && k) { eps[S.sel].s = k; fixNext(eps); } }
+  else if (btn.classList.contains('sg')) { const k = ['t', 'p', 'v'].find((x) => btn.classList.contains('sg-' + x)); const host = btn.closest('[data-i]'); if (host && k) { eps[+host.dataset.i].s = k; fixNext(eps); } else return false; }
   else return false;
   g.outerHTML = epBlock(g.dataset.set, +g.dataset.si, S);
   return true;

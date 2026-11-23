@@ -53,6 +53,10 @@ body{background:var(--a-bg);color:var(--a-fg);font:400 15px/1.5 var(--a-f)}
 .dbar p{margin:2px 0 0;color:var(--a-fg2);font-size:14px}
 .note{margin:14px 0 0;padding:12px 14px;border-radius:10px;background:var(--a-panel);box-shadow:inset 0 0 0 1px var(--a-line);font-size:13.5px;color:var(--a-fg2)}
 .note b{color:var(--a-fg)}
+.sets{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;font-size:14px;color:var(--a-fg2)}.sets b{color:var(--a-fg)}
+.sets button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-panel);font-size:13.5px;font-weight:600;cursor:pointer;color:var(--a-fg2)}
+.sets button[aria-pressed="true"]{background:var(--a-acc);color:var(--a-accfg);border-color:var(--a-acc)}
+.sets small{flex-basis:100%;color:var(--a-mut);font-size:13px}
 .kbd{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--a-mut)}.kbd kbd{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 6px;border-radius:6px;border:1px solid var(--a-line);border-bottom-width:2px;background:var(--a-panel);font:600 12.5px var(--a-f);color:var(--a-fg)}
 .pane h3{align-items:center}.pane h3 #ha,.pane h3 #hb{font-weight:700;font-size:15px;color:var(--a-fg)}.pane h3 .pn{margin-left:auto;display:flex;gap:8px}.pane h3 .pn .ab{width:44px;padding:0;justify-content:center}
 @media (hover:none){.kbd{display:none}}
@@ -144,6 +148,10 @@ const nameOf = (k) => { const d = D.find((x) => 'n' + x.id === k); if (d) return
 function showPicked() {
   $('#picked').innerHTML = picked.length ? 'Tu as retenu : <b>' + picked.map(nameOf).join(', ') + '</b>' : 'Marque d’une étoile les propositions qui te plaisent.';
 }
+window.CL_EPSET = 'arcane';
+try { const v = localStorage.getItem('cl-epset'); if (v && window.CL_SETS[v]) window.CL_EPSET = v; } catch (e) {}
+const setsBar = () => '<div class="sets" role="group" aria-label="Saisons de test"><b>Saisons de test :</b>' + Object.entries(window.CL_SETS).map(([k, l]) => '<button data-set="' + k + '" aria-pressed="' + (window.CL_EPSET === k) + '">' + l + '</button>').join('') + '<small>Seule la partie « Saisons et épisodes » change. Les propositions 01 et 02 utilisent la grille compacte, les autres la liste.</small></div>';
+let refillCmp = null;
 let cmp = { a: 'n09', b: 'o6', sync: true };
 try { Object.assign(cmp, JSON.parse(localStorage.getItem('cl-cmp') || '{}')); } catch (e) {}
 const saveCmp = () => { try { localStorage.setItem('cl-cmp', JSON.stringify(cmp)); } catch (e) {} };
@@ -158,12 +166,14 @@ const cmpBtn = (k) => '<button class="ab" data-cmp="' + k + '">' + svg('cols') +
 
 let filter = 'Toutes';
 function galerie() {
+  const keep = window.CL_EPSET; window.CL_EPSET = 'arcane';
   const F = ['Toutes', 'Sombre', 'Clair', 'Sans arrondi', 'Retenues'];
   const list = D.filter((d) => filter === 'Toutes' || (filter === 'Retenues' ? picked.includes('n' + d.id) : filter === 'Sans arrondi' ? ['01', '04', '10'].includes(d.id) : d.th === filter));
   view.innerHTML = '<div class="filters" role="group" aria-label="Filtrer">' + F.map((f) => '<button data-f="' + f + '" aria-pressed="' + (f === filter) + '">' + f + '</button>').join('') + '</div>' +
     '<div class="grid">' + (list.length ? list.map((d) => '<article class="pc' + (picked.includes('n' + d.id) ? ' is-picked' : '') + '"><div class="thumb" role="link" tabindex="0" data-open="p-' + d.id + '" aria-label="Voir ' + d.n + ' en grand">' + stageNew(d) + '</div>' +
       '<div class="pcb"><p class="pct"><span>' + d.id + '</span><b>' + d.n + '</b></p><p class="pcm">' + d.style + ' · ' + d.lay + ' · ' + d.font + '</p><p class="pcd">' + d.d + '</p>' +
       '<div class="pca"><a class="ab pri" href="#p-' + d.id + '">Voir en grand</a>' + pickBtn('n' + d.id) + cmpBtn('n' + d.id) + '</div></div></article>').join('') : '<p>Aucune proposition retenue pour l’instant.</p>') + '</div>';
+  window.CL_EPSET = keep;
   watch(view);
 }
 function anciennes() {
@@ -176,7 +186,7 @@ function detailNew(id) {
   const prev = D[(i + D.length - 1) % D.length], next = D[(i + 1) % D.length];
   view.innerHTML = '<div class="dbar"><a class="ab" href="#galerie">' + svg('left') + 'Galerie</a><div class="grow"><h2>' + d.id + ' · ' + d.n + '</h2><p>' + d.style + ' · ' + d.lay + ' · police ' + d.font + ' · thème ' + d.th.toLowerCase() + '</p></div>' +
     pickBtn('n' + d.id) + cmpBtn('n' + d.id) + '<a class="ab" href="#p-' + prev.id + '">' + svg('left') + prev.id + '</a><a class="ab" href="#p-' + next.id + '">' + next.id + svg('chevr') + '</a></div>' +
-    '<p class="kbd" style="margin:0 0 10px"><kbd>←</kbd><kbd>→</kbd>proposition précédente / suivante</p><div class="stagewrap">' + stageNew(d) + '</div>' +
+    setsBar() + '<p class="kbd" style="margin:0 0 10px"><kbd>←</kbd><kbd>→</kbd>proposition précédente / suivante</p><div class="stagewrap">' + stageNew(d) + '</div>' +
     '<p class="note"><b>' + d.d + '</b><br>Mêmes infos que le site sur chaque proposition : note TMDB colorée, disponibilité, statut, progression par épisode, Favori / Watchlist, boutons Saga et Licence sous l’affiche, diffusion, offres, résumé, saisons et épisodes (À voir / En cours / Vu, Vu jusqu’ici), prochain épisode, Mes statistiques et Reprendre. Contrôlé avec le skill UI/UX Pro Max et un script de mesure : contraste du texte mesuré sur les pixels réels du fond (4,5:1 au moins, 3:1 pour les grands titres), toutes les cibles cliquables à 44 px au moins avec 8 px d’écart, texte à 12 px au moins, statut toujours écrit avec une icône, icônes SVG, contour visible au clavier. Résultat : 0 écart sur les 16 propositions.</p>';
   watch(view);
 }
@@ -196,10 +206,11 @@ const paneHtml = (k) => { const d = D.find((x) => 'n' + x.id === k); if (d) retu
 const paneSub = (k) => { const d = D.find((x) => 'n' + x.id === k); if (d) return d.style + ' · ' + d.lay; const o = OLD.find((x) => x.id === k); return o ? o.a : ''; };
 function comparer() {
   view.innerHTML = '<div class="cmpbar"><label for="ca">À gauche<select id="ca">' + opts() + '</select></label><button class="ab" id="swap" aria-label="Inverser les deux côtés">' + svg('swap') + 'Inverser</button><label for="cb">À droite<select id="cb">' + opts() + '</select></label></div>' +
-    '<div class="cmpopts"><label><input type="checkbox" id="sync"' + (cmp.sync ? ' checked' : '') + '>Défilement lié</label><span class="kbd"><kbd>←</kbd><kbd>→</kbd>change la droite · <kbd>Maj</kbd>+<kbd>←</kbd><kbd>→</kbd>change la gauche</span></div>' +
+    '<div class="cmpopts"><label><input type="checkbox" id="sync"' + (cmp.sync ? ' checked' : '') + '>Défilement lié</label><span class="kbd"><kbd>←</kbd><kbd>→</kbd>change la droite · <kbd>Maj</kbd>+<kbd>←</kbd><kbd>→</kbd>change la gauche</span></div>' + setsBar() +
     '<div class="panes">' + ['a', 'b'].map((x) => '<section class="pane"><h3><span id="h' + x + '"></span><span class="pn"><button class="ab" data-step="' + x + ':-1" aria-label="Précédente">' + svg('left') + '</button><button class="ab" data-step="' + x + ':1" aria-label="Suivante">' + svg('chevr') + '</button></span></h3><div class="stagewrap" id="p' + x + '"></div></section>').join('') + '</div>';
   $('#ca').value = cmp.a; $('#cb').value = cmp.b;
   const fill = (side) => { const k = cmp[side], pane = $('#p' + side), top = pane.scrollTop; pane.innerHTML = paneHtml(k); const st = pane.querySelector('.stage'); st.style.setProperty('--z', (pane.clientWidth / (st.classList.contains('old') ? 1440 : 1280)).toFixed(4)); pane.scrollTop = top; $('#h' + side).innerHTML = nameOf(k) + ' <span>' + paneSub(k) + '</span>'; $('#c' + side).value = k; };
+  refillCmp = () => { fill('a'); fill('b'); };
   stepCmp = (side, dir) => { const i = ALL.indexOf(cmp[side]); cmp[side] = ALL[(i + dir + ALL.length) % ALL.length]; saveCmp(); fill(side); };
   fill('a'); fill('b'); watch(view);
   $('#ca').onchange = (e) => { cmp.a = e.target.value; saveCmp(); fill('a'); };
@@ -219,9 +230,17 @@ function route() {
   showPicked();
 }
 document.addEventListener('click', (e) => {
-  const t = e.target.closest('[data-pick],[data-cmp],[data-open],[data-f],[data-step],.dz a,.dz button');
+  const t = e.target.closest('[data-pick],[data-cmp],[data-open],[data-f],[data-step],[data-set],.dz a,.dz button');
   if (!t) return;
-  if (t.closest('.dz') && !t.dataset.open) { e.preventDefault(); return; }
+  if (t.closest('.dz') && !t.dataset.open) { e.preventDefault(); window.CL_epClick(t); return; }
+  if (t.dataset.set) {
+    window.CL_EPSET = t.dataset.set; try { localStorage.setItem('cl-epset', t.dataset.set); } catch (er) {}
+    document.querySelectorAll('[data-set]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.set === window.CL_EPSET));
+    const toSeasons = (wrap) => { const el = wrap && wrap.querySelector('.seasons'); if (!el) return; wrap.scrollTop += el.getBoundingClientRect().top - wrap.getBoundingClientRect().top - 8; };
+    if (location.hash.slice(1) === 'comparer' && refillCmp) { refillCmp(); toSeasons($('#pa')); toSeasons($('#pb')); }
+    else if (location.hash.startsWith('#p-')) { const y = window.scrollY; detailNew(location.hash.slice(3)); window.scrollTo(0, y); const el = view.querySelector('.stagewrap .seasons'); if (el) window.scrollTo(0, window.scrollY + el.getBoundingClientRect().top - 12); }
+    return;
+  }
   if (t.dataset.f) { filter = t.dataset.f; galerie(); return; }
   if (t.dataset.step && stepCmp) { const [sd, dir] = t.dataset.step.split(':'); stepCmp(sd, +dir); return; }
   if (t.dataset.open) { location.hash = t.dataset.open; return; }

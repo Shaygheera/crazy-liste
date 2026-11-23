@@ -5,6 +5,7 @@ const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.
 (async () => {
   const ids = (process.argv[3] || '01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16').split(',');
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1400, height: 1000 } });
+  if (process.env.SET) await p.addInitScript((v) => { try { localStorage.setItem('cl-epset', v); } catch (e) {} }, process.env.SET);
   await p.goto('file://' + process.argv[2] + '#galerie', { waitUntil: 'networkidle' }); await p.evaluate(() => document.fonts.ready);
   let total = 0;
   for (const id of ids) {

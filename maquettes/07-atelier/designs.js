@@ -68,23 +68,76 @@ const progress = (o) => blk('prog', 'Ma progression ' + st('p'),
   '<div class="pacts"><button class="btn sm">' + I('check') + 'Tout marquer comme vu</button><button class="btn sm">' + I('reset') + 'Tout remettre à « À voir »</button><button class="btn sm danger">' + I('x') + 'Retirer de ma liste</button></div>');
 const seg = (on) => '<div class="seg" role="group" aria-label="Statut">' + ['t', 'p', 'v'].map((k) => '<button class="sg sg-' + k + (on === k ? ' on' : '') + '" aria-pressed="' + (on === k) + '">' + I(on === k ? 'check' : STI[k]) + STL[k] + '</button>').join('') + '</div>';
 const epState = (s) => (s === 'v' ? 'v' : 't');
+/* ---------- jeux de saisons pour tester la place prise (seule la partie Saisons et épisodes change) ---------- */
+const fmtD = (d) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+const gen = (n, seen, start, opt) => Array.from({ length: n }, (_, i) => { const no = (opt && opt.from || 1) + i; const d = new Date(start); d.setDate(d.getDate() + 7 * Math.max(0, i - ((opt && opt.first) || 0)));
+  return { no, t: 'Épisode ' + no, d: fmtD(d), r: 7.6 + ((no * 37) % 14) / 10, s: no <= seen ? 'v' : no === seen + 1 ? 'next' : 't' }; });
+const S1A = ['Welcome to the Playground', 'Some Mysteries Are Better Left Unsolved', 'The Base Violence Necessary for Change', 'Happy Progress Day!', 'Everybody Wants to Be My Enemy', 'When These Walls Come Tumbling Down', 'The Boy Savior', 'Oil and Water', 'The Monster You Created'];
+const SETS = {
+  arcane: { min: 40, seasons: [
+    { n: 'Saison 1', m: '2021 · 9 épisodes', eps: S1A.map((t, i) => ({ no: i + 1, t, d: ['6', '13', '20'][Math.floor(i / 3)] + ' nov. 2021', r: 8.3 + (i % 4) / 10, s: 'v' })) },
+    { n: 'Saison 2', m: '2024 · 9 épisodes', open: 1, eps: EP.map(([t, d, r, s], i) => ({ no: i + 1, t, d, r, s })) },
+    { n: 'Épisodes spéciaux', m: '2 épisodes · hors progression', special: 1, eps: [{ no: 1, t: 'Spécial 1', d: '2021', r: 0, s: 't' }, { no: 2, t: 'Spécial 2', d: '2024', r: 0, s: 't' }] }] },
+  frieren: { min: 24, seasons: [
+    { n: 'Saison 1', m: '2023 – 2024 · 28 épisodes', open: 1, eps: gen(28, 17, '2023-09-29', { first: 3 }) },
+    { n: 'Saison 2', m: 'annoncée · 10 épisodes', eps: gen(10, 0, '2026-01-16') }] },
+  long: { min: 24, seasons: [
+    { n: 'Épisodes 1 à 1 150', m: 'depuis 1999 · 1 150 épisodes (démo)', open: 1, eps: gen(1150, 1088, '1999-10-20') }] }
+};
+const curSet = () => SETS[window.CL_EPSET] ? window.CL_EPSET : 'arcane';
+const sState = (eps) => eps.every((e) => e.s === 'v') ? 'v' : eps.some((e) => e.s === 'v') ? 'p' : 't';
 const epItem = (e, i) => {
-  const [t, d, r, s] = e;
-  return '<div class="ep ep-' + s + '"><span class="no">' + (s === 'v' ? I('check') : 'É' + (i + 1)) + '</span><div class="et"><h4>' + (s === 'v' ? '<span class="sr">É' + (i + 1) + ' </span>' : '') + t + '</h4><p class="em">' + (s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b>' : '') + '<span>' + d + '</span><span>40 min</span>' + rate(r, 'sm') + '</p></div>' +
+  const s = e.s;
+  return '<div class="ep ep-' + s + '"><span class="no">' + (s === 'v' ? I('check') : 'É' + e.no) + '</span><div class="et"><h4>' + (s === 'v' ? '<span class="sr">É' + e.no + ' </span>' : '') + e.t + '</h4><p class="em">' + (s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b>' : '') + '<span>' + e.d + '</span><span>' + (e.min || 40) + ' min</span>' + (e.r ? rate(e.r, 'sm') : '') + '</p></div>' +
     '<div class="ec">' + seg(epState(s)) + (i ? '<button class="btn sm upto">Vu jusqu’ici</button>' : '') + '</div></div>';
 };
 const seasonRow = (name, m, s, on, pc, body) => '<div class="season' + (body ? ' open' : '') + '"><div class="sh"><button class="sx" aria-label="Déplier">' + I(body ? 'chevu' : 'chev') + '</button><h3>' + name + '</h3><span class="smeta">' + m + '</span>' + st(s) + '<span class="sall">Toute la saison</span>' + seg(on) + '</div><div class="sbar"><i class="sb-' + s + '" style="width:' + pc + '%"></i></div>' + (body || '') + '</div>';
-function episodes(v) {
+const CAP = 60;
+const capNote = (eps) => eps.length > CAP ? '<p class="capnote">… et ' + (eps.length - CAP).toLocaleString('fr-FR') + ' autres épisodes, non affichés dans cette démo : en liste, ils prendraient environ ' + Math.round(eps.length * 60 / 1000) + ' 000 px de haut.</p>' : '';
+function episodes(v, eps) {
+  const E = eps.slice(0, CAP);
   if (v === 'table') {
     return '<div class="tw"><table class="etab"><thead><tr><th>N°</th><th>Titre</th><th>Diffusion</th><th>Durée</th><th>Note</th><th>Mon statut</th><th></th></tr></thead><tbody>' +
-      EP.map(([t, d, r, s], i) => '<tr class="tr-' + s + '"><td class="tn">É' + (i + 1) + '</td><td class="tt">' + (s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b>' : '') + t + '</td><td>' + d + '</td><td>40 min</td><td>' + rate(r, 'sm') + '</td><td>' + seg(epState(s)) + '</td><td>' + (i ? '<button class="btn sm upto">Vu jusqu’ici</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>';
+      E.map((e, i) => '<tr class="tr-' + e.s + '"><td class="tn">É' + e.no + '</td><td class="tt">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b>' : '') + e.t + '</td><td>' + e.d + '</td><td>40 min</td><td>' + (e.r ? rate(e.r, 'sm') : '') + '</td><td>' + seg(epState(e.s)) + '</td><td>' + (i ? '<button class="btn sm upto">Vu jusqu’ici</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>' + capNote(eps);
   }
-  return '<div class="eps eps-' + v + '">' + EP.map(epItem).join('') + '</div>';
+  return '<div class="eps eps-' + v + '">' + E.map(epItem).join('') + '</div>' + capNote(eps);
 }
-const seasons = (v) => '<section class="seasons"><header class="ssh"><h2>Saisons et épisodes</h2><p>Les boutons d’une saison s’appliquent à tous ses épisodes ; ceux d’un épisode ne modifient que lui.</p></header>' +
-  seasonRow('Saison 1', '2021 · 9 épisodes', 'v', 'v', 100) +
-  seasonRow('Saison 2', '2024 · 9 épisodes', 'p', '', 44, episodes(v)) +
-  seasonRow('Épisodes spéciaux', '2 épisodes · hors progression', 't', 't', 0) + '</section>';
+/* grille compacte : une case par épisode, détail de l'épisode choisi, tranches de 100 au-delà de 120 épisodes */
+function grid(setKey, si, sel, rng) {
+  const eps = SETS[setKey].seasons[si].eps, big = eps.length > 120, R = 100;
+  const nextI = Math.max(0, eps.findIndex((e) => e.s === 'next'));
+  if (sel == null) sel = nextI;
+  if (rng == null) rng = big ? Math.floor(sel / R) : 0;
+  const from = big ? rng * R : 0, show = big ? eps.slice(from, from + R) : eps;
+  let h = '<div class="eg" data-set="' + setKey + '" data-si="' + si + '" data-sel="' + sel + '" data-rng="' + rng + '">';
+  if (big) {
+    h += '<div class="erng" role="group" aria-label="Tranches d’épisodes">';
+    for (let k = 0; k * R < eps.length; k++) { const part = eps.slice(k * R, k * R + R), ss = sState(part);
+      h += '<button class="rg rg-' + ss + (k === rng ? ' on' : '') + '" data-rng="' + k + '" aria-pressed="' + (k === rng) + '">' + I(k === rng && ss === 'v' ? 'check' : STI[ss]) + part[0].no + '–' + part[part.length - 1].no + '</button>'; }
+    h += '</div>';
+  }
+  h += '<div class="etiles' + (eps.length > 999 ? ' wide' : '') + '" role="group" aria-label="Épisodes">' + show.map((e, j) => { const i = from + j;
+    return '<button class="tile-ep te-' + e.s + (i === sel ? ' sel' : '') + '" data-ep="' + i + '" aria-pressed="' + (i === sel) + '" aria-label="Épisode ' + e.no + ' : ' + (e.s === 'next' ? 'prochain à voir' : STL[epState(e.s)]) + '">' +
+      '<span>' + e.no + '</span>' + (e.s === 'v' ? I('check') : e.s === 'next' ? I('arrow') : '') + '</button>'; }).join('') + '</div>';
+  const e = eps[sel];
+  h += '<div class="esel"><div class="esm"><p class="esk">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain à voir</b>' : 'Épisode choisi') + '</p><h4>É' + e.no + ' · ' + e.t + '</h4><p class="em"><span>' + e.d + '</span><span>40 min</span>' + (e.r ? rate(e.r, 'sm') : '') + '</p></div>' +
+    '<div class="ec">' + seg(epState(e.s)) + (sel ? '<button class="btn sm upto">Vu jusqu’ici</button>' : '') + '</div></div>';
+  h += '<p class="elg"><span>' + I('check') + 'Vu</span><span>' + I('arrow') + 'Prochain</span><span><i class="sq"></i>À voir</span><span>Clique une case pour voir l’épisode.</span></p></div>';
+  return h;
+}
+window.CL_epClick = (btn) => {
+  const g = btn.closest('.eg'); if (!g) return false;
+  let sel = +g.dataset.sel, rng = +g.dataset.rng;
+  if (btn.dataset.ep != null) sel = +btn.dataset.ep;
+  else if (btn.dataset.rng != null) { rng = +btn.dataset.rng; sel = rng * 100; const eps = SETS[g.dataset.set].seasons[+g.dataset.si].eps; const n = eps.findIndex((e, i) => i >= sel && e.s === 'next'); if (n >= 0 && n < sel + 100) sel = n; }
+  else return false;
+  g.outerHTML = grid(g.dataset.set, +g.dataset.si, sel, rng);
+  return true;
+};
+const seasons = (v) => { const k = curSet(), S = SETS[k];
+  return '<section class="seasons"><header class="ssh"><h2>Saisons et épisodes</h2><p>Les boutons d’une saison s’appliquent à tous ses épisodes ; ceux d’un épisode ne modifient que lui.</p></header>' +
+  S.seasons.map((se, si) => { const ss = sState(se.eps), pc = Math.round(100 * se.eps.filter((e) => e.s === 'v').length / se.eps.length);
+    return seasonRow(se.n, se.m, ss, ss === 'p' ? '' : ss, pc, se.open ? (v === 'grid' ? grid(k, si) : episodes(v, se.eps)) : ''); }).join('') + '</section>'; };
 const stats = () => blk('stats', 'Mes statistiques <a href="#">Détails</a>', '<div class="sn">' +
   '<div class="sn-v"><strong>162</strong><span>' + I('seen') + 'Vus</span></div><div class="sn-p"><strong>4</strong><span>' + I('prog') + 'En cours</span></div>' +
   '<div class="sn-f"><strong>31</strong><span>' + I('heart') + 'Favoris</span></div><div class="sn-t"><strong>214</strong><span>' + I('lib') + 'Total</span></div></div>');
@@ -103,7 +156,7 @@ const L = {};
 L.sidebar = (o) => '<aside class="navcol">' + brand() + nav('full') + navFoot() + '</aside>' +
   '<main class="mn"><div class="topbar">' + search() + '</div>' +
   '<section class="hero' + (o.bd ? ' bdh onimg' : '') + '">' + (o.bd ? '<img class="bd" src="' + IMG('fond') + '" alt="">' : '') + '<div class="hin">' + posterCol() + heroText(o) + '</div></section>' +
-  '<div class="g2">' + diffusion() + progress(o) + '</div>' + seasons('rows') + similar(4) + '</main>' +
+  '<div class="g2">' + diffusion() + progress(o) + '</div>' + seasons(o.grid ? 'grid' : 'rows') + similar(4) + '</main>' +
   '<aside class="side">' + stats() + resume() + '</aside>';
 L.top = (o) => '<header class="tbar">' + brand() + nav('top') + search('compact') + themeBtn() + '</header>' +
   '<section class="hero' + (o.bd ? ' bdh onimg' : '') + '">' + (o.bd ? '<img class="bd" src="' + IMG('fond') + '" alt="">' : '') + '<div class="hin">' + posterCol() + heroText(o) + '</div></section>' +
@@ -115,7 +168,7 @@ L.rail = (o) => '<aside class="rail"><span class="mark">CL</span>' + nav('rail')
 L.dock = (o) => '<div class="amb" style="background-image:url(' + IMG('fond') + ')"></div>' +
   '<header class="tbar">' + brand() + search() + statsInline() + '</header>' +
   '<section class="hero bdh onimg"><img class="bd" src="' + IMG('fond') + '" alt=""><div class="hin">' + posterCol() + heroText(o) + '</div></section>' +
-  '<div class="wrap"><div class="g3">' + progress(o) + diffusion() + stats() + '</div>' + seasons('cards') + resume() + similar(6) + '</div>' +
+  '<div class="wrap"><div class="g3">' + progress(o) + diffusion() + stats() + '</div>' + seasons(o.grid ? 'grid' : 'cards') + resume() + similar(6) + '</div>' +
   '<nav class="dock" aria-label="Menu">' + nav('dock').replace(/^<nav[^>]*>|<\/nav>$/g, '') + '<span class="dsep"></span><a class="nl" href="#">' + I('gear') + '<span class="nt">Réglages</span></a></nav>';
 L.bento = (o) => '<header class="tbar">' + brand() + nav('top') + search('compact') + themeBtn() + '</header>' +
   '<div class="bento">' +
@@ -133,17 +186,16 @@ L.split = (o) => '<aside class="left onimg"><img class="bd" src="' + IMG('fond')
   '<main class="right"><header class="tbar">' + nav('top') + search('compact') + '</header>' +
   '<section class="lead"><h2 class="bh">Résumé</h2>' + synopsis() + '</section>' + progress(o) + diffusion() + seasons('rows') + resume() + similar(4) + '</main>';
 function timeline() {
+  const S = SETS[curSet()], op = S.seasons.find((x) => x.open), eps = op.eps.slice(0, CAP);
   let h = '<section class="seasons tline"><header class="ssh"><h2>Saisons et épisodes</h2><p>Chronologie de diffusion. Les boutons d’une saison s’appliquent à tous ses épisodes.</p></header><ol class="tl">';
-  h += '<li class="tn-s tv"><span class="dot">' + I('seen') + '</span><div class="tcard"><div class="sh"><h3>Saison 1</h3><span class="smeta">6 – 20 novembre 2021 · 9 épisodes</span>' + st('v') + '<span class="sall">Toute la saison</span>' + seg('v') + '</div></div></li>';
-  h += '<li class="tn-s tp"><span class="dot">' + I('prog') + '</span><div class="tcard"><div class="sh"><h3>Saison 2</h3><span class="smeta">9 – 23 novembre 2024 · 9 épisodes</span>' + st('p') + '<span class="sall">Toute la saison</span>' + seg('') + '</div></div></li>';
-  let last = '';
-  EP.forEach(([t, d, r, s], i) => {
-    const day = d !== last ? '<span class="tdate">' + d.replace(' 2024', '') + '</span>' : '';
-    last = d;
-    h += '<li class="te te-' + s + '">' + day + '<span class="dot sm">' + (s === 'v' ? I('check') : s === 'next' ? I('arrow') : '') + '</span><div class="ep ep-' + s + '"><span class="no">É' + (i + 1) + '</span><div class="et"><h4>' + t + '</h4><p class="em">' + (s === 'next' ? '<b class="nx">Prochain à voir</b>' : '') + '<span>40 min</span>' + rate(r, 'sm') + '</p></div><div class="ec">' + seg(epState(s)) + (i ? '<button class="btn sm upto">Vu jusqu’ici</button>' : '') + '</div></div></li>';
+  S.seasons.forEach((se) => { const ss = sState(se.eps);
+    h += '<li class="tn-s t' + ss + '"><span class="dot">' + I(STI[ss]) + '</span><div class="tcard"><div class="sh"><h3>' + se.n + '</h3><span class="smeta">' + se.m + '</span>' + st(ss) + '<span class="sall">Toute la saison</span>' + seg(ss === 'p' ? '' : ss) + '</div></div></li>';
+    if (se !== op) return;
+    let last = '';
+    eps.forEach((e, i) => { const day = e.d !== last ? '<span class="tdate">' + e.d.replace(/ \d{4}$/, '') + '</span>' : ''; last = e.d;
+      h += '<li class="te te-' + e.s + '">' + day + '<span class="dot sm">' + (e.s === 'v' ? I('check') : e.s === 'next' ? I('arrow') : '') + '</span><div class="ep ep-' + e.s + '"><span class="no">É' + e.no + '</span><div class="et"><h4>' + e.t + '</h4><p class="em">' + (e.s === 'next' ? '<b class="nx">Prochain à voir</b>' : '') + '<span>40 min</span>' + (e.r ? rate(e.r, 'sm') : '') + '</p></div><div class="ec">' + seg(epState(e.s)) + (i ? '<button class="btn sm upto">Vu jusqu’ici</button>' : '') + '</div></div></li>'; });
   });
-  h += '<li class="tn-s tt"><span class="dot">' + I('todo') + '</span><div class="tcard"><div class="sh"><h3>Épisodes spéciaux</h3><span class="smeta">2 épisodes · hors progression</span>' + st('t') + '<span class="sall">Toute la saison</span>' + seg('t') + '</div></div></li>';
-  return h + '</ol></section>';
+  return h + '</ol>' + capNote(op.eps) + '</section>';
 }
 L.timeline = (o) => '<header class="tbar">' + brand() + nav('top') + search('compact') + themeBtn() + '</header>' +
   '<section class="hero' + (o.bd ? ' bdh onimg' : '') + '">' + (o.bd ? '<img class="bd" src="' + IMG('fond') + '" alt="">' : '') + '<div class="hin">' + posterCol() + heroText(Object.assign({}, o, { noOffInHero: true })) + '</div></section>' +
@@ -159,8 +211,8 @@ L.table = (o) => '<aside class="navcol">' + brand() + nav('full') + navFoot() + 
 
 /* ---------- les 16 propositions ---------- */
 const D = [
-  { id: '01', n: 'Ardoise carrée', L: 'sidebar', th: 'Sombre', style: 'Sombre sans arrondi', lay: 'Menu à gauche + panneau droit', font: 'Geist', o: { bd: 1, logo: 1 }, d: 'La structure de l’immersive v2, mais tout à angles droits, sans verre ni flou : des aplats sombres et des filets fins.' },
-  { id: '02', n: 'Verre clair', L: 'dock', th: 'Clair', style: 'Verre clair façon visionOS', lay: 'Dock flottant en bas', font: 'Onest', o: { logo: 1, ring: 1 }, d: 'Panneaux de verre dépoli sur les couleurs floutées d’Arcane, menu en dock flottant en bas de l’écran.' },
+  { id: '01', n: 'Ardoise carrée', L: 'sidebar', th: 'Sombre', style: 'Sombre sans arrondi', lay: 'Menu à gauche + panneau droit', font: 'Geist', o: { bd: 1, logo: 1, grid: 1 }, d: 'La structure de l’immersive v2, mais tout à angles droits, sans verre ni flou : des aplats sombres et des filets fins.' },
+  { id: '02', n: 'Verre clair', L: 'dock', th: 'Clair', style: 'Verre clair façon visionOS', lay: 'Dock flottant en bas', font: 'Onest', o: { logo: 1, ring: 1, grid: 1 }, d: 'Panneaux de verre dépoli sur les couleurs floutées d’Arcane, menu en dock flottant en bas de l’écran.' },
   { id: '03', n: 'Néon Zaun', L: 'rail', th: 'Sombre', style: 'Néon', lay: 'Rail d’icônes', font: 'Unbounded + Manrope', o: { logo: 0, ring: 1 }, d: 'Fond violet-noir, accents rose et bleu néon, lueurs discrètes ; un rail d’icônes à gauche libère la largeur.' },
   { id: '04', n: 'Suisse moderne', L: 'top', th: 'Clair', style: 'Suisse moderne', lay: 'Barre en haut', font: 'Archivo', o: { logo: 0 }, d: 'Grille stricte, noir sur blanc, un seul rouge pour l’action, titre typographique géant à la place du logo.' },
   { id: '05', n: 'Material You', L: 'bento', th: 'Clair', style: 'Couleur dynamique façon Material You', lay: 'Mosaïque bento', font: 'Roboto Flex', o: { logo: 1, bd: 0 }, d: 'Palette tonale tirée de l’affiche (bleu de Piltover, rose de Jinx), tuiles de tailles variées.' },
@@ -177,5 +229,6 @@ const D = [
   { id: '16', n: 'Tableau clair', L: 'table', th: 'Clair', style: 'Densité maximale, clair', lay: 'Tableau', font: 'Public Sans', o: {}, d: 'Le tableau dense en clair, lignes alternées, pour voir le plus d’épisodes possible sans défiler.' }
 ];
 window.CL_DESIGNS = D;
+window.CL_SETS = { arcane: 'Arcane · 9 épisodes par saison', frieren: 'Frieren · 28 épisodes', long: 'Très longue · 1 150 épisodes' };
 window.CL_render = (d) => '<div class="dz s' + d.id + ' L-' + d.L + '">' + L[d.L](d.o) + '</div>';
 })();

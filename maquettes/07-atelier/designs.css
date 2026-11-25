@@ -582,3 +582,14 @@
 .L-sidebar2 .cards{grid-template-columns:repeat(6,minmax(0,1fr))}
 .L-sidebar2 .bdh::before{background:linear-gradient(90deg,rgba(6,6,9,.93) 0,rgba(6,6,9,.88) 860px,rgba(6,6,9,.45) 100%),linear-gradient(0deg,rgba(6,6,9,.6),transparent 55%)}
 .dz .cp::after{inset:50% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.88))}
+
+/* ===== 01c : la 01b avec des arrondis modérés ===== */
+.s01r{--r:12px;--rb:10px;--rs:8px;--rp:10px}
+.s01r .hero{border-radius:var(--r)}
+.s01r .ticks i{border-radius:3px}.s01r .sbar,.s01r .bar{border-radius:4px}
+.s01r .nl.on,.s01r .nav .ng:last-child .nl:nth-child(4){box-shadow:none;background:var(--surf2)}
+.s01r .mark{border-radius:9px}
+.s01r .rate{border-radius:6px}.s01r .rate.sm{border-radius:5px}
+.s01r .genres span,.s01r .tagS{border-radius:7px}
+.s01r .rr img{border-radius:5px}
+.s01r .er .no,.s01r .ep .no{border-radius:8px}

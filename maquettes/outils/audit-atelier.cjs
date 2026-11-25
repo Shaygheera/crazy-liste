@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
 const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
 (async () => {
-  const ids = (process.argv[3] || '01,01b,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16').split(',');
+  const ids = (process.argv[3] || '01,01b,01c,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16').split(',');
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1400, height: 1000 } });
   if (process.env.SET) await p.addInitScript((v) => { try { localStorage.setItem('cl-epset', v); } catch (e) {} }, process.env.SET);
   await p.goto('file://' + process.argv[2] + '#galerie', { waitUntil: 'networkidle' }); await p.evaluate(() => document.fonts.ready);

@@ -27,8 +27,8 @@ export async function launch() {
 }
 
 /* storage : paires clé/valeur écrites dans localStorage avant le premier chargement de l'onglet (une seule fois). */
-export async function openApp(browser, { hash = '', storage = null, viewport = { width: 1440, height: 900 }, mock: mockOptions, initScript, acceptDownloads = false } = {}) {
-  const context = await browser.newContext({ viewport, acceptDownloads, locale: 'fr-FR' });
+export async function openApp(browser, { hash = '', storage = null, viewport = { width: 1440, height: 900 }, mock: mockOptions, initScript, acceptDownloads = false, touch = false } = {}) {
+  const context = await browser.newContext({ viewport, acceptDownloads, locale: 'fr-FR', ...(touch ? { isMobile: true, hasTouch: true } : {}) });
   const mock = createMock(mockOptions);
   await context.route('https://api.themoviedb.org/**', (r) => mock.handle(r));
   await context.route('https://image.tmdb.org/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', body: PNG }));

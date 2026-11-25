@@ -5,9 +5,9 @@
   "description": "Crazy Liste : suivi personnel de films, séries et anime avec TMDB (fichier HTML autonome).",
   "type": "module",
   "scripts": {
-    "test": "node --test --test-concurrency=1 tests/core.test.mjs tests/sync.test.mjs tests/e2e.test.mjs tests/e2e-robustness.test.mjs tests/e2e-sync.test.mjs tests/e2e-trailer.test.mjs tests/e2e-filters.test.mjs tests/e2e-gallery.test.mjs tests/e2e-sagas.test.mjs tests/e2e-avail.test.mjs tests/e2e-agenda-stats.test.mjs tests/relay.test.mjs tests/e2e-relay.test.mjs tests/e2e-licence.test.mjs",
+    "test": "node --test --test-concurrency=1 tests/core.test.mjs tests/sync.test.mjs tests/e2e.test.mjs tests/e2e-robustness.test.mjs tests/e2e-sync.test.mjs tests/e2e-trailer.test.mjs tests/e2e-filters.test.mjs tests/e2e-gallery.test.mjs tests/e2e-sagas.test.mjs tests/e2e-avail.test.mjs tests/e2e-agenda-stats.test.mjs tests/relay.test.mjs tests/e2e-relay.test.mjs tests/e2e-licence.test.mjs tests/e2e-episodes.test.mjs",
     "test:core": "node --test tests/core.test.mjs tests/sync.test.mjs",
-    "test:e2e": "node --test --test-concurrency=1 tests/e2e.test.mjs tests/e2e-robustness.test.mjs tests/e2e-sync.test.mjs tests/e2e-trailer.test.mjs tests/e2e-filters.test.mjs tests/e2e-gallery.test.mjs tests/e2e-sagas.test.mjs tests/e2e-avail.test.mjs tests/e2e-agenda-stats.test.mjs tests/relay.test.mjs tests/e2e-relay.test.mjs tests/e2e-licence.test.mjs",
+    "test:e2e": "node --test --test-concurrency=1 tests/e2e.test.mjs tests/e2e-robustness.test.mjs tests/e2e-sync.test.mjs tests/e2e-trailer.test.mjs tests/e2e-filters.test.mjs tests/e2e-gallery.test.mjs tests/e2e-sagas.test.mjs tests/e2e-avail.test.mjs tests/e2e-agenda-stats.test.mjs tests/relay.test.mjs tests/e2e-relay.test.mjs tests/e2e-licence.test.mjs tests/e2e-episodes.test.mjs",
     "check:legacy": "node tests/check-legacy-file.mjs",
     "build:public": "node tools/build-public.mjs"
   },

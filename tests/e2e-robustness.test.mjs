@@ -101,7 +101,7 @@ describe('F. Robustesse', () => {
     await page.waitForSelector('#rail-trending .card');
     const fav = page.locator('#rail-trending [data-item-key="tv-201"] [data-action="toggle-favorite"]');
     await fav.click();
-    assert.equal(await fav.textContent(), '♥ En favori');
+    assert.equal(await fav.textContent(), 'En favori');
     assert.deepEqual(errors, []);
     await context.close();
   });
@@ -256,10 +256,10 @@ describe('Affichage', () => {
     const { page, errors, context } = await openApp(browser);
     const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     assert.equal(await page.getAttribute('html', 'data-theme'), 'dark');
-    assert.equal(await bg(), 'rgb(11, 14, 20)');
+    assert.equal(await bg(), 'rgb(11, 12, 14)');
     await page.locator('.sidebar [data-action="toggle-theme"]').click();
     assert.equal(await page.getAttribute('html', 'data-theme'), 'light');
-    assert.equal(await bg(), 'rgb(243, 245, 249)');
+    assert.equal(await bg(), 'rgb(244, 245, 247)');
     await page.waitForSelector('#rail-trending .card');
     await page.waitForTimeout(300); // fin de la transition de couleur avant la capture
     await shot(page, 'desktop-clair');
@@ -268,7 +268,7 @@ describe('Affichage', () => {
     await go(page, '#settings', 'Réglages');
     assert.equal(await page.locator('[data-action="set-theme"][data-theme="light"]').getAttribute('aria-pressed'), 'true');
     await page.locator('[data-action="set-theme"][data-theme="dark"]').click();
-    assert.equal(await bg(), 'rgb(11, 14, 20)');
+    assert.equal(await bg(), 'rgb(11, 12, 14)');
     assert.deepEqual(errors, []);
     await context.close();
   });
@@ -277,12 +277,14 @@ describe('Affichage', () => {
     const { page, errors, context } = await openApp(browser, { viewport: { width: 375, height: 812 } });
     await page.waitForSelector('#rail-trending .card');
     assert.ok(await page.locator('.bottom-nav').isVisible());
-    assert.equal(await page.locator('.sidebar').isVisible(), false);
+    assert.equal(await page.locator('.sidebar nav.nav').isVisible(), false, 'menu de gauche remplacé par la barre du bas');
+    assert.ok(await page.locator('#stats-panel').isVisible(), 'statistiques et Reprendre sous le contenu');
     assert.ok(await noOverflow(page), 'accueil');
     await shot(page, 'mobile-accueil');
     await go(page, '#detail/tv/201', 'Série Alpha');
     await page.waitForSelector('#season-1 .ep');
-    await page.locator('[data-action="episode-status"][data-season="1"][data-episode="1"][data-status="seen"]').click();
+    await page.locator('[data-action="episode-menu"][data-season="1"][data-episode="1"]').click();
+    await page.locator('.ep-menu [data-action="episode-status"][data-season="1"][data-episode="1"][data-status="seen"]').click();
     assert.ok(await noOverflow(page), 'fiche série');
     await shot(page, 'mobile-fiche');
     await page.locator('.bottom-nav [data-nav="library"]').click();

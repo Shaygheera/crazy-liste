@@ -278,7 +278,7 @@ describe('Licence : fiche', () => {
     const arm0 = armState.calls;
     const { page, errors, context, mock } = await openApp(browser, { hash: '#detail/tv/216' });
     await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
-    assert.equal(await button(page), '▾ Licence « Licence Test »3 séries · 1 film');
+    assert.equal(await button(page), 'Licence « Licence Test »3 séries · 1 film');
     assert.match(await page.locator('#detail-cards .dcard-head').textContent(), /^Diffusion/);
     assert.equal(await page.locator('#detail-cards [data-col="suite"]').count(), 0, 'plus de « suite probable » devinée');
     assert.match(await page.locator('.detail-meta .detail-badges').first().textContent(), /^Mon suivi :/, 'Mon suivi juste sous l’affiche');
@@ -308,7 +308,7 @@ describe('Licence : fiche', () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/movie/176' });
     const btns = page.locator('#detail-licence-btn .licbtn');
     await page.waitForFunction(() => document.querySelectorAll('#detail-licence-btn .licbtn[data-scope]').length === 2, null, { timeout: 15000 });
-    assert.deepEqual(await btns.allTextContents(), ['▾ Saga « Homme de Fer »3 films', '▾ Licence « Univers Merveille »8 films']);
+    assert.deepEqual(await btns.allTextContents(), ['Saga « Homme de Fer »3 films', 'Licence « Univers Merveille »8 films']);
     assert.deepEqual(await btns.evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor === 'rgba(0, 0, 0, 0)')), [true, true], 'aucun bouton coloré avant le clic');
     await btns.nth(0).click();
     await page.waitForSelector('#detail-licence:not([hidden]) .lera');
@@ -321,10 +321,12 @@ describe('Licence : fiche', () => {
     await page.locator('#detail-licence [data-action="licence-toggle"][data-scope="all"]').click(); // depuis la fenêtre : toute la licence
     await page.waitForFunction(() => document.querySelectorAll('#detail-licence .lfilm').length === 8);
     assert.match(await page.locator('#detail-licence .licence-head h2').textContent(), /^Licence « Univers Merveille »$/);
-    assert.deepEqual(await btns.allTextContents(), ['▾ Saga « Homme de Fer »3 films', '▴ Licence « Univers Merveille »8 films']);
+    assert.deepEqual(await btns.allTextContents(), ['Saga « Homme de Fer »3 films', 'Licence « Univers Merveille »8 films']);
     assert.deepEqual(await bg(), [false, true], 'après le clic sur Licence, Saga n’est plus coloré');
     await page.keyboard.press('Escape'); // Échap ferme la fenêtre
     await page.waitForFunction(() => !document.getElementById('licence-dialog').open);
+    // l'événement « close » est envoyé après la fermeture : attendre que les boutons soient redessinés
+    await page.waitForFunction(() => [...document.querySelectorAll('#detail-licence-btn .licbtn')].every((b) => b.getAttribute('aria-expanded') === 'false'));
     assert.equal(await page.locator('#detail-licence').isHidden(), true);
     assert.deepEqual(await btns.evaluateAll((els) => els.map((e) => e.getAttribute('aria-expanded'))), ['false', 'false']);
     await btns.nth(1).click(); // bouton Licence : ouvre directement toute la licence
@@ -362,7 +364,7 @@ describe('Licence : fiche', () => {
     const arm0 = armState.calls;
     const { page, errors, context } = await openApp(browser, { hash: '#detail/movie/150' });
     await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
-    assert.equal(await button(page), '▾ Licence « Le Labyrinthe »3 films');
+    assert.equal(await button(page), 'Licence « Le Labyrinthe »3 films');
     await openLicence(page);
     assert.deepEqual(await films(page), ['movie-150', 'movie-151', 'movie-152'], 'pas « Le Labyrinthe » (1953), « Le Labyrinthe de Pan », ni le documentaire');
     assert.match(await page.locator('#detail-licence .lseries-title').textContent(), /^Films$/);
@@ -374,7 +376,7 @@ describe('Licence : fiche', () => {
   it('pièges Wikidata : ni liste ni catalogue du studio, ni franchise démesurée, ni conte d’origine — seulement la vraie série', T, async () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/movie/160' });
     await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
-    assert.equal(await button(page), '▾ Licence « Jouets Test »3 films');
+    assert.equal(await button(page), 'Licence « Jouets Test »3 films');
     await openLicence(page);
     assert.deepEqual(await films(page), ['movie-160', 'movie-161', 'movie-162'], 'pas les autres films du studio (163-165), du conte (166), de l’univers (167) ni de la franchise de 130 films');
     assert.deepEqual(jsErrors(errors), []);
@@ -405,7 +407,7 @@ describe('Licence : fiche', () => {
   it('univers en secours : seul lien entre deux séries de la même chaîne (comme Game of Thrones et House of the Dragon), pas une autre adaptation', T, async () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/231' });
     await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
-    assert.equal(await button(page), '▾ Licence « Trône Test »2 séries · 0 film');
+    assert.equal(await button(page), 'Licence « Trône Test »2 séries · 0 film');
     await openLicence(page);
     assert.deepEqual(await eras(page), ['tv-230', 'tv-231'], 'série du même univers mais d’une autre chaîne (233) : écartée');
     assert.deepEqual(jsErrors(errors), []);
@@ -416,7 +418,7 @@ describe('Licence : fiche', () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/226' });
     await page.waitForSelector('#detail-cards [data-col="suite"]', { timeout: 15000 });
     assert.equal(await col(page, 'suite'), 'SuiteDextre : Nouveau sang ›Série · 2021');
-    for (const [hash, label] of [['#detail/tv/228', '▾ Licence « Univers Marvelo »2 séries · 0 film'], ['#detail/tv/201', '▾ Licence « Série Alpha »2 séries · 0 film']]) {
+    for (const [hash, label] of [['#detail/tv/228', 'Licence « Univers Marvelo »2 séries · 0 film'], ['#detail/tv/201', 'Licence « Série Alpha »2 séries · 0 film']]) {
       await page.evaluate((h) => { location.hash = h; }, hash);
       // les deux séries sont bien dans la licence…
       await page.waitForFunction((l) => { const b = document.querySelector('#detail-licence-btn .licbtn'); return !!b && b.textContent === l; }, label, { timeout: 15000 });
@@ -454,7 +456,7 @@ describe('Licence : fiche', () => {
     const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/225' });
     await page.waitForSelector('#detail-cards [data-col="suite"]', { timeout: 15000 });
     assert.equal(await col(page, 'suite'), 'Suite annoncéePont Saison 4Anime · en production · pas encore sur TMDB', 'saison 3 (sans fiche, après le film) rattachée à la série : la suite est la saison 4');
-    assert.equal(await button(page), '▾ Licence « Anime Pont »2 séries · 4 films · 1 OVA / spécial');
+    assert.equal(await button(page), 'Licence « Anime Pont »2 séries · 4 films · 1 OVA / spécial');
     await openLicence(page);
     assert.deepEqual(await eras(page), ['tv-225']);
     assert.deepEqual(await films(page, 'tv-225'), ['anilist-73', 'movie-172', 'anilist-79', 'movie-173'], 'OVA (spécial de la série), film-pont, film mal relié (lien AniList seulement), film dérivé');
@@ -501,7 +503,7 @@ describe('Licence : fiche', () => {
     const old = JSON.stringify({ v: 8, list: [{ id: 'base:licence test', at: Date.now(), label: 'Ancienne', items: [{ key: 'tv-216', title: 'Licence Test : Première partie' }, { key: 'tv-218', title: 'Licencieux' }], extras: [], chain: [] }] });
     const { page, errors, context } = await openApp(browser, { hash: '#detail/tv/216', storage: { 'crazy-liste-licences': old } });
     await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
-    assert.equal(await button(page), '▾ Licence « Licence Test »3 séries · 1 film');
+    assert.equal(await button(page), 'Licence « Licence Test »3 séries · 1 film');
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });
@@ -540,7 +542,7 @@ describe('Licence : fiche', () => {
     await context.route('https://graphql.anilist.co/**', (r) => r.abort());
     await page.evaluate(() => { location.hash = '#detail/tv/216'; });
     await page.waitForSelector('#detail-licence-btn .licbtn:not([disabled])', { timeout: 15000 });
-    assert.equal(await button(page), '▾ Licence « Licence Test »3 séries · 1 film', 'pas un anime : AniList n’est pas nécessaire');
+    assert.equal(await button(page), 'Licence « Licence Test »3 séries · 1 film', 'pas un anime : AniList n’est pas nécessaire');
     await page.evaluate(() => { location.hash = '#detail/tv/221'; });
     await page.waitForSelector('#detail-licence-btn .licbtn[disabled]', { timeout: 15000 }); // calcul en cours (AniList retenté)…
     await page.waitForFunction(() => !document.querySelector('#detail-licence-btn .licbtn[disabled]'), null, { timeout: 15000 }); // … terminé

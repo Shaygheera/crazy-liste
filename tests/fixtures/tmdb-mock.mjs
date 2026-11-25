@@ -49,6 +49,8 @@ SHOWS[213] = { base: show(213, 'Anime Bientôt', { original_language: 'ja', genr
 SHOWS[214] = { base: show(214, 'Anime Patience', { original_language: 'ja', genre_ids: [16, 18], origin_country: ['JP'], first_air_date: '2018-04-01', vote_average: 8.4 }), status: 'Returning Series', seasons: [[1, range(1, 24)]],
   next: { season_number: 2, episode_number: 1, name: 'Épisode 1', air_date: daysAgo(-300) } };
 SHOWS[215] = { base: show(215, 'Anime Mystère', { original_language: 'ja', genre_ids: [16, 9648], origin_country: ['JP'], first_air_date: '2017-04-01', vote_average: 7.6 }), status: 'Returning Series', seasons: [[1, range(1, 10)], [2, []]], undatedSeason: 2 };
+// Saison très longue (affichage des épisodes par tranches), hors découverte.
+SHOWS[299] = { base: show(299, 'Anime Fleuve', { original_language: 'ja', genre_ids: [16], origin_country: ['JP'] }), status: 'Ended', seasons: [[1, range(1, 130)]], hidden: true };
 // Offres en France (watch/providers) : film 101 en abonnement et en location.
 export const PROVIDERS = {
   'movie-101': { FR: { link: 'https://www.themoviedb.org/movie/101/watch?locale=FR',
@@ -295,7 +297,7 @@ function seasonDetail(id, n) {
   const weekly = (e) => new Date(Date.parse(nx.air_date + 'T00:00:00Z') + 7 * 86400000 * (e - nx.episode_number)).toISOString().slice(0, 10);
   return { season_number: n, name: n === 0 ? 'Épisodes spéciaux' : 'Saison ' + n, air_date: '2019-07-25', episodes: entry[1].map((e, i) => ({
     episode_number: e, season_number: n, name: e === 2 && n === 1 ? `L'épisode "piège" <i>n°2</i>` : 'Épisode ' + e, air_date: nx && e >= nx.episode_number ? weekly(e) : '2019-08-' + String(1 + (i % 27)).padStart(2, '0'),
-    runtime: 42, vote_average: 7 + (e % 3) * 0.5, vote_count: 10, overview: '', still_path: null, crew: [], guest_stars: [] })) };
+    runtime: 42, vote_average: 7 + (e % 3) * 0.5, vote_count: 10, overview: id === 201 && n === 1 && e === 1 ? 'Résumé TMDB du premier épisode de Série Alpha.' : '', still_path: null, crew: [], guest_stars: [] })) };
 }
 function movieDetail(id) {
   const m = MOVIES[id];

@@ -13,6 +13,9 @@ const sel = {
   season: (s, st) => `[data-action="season-status"][data-season="${s}"][data-status="${st}"]`
 };
 const text = (page, s) => page.locator(s).first().textContent();
+/* Le statut d'un épisode se change depuis son menu (bouton de statut de la ligne). */
+const epMenu = (s, e) => `[data-action="episode-menu"][data-season="${s}"][data-episode="${e}"]`;
+const setEp = async (page, s, e, st) => { await page.locator(epMenu(s, e)).click(); await page.locator(`.ep-menu ${sel.ep(s, e, st)}`).click(); };
 const statusOf = (page, key) => text(page, `[data-status-for="${key}"]`);
 const epStatuses = (page, s) => page.$$eval(`#season-${s} .ep`, (els) => els.map((e) => e.dataset.status));
 const seasonStatus = (page, s) => page.locator(`#season-${s}`).getAttribute('data-status');
@@ -29,7 +32,7 @@ describe('Accueil TMDB', () => {
     assert.equal(await page.locator('#rail-trending .card').count(), 5, 'la « personne » des tendances est exclue');
     const buttons = await page.$$eval('.card', (cards) => cards.map((c) => [...c.querySelectorAll('button')].map((b) => b.textContent.trim())));
     assert.ok(buttons.length > 20);
-    for (const b of buttons) assert.deepEqual(b, ['♡ Ajouter favori', '＋ Ajouter watchlist']);
+    for (const b of buttons) assert.deepEqual(b, ['Ajouter favori', 'Ajouter watchlist']);
     assert.equal(await page.locator('button, a').filter({ hasText: /^\s*Ouvrir\s*$/ }).count(), 0, 'aucun bouton « Ouvrir »');
     assert.deepEqual(await duplicateIds(page), []);
     assert.equal(await text(page, 'h1'), 'Crazy Liste');
@@ -44,27 +47,27 @@ describe('Accueil TMDB', () => {
     const requests = mock.state.requests.length;
     const favTrending = page.locator('#rail-trending [data-item-key="tv-201"] [data-action="toggle-favorite"]');
     await favTrending.click();
-    assert.equal(await favTrending.textContent(), '♥ En favori');
+    assert.equal(await favTrending.textContent(), 'En favori');
     assert.equal(await favTrending.getAttribute('aria-pressed'), 'true');
     const favOther = page.locator('#rail-popular-tv [data-item-key="tv-201"] [data-action="toggle-favorite"]');
-    assert.equal(await favOther.textContent(), '♥ En favori', 'autre représentation du même contenu mise à jour');
+    assert.equal(await favOther.textContent(), 'En favori', 'autre représentation du même contenu mise à jour');
     assert.equal(await page.evaluate(() => location.hash), '', 'aucune redirection');
     assert.equal(await page.locator('h1').first().textContent(), 'Crazy Liste', 'la carte ne s’est pas ouverte');
     assert.equal(await text(page, '[data-count="favorites"]'), '1');
     assert.equal(await text(page, '[data-stat="fav"] strong'), '1');
     const watch = page.locator('#rail-popular-movies [data-item-key="movie-103"] [data-action="toggle-watchlist"]');
     await watch.click();
-    assert.equal(await watch.textContent(), '✓ En watchlist');
-    assert.equal(await text(page, '#rail-trending [data-item-key="movie-103"] [data-action="toggle-watchlist"]'), '✓ En watchlist');
+    assert.equal(await watch.textContent(), 'En watchlist');
+    assert.equal(await text(page, '#rail-trending [data-item-key="movie-103"] [data-action="toggle-watchlist"]'), 'En watchlist');
     assert.equal(mock.state.requests.length, requests, 'aucune requête TMDB pour actualiser un bouton');
     const data = await store(page);
     assert.deepEqual([data.tracking['tv-201'].favorite, data.tracking['movie-103'].watchlist], [true, true]);
     assert.equal(data.tracking['tv-201'].lastActivityAt, 0, 'un favori ne change pas la date d’activité');
     assert.equal(await page.locator('#resume-panel-list .resume-row').count(), 0, 'un favori ne fait pas remonter dans Reprendre');
     await favOther.click();
-    assert.equal(await favTrending.textContent(), '♡ Ajouter favori');
+    assert.equal(await favTrending.textContent(), 'Ajouter favori');
     await page.locator('.toast [data-action="toast-action"]').click();
-    assert.equal(await favTrending.textContent(), '♥ En favori', 'annulation du retrait');
+    assert.equal(await favTrending.textContent(), 'En favori', 'annulation du retrait');
     assert.equal(Object.keys((await store(page)).tracking).length, 2, 'l’affichage de l’accueil n’ajoute rien à la bibliothèque');
     assert.deepEqual(errors, []);
     await context.close();
@@ -86,9 +89,13 @@ describe('Épisodes et saisons', () => {
     const { page, errors, mock, context } = await openApp(browser, { hash: '#detail/tv/201' });
     await page.waitForSelector('#season-1 .ep');
     const requests = mock.state.requests.length;
-    await page.locator(sel.ep(1, 3, 'seen')).click();
-    assert.equal(await page.locator(sel.ep(1, 3, 'seen')).getAttribute('aria-pressed'), 'true');
-    assert.equal(await page.locator(sel.ep(1, 3, 'todo')).getAttribute('aria-pressed'), 'false');
+    await setEp(page, 1, 3, 'seen');
+    assert.equal(await page.locator('.ep-menu').count(), 0, 'le menu se referme après le choix');
+    await page.locator(epMenu(1, 3)).click();
+    assert.equal(await page.locator(sel.ep(1, 3, 'seen')).getAttribute('aria-checked'), 'true');
+    assert.equal(await page.locator(sel.ep(1, 3, 'todo')).getAttribute('aria-checked'), 'false');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('.ep-menu').count(), 0, 'Échap referme le menu');
     assert.equal(await text(page, '[data-ep="1-3"] .status'), 'Vu');
     assert.deepEqual(await epStatuses(page, 1), ['todo', 'todo', 'seen', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo']);
     assert.equal(await seasonStatus(page, 1), 'progress', '1 épisode vu sur 10 : saison En cours');
@@ -96,12 +103,12 @@ describe('Épisodes et saisons', () => {
     assert.equal(await text(page, '[data-stat="progress"] strong'), '1');
     assert.deepEqual(await resumeKeys(page, 'resume-panel-list'), ['tv-201']);
     assert.deepEqual((await store(page)).tracking['tv-201'].seasons, { 1: { episodes: { 3: 'seen' } } });
-    for (const e of [1, 2, 4, 5, 6, 7, 8, 9, 10]) await page.locator(sel.ep(1, e, 'seen')).click();
+    for (const e of [1, 2, 4, 5, 6, 7, 8, 9, 10]) await setEp(page, 1, e, 'seen');
     assert.equal(await seasonStatus(page, 1), 'seen', 'tous les épisodes vus : saison Vue');
     assert.equal(await statusOf(page, 'tv-201'), 'En cours', 'une saison vue sur trois : la série reste En cours');
-    await page.locator(sel.ep(1, 7, 'todo')).click();
+    await setEp(page, 1, 7, 'todo');
     assert.equal(await seasonStatus(page, 1), 'progress', 'un épisode remis à À voir : saison En cours');
-    await page.locator(sel.ep(1, 5, 'progress')).click();
+    await setEp(page, 1, 5, 'progress');
     assert.equal(await text(page, '[data-ep="1-5"] .status'), 'En cours');
     assert.equal(await page.locator('[data-ep="1-5"]').getAttribute('data-status'), 'progress');
     assert.equal(mock.state.requests.length, requests, 'aucune requête réseau pour un clic d’épisode');
@@ -134,7 +141,7 @@ describe('Épisodes et saisons', () => {
     await page.waitForSelector('#season-0 .ep');
     assert.equal(await seasonStatus(page, 0), 'todo', 'les spéciaux ne sont pas requis pour Vu');
     await page.locator('#season-3 [data-action="season-toggle"]').click();
-    await page.locator(sel.ep(3, 2, 'todo')).click();
+    await setEp(page, 3, 2, 'todo');
     assert.equal(await statusOf(page, 'tv-201'), 'En cours');
     await page.locator('[data-action="show-reset"]').click();
     assert.equal(await statusOf(page, 'tv-201'), 'À voir', 'tout remis à À voir');
@@ -191,7 +198,8 @@ describe('Épisodes et saisons', () => {
     await page.locator('[data-action="show-start"]').click();
     assert.equal(await statusOf(page, 'tv-201'), 'En cours', 'intention de suivi sans épisode');
     assert.deepEqual((await store(page)).tracking['tv-201'].seasons, {});
-    await page.locator('[data-action="episodes-upto"][data-season="1"][data-episode="4"]').click();
+    await page.locator(epMenu(1, 4)).click();
+    await page.locator('.ep-menu [data-action="episodes-upto"][data-season="1"][data-episode="4"]').click();
     assert.deepEqual(await epStatuses(page, 1), ['seen', 'seen', 'seen', 'seen', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo']);
     assert.match(await text(page, '#detail-track'), /Prochain à voir : S1 · É5/);
     assert.deepEqual(errors, []);
@@ -211,7 +219,7 @@ describe('Films, fiche et Reprendre', () => {
     assert.equal(await statusOf(page, 'movie-120'), 'Vu');
     const fav = page.locator('.detail-actions [data-action="toggle-favorite"]');
     await fav.click();
-    assert.equal(await fav.textContent(), '♥ En favori');
+    assert.equal(await fav.textContent(), 'En favori');
     const watch = page.locator('.detail-actions [data-action="toggle-watchlist"]');
     await watch.click();
     assert.equal(await watch.getAttribute('aria-pressed'), 'true');
@@ -243,8 +251,8 @@ describe('Films, fiche et Reprendre', () => {
     assert.deepEqual(await resumeKeys(page, 'resume-panel-list'), ['movie-106', 'movie-105', 'movie-104', 'movie-103', 'movie-102']);
     await go(page, '#detail/tv/205', 'Série Rapide 1');
     await page.waitForSelector('#season-1 .ep');
-    await page.locator(sel.ep(1, 1, 'seen')).click();
-    await page.locator(sel.ep(1, 2, 'seen')).click();
+    await setEp(page, 1, 1, 'seen');
+    await setEp(page, 1, 2, 'seen');
     const expected = ['tv-205', 'movie-106', 'movie-105', 'movie-104', 'movie-103'];
     assert.deepEqual(await resumeKeys(page, 'resume-panel-list'), expected, 'le sixième est en tête, le plus ancien sort, une ligne par série');
     await go(page, '#detail/movie/102', 'Film Test 2'); // simple ouverture : aucun effet

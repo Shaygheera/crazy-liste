@@ -124,7 +124,8 @@ describe('Synchronisation PC ↔ téléphone', () => {
     await pc.page.waitForSelector('#season-1 .ep');
     await go(phone.page, '#detail/tv/201');
     await phone.page.waitForSelector('#season-1 .ep');
-    await phone.page.locator('[data-action="episode-status"][data-season="1"][data-episode="3"][data-status="seen"]').click();
+    await phone.page.locator('[data-action="episode-menu"][data-season="1"][data-episode="3"]').click();
+    await phone.page.locator('.ep-menu [data-action="episode-status"][data-season="1"][data-episode="3"][data-status="seen"]').click();
     await pc.page.waitForFunction(() => { const e = document.querySelector('#season-1 [data-ep="1-3"]'); return e && e.dataset.status === 'seen'; }, null, { timeout: 15000 });
     const reloads = await pc.page.evaluate(() => performance.getEntriesByType('navigation').length);
     assert.equal(reloads, 1, 'pas de rechargement de page');
@@ -192,7 +193,8 @@ describe('Synchronisation PC ↔ téléphone', () => {
     await phone.context.setOffline(true); // le téléphone perd Internet
     await go(phone.page, '#detail/tv/201');
     await phone.page.waitForSelector('#season-1 .ep');
-    await phone.page.locator('[data-action="episode-status"][data-season="1"][data-episode="4"][data-status="seen"]').click();
+    await phone.page.locator('[data-action="episode-menu"][data-season="1"][data-episode="4"]').click();
+    await phone.page.locator('.ep-menu [data-action="episode-status"][data-season="1"][data-episode="4"][data-status="seen"]').click();
     assert.equal((await local(phone.page)).tracking['tv-201'].seasons[1].episodes[4], 'seen', 'enregistré sur l’appareil malgré la coupure');
     await phone.context.setOffline(false);
     await phone.page.locator('#detail-track').waitFor();

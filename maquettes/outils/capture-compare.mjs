@@ -35,7 +35,7 @@ const data = (theme) => ({ schemaVersion: 1, preferences: theme ? { theme } : {}
   'movie-120': tr('movie', 120, { inLibrary: false, watchlist: true }),
   'tv-203': tr('tv', 203, { inLibrary: false, watchlist: true }) } });
 
-const browser = await chromium.launch({ channel: 'chrome' });
+const browser = await (process.env.CHROME_PATH ? chromium.launch({ executablePath: process.env.CHROME_PATH }) : chromium.launch({ channel: 'chrome' }));
 async function open(hash, { viewport = { width: 1440, height: 900 }, theme } = {}) {
   const context = await browser.newContext({ viewport, locale: 'fr-FR' });
   const mock = createMock({ generic: true });

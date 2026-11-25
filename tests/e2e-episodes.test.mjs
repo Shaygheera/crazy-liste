@@ -140,6 +140,11 @@ describe('Menu de gauche (refonte 01c)', () => {
     assert.equal(await page.locator('.sidebar nav.nav').isVisible(), false, 'la navigation passe dans la barre du bas');
     assert.ok(await page.locator('.bottom-nav').isVisible());
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0);
+    await page.evaluate(() => { location.hash = '#detail/tv/201'; });
+    await page.waitForSelector('#season-1 .ep');
+    // la page masque le débordement horizontal : on vérifie que chaque bloc de la fiche tient dans l'écran
+    const outside = await page.evaluate(() => [...document.querySelectorAll('.detail-hero *, .seasons *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width && r.right > innerWidth + 1 && !e.closest('.gallery, .rail'); }).map((e) => e.className).slice(0, 5));
+    assert.deepEqual(outside, [], 'rien ne dépasse à droite sur la fiche');
     assert.deepEqual(jsErrors(errors), []);
     await context.close();
   });

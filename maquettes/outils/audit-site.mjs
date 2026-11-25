@@ -8,7 +8,10 @@ const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) +
 
 async function audit(page, label, { minTarget }) {
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(400);
+  // images chargées et animations finies avant de mesurer, sinon la page bouge entre la mesure et la capture
+  await page.evaluate(() => Promise.all([...document.images].filter((i) => !i.complete).map((i) => new Promise((r) => { i.addEventListener('load', r); i.addEventListener('error', r); setTimeout(r, 2000); }))));
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(900);
   const info = await page.evaluate(() => {
     const vis = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && !el.closest('[hidden], dialog:not([open]), .visually-hidden, .skip-link'); };
     const texts = [];
@@ -19,7 +22,10 @@ async function audit(page, label, { minTarget }) {
       const range = document.createRange(); range.selectNodeContents(tn);
       const rr = range.getBoundingClientRect(); let L = rr.left, T = rr.top, R = rr.right, B = rr.bottom;
       for (let e = el; e && e !== document.body; e = e.parentElement) { const c = getComputedStyle(e); if (c.overflow !== 'visible' || c.overflowX !== 'visible') { const q = e.getBoundingClientRect(); L = Math.max(L, q.left); T = Math.max(T, q.top); R = Math.min(R, q.right); B = Math.min(B, q.bottom); } }
-      if (R - L < 2 || B - T < 2 || B < 0 || T > innerHeight) return;
+      L = Math.max(L, 0); T = Math.max(T, 0); R = Math.min(R, innerWidth); B = Math.min(B, innerHeight);
+      if (R - L < 2 || B - T < 2) return;
+      const top = document.elementFromPoint((L + R) / 2, (T + B) / 2);
+      if (top && !el.contains(top) && !top.contains(el)) return; // texte caché sous la barre de recherche fixe ou un menu
       let op = 1; for (let e = el; e; e = e.parentElement) op *= parseFloat(getComputedStyle(e).opacity);
       if (op < 0.05) return; // indication visible seulement au survol
       const cs = getComputedStyle(el);

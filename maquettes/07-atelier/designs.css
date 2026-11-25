@@ -554,3 +554,9 @@
 .dz .eact{display:flex;flex-wrap:wrap;gap:8px}
 .dz .esel{display:block}.dz .esel h4{font-size:15px;font-weight:700;margin:2px 0 0}
 .dz .esel .edet{padding-left:0;border-top:0;margin-top:6px}
+/* l'épisode déplié reste à sa place, dans sa colonne, et s'ouvre vers le bas */
+.dz .elist{align-items:start}
+.dz .er.open{grid-column:auto}
+.dz .er.open .h4{font-size:14px}
+.dz .edet{padding:12px 4px 4px 6px}
+.dz .edet .syn2{font-size:13.5px}

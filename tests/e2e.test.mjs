@@ -21,7 +21,7 @@ const epStatuses = (page, s) => page.$$eval(`#season-${s} .ep`, (els) => els.map
 const seasonStatus = (page, s) => page.locator(`#season-${s}`).getAttribute('data-status');
 const go = async (page, hash, h1) => {
   await page.evaluate((h) => { location.hash = h; }, hash);
-  if (h1) await page.waitForFunction((t) => document.querySelector('h1') && document.querySelector('h1').textContent === t, h1);
+  if (h1) await page.waitForFunction((t) => document.querySelector('h1') && document.querySelector('h1')?.textContent === t, h1);
 };
 const resumeKeys = (page, list) => page.$$eval(`#${list} .resume-row`, (els) => els.map((e) => e.dataset.resumeKey));
 
@@ -77,7 +77,7 @@ describe('Accueil TMDB', () => {
     const { page, errors, context } = await openApp(browser);
     await page.waitForSelector('#rail-trending .card');
     await page.locator('#rail-trending [data-item-key="tv-201"]').click({ position: { x: 40, y: 60 } });
-    await page.waitForFunction(() => document.querySelector('h1') && document.querySelector('h1').textContent === 'Série Alpha');
+    await page.waitForFunction(() => document.querySelector('h1') && document.querySelector('h1')?.textContent === 'Série Alpha');
     assert.equal(await page.evaluate(() => location.hash), '#detail/tv/201');
     assert.deepEqual(errors, []);
     await context.close();
@@ -231,7 +231,7 @@ describe('Films, fiche et Reprendre', () => {
     assert.match(await text(page, '#detail-reco'), /Dans le même esprit[\s\S]*pas des suites officielles/);
     assert.equal(await page.locator('#related-panel').count(), 0, 'plus de panneau « Prochain contenu lié »');
     await page.locator('#detail-cards a[href="#detail/movie/121"]').click();
-    await page.waitForFunction(() => document.querySelector('h1').textContent === 'Saga : Partie 2');
+    await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Saga : Partie 2');
     await page.waitForFunction(() => document.querySelector('#detail-cards').textContent.includes('Film suivant (à venir)'));
     assert.match(await text(page, '#detail-cards [data-col="previous"]'), /Saga : Partie 1/);
     await go(page, '#detail/movie/101', `L'Été d'Amélie & <b>Les "Fous"</b>`);
@@ -268,7 +268,7 @@ describe('Films, fiche et Reprendre', () => {
     await go(page, '#resume', 'Reprendre');
     assert.deepEqual(await resumeKeys(page, 'resume-page-list'), await resumeKeys(page, 'resume-panel-list'));
     await page.locator('#resume-page-list [data-resume-key="movie-105"]').click();
-    await page.waitForFunction(() => document.querySelector('h1').textContent === 'Film Test 5');
+    await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Film Test 5');
     assert.equal(await page.evaluate(() => location.hash), '#detail/movie/105');
     await go(page, '#library?status=progress', 'Bibliothèque');
     assert.equal(await page.locator('#view-root .card').count(), 5, 'tous les En cours (6 moins le film passé en Vu) restent dans la bibliothèque');

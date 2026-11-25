@@ -13,7 +13,7 @@ after(async () => { if (browser) await browser.close(); });
 const T = { timeout: 60000 };
 const SHOTS = process.env.CRAZY_SHOTS || '';
 const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: false }); };
-const h1Is = (page, t) => page.waitForFunction((x) => document.querySelector('h1') && document.querySelector('h1').textContent === x, t);
+const h1Is = (page, t) => page.waitForFunction((x) => document.querySelector('h1') && document.querySelector('h1')?.textContent === x, t);
 const go = async (page, hash, h1) => { await page.evaluate((h) => { location.hash = h; }, hash); if (h1) await h1Is(page, h1); };
 const text = (page, s) => page.locator(s).first().textContent();
 const noOverflow = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

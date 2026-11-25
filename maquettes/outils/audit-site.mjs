@@ -21,13 +21,16 @@ async function audit(page, label, { minTarget }) {
       for (let e = el; e && e !== document.body; e = e.parentElement) { const c = getComputedStyle(e); if (c.overflow !== 'visible' || c.overflowX !== 'visible') { const q = e.getBoundingClientRect(); L = Math.max(L, q.left); T = Math.max(T, q.top); R = Math.min(R, q.right); B = Math.min(B, q.bottom); } }
       if (R - L < 2 || B - T < 2 || B < 0 || T > innerHeight) return;
       let op = 1; for (let e = el; e; e = e.parentElement) op *= parseFloat(getComputedStyle(e).opacity);
+      if (op < 0.05) return; // indication visible seulement au survol
       const cs = getComputedStyle(el);
       texts.push({ t: tn.textContent.trim().slice(0, 30), cls: String(el.className).slice(0, 30), x: L, y: T, w: R - L, h: B - T, color: cs.color, fs: parseFloat(cs.fontSize), fw: parseInt(cs.fontWeight, 10), op });
     });
     const targets = [];
     document.querySelectorAll('button, a[href], select, input:not([type="hidden"]), label.avail-toggle').forEach((el) => {
       if (!vis(el)) return;
-      if (el.matches('.card-link, .skip-link') || el.closest('.detail-overview, .hint, p')) return; // lien couvrant la carte, liens dans une phrase (exception WCAG)
+      if (el.matches('.card-link, .skip-link') || el.closest('.detail-overview, .hint, p') || (el.tagName === 'INPUT' && el.closest('label'))) return; // lien couvrant la carte, liens dans une phrase (exception WCAG), case dans son libellé
+      const r0 = el.getBoundingClientRect(), top = document.elementFromPoint(r0.left + r0.width / 2, r0.top + r0.height / 2);
+      if (top && !el.contains(top) && !top.contains(el)) return; // caché sous la barre de recherche fixe
       const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
       targets.push({ t: (el.textContent.trim() || el.getAttribute('aria-label') || el.tagName).slice(0, 26), x: r.left, y: r.top, w: r.width, h: r.height, tag: el.tagName });
     });
@@ -69,7 +72,7 @@ for (const theme of ['dark', 'light']) {
     const storage = theme === 'light' ? { 'crazy-liste-v1': JSON.stringify({ schemaVersion: 1, tracking: {}, metadata: {}, preferences: { theme: 'light' } }) } : null;
     const { page, context } = await openApp(browser, { hash, storage });
     await page.waitForSelector(wait);
-    for (let y = 0; y < 3; y++) { total += await audit(page, name + ' · ' + theme + ' · écran ' + (y + 1), { minTarget: 40 }); const more = await page.evaluate(() => { const before = scrollY; scrollBy(0, innerHeight * 0.9); return scrollY !== before; }); if (!more) break; }
+    for (let y = 0; y < 3; y++) { total += await audit(page, name + ' · ' + theme + ' · écran ' + (y + 1), { minTarget: 40 }); const more = await page.evaluate(() => { const before = scrollY; scrollBy({ top: innerHeight * 0.9, behavior: 'instant' }); return scrollY !== before; }); if (!more) break; }
     if (hash === '#detail/tv/201') {
       await page.locator('[data-action="episode-menu"][data-season="1"][data-episode="2"]').click();
       total += await audit(page, name + ' · ' + theme + ' · menu de statut ouvert', { minTarget: 40 });

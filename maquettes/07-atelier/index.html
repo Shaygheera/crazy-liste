@@ -112,11 +112,11 @@ body{background:var(--a-bg);color:var(--a-fg);font:400 15px/1.5 var(--a-f)}
 <div class="app">
   <header class="ah">
     <div><h1>Atelier Crazy Liste</h1>
-      <p>Seize nouvelles propositions sur la même fiche d’Arcane, les anciennes maquettes et le site actuel. Ouvre une proposition en grand, marque celles qui te plaisent, puis compare-les deux par deux.</p></div>
+      <p>Dix-sept nouvelles propositions sur la même fiche d’Arcane, les anciennes maquettes et le site actuel. Ouvre une proposition en grand, marque celles qui te plaisent, puis compare-les deux par deux.</p></div>
     <p class="picked" id="picked"></p>
   </header>
   <nav class="tabs" aria-label="Vues">
-    <a href="#galerie" data-v="galerie">Nouvelles <small>16</small></a>
+    <a href="#galerie" data-v="galerie">Nouvelles <small>17</small></a>
     <a href="#anciennes" data-v="anciennes">Anciennes et site actuel <small>7</small></a>
     <a href="#comparer" data-v="comparer">Comparer</a>
   </nav>
@@ -169,7 +169,7 @@ let filter = 'Toutes';
 function galerie() {
   const keep = window.CL_EPSET; window.CL_EPSET = 'arcane';
   const F = ['Toutes', 'Sombre', 'Clair', 'Sans arrondi', 'Retenues'];
-  const list = D.filter((d) => filter === 'Toutes' || (filter === 'Retenues' ? picked.includes('n' + d.id) : filter === 'Sans arrondi' ? ['01', '04', '10'].includes(d.id) : d.th === filter));
+  const list = D.filter((d) => filter === 'Toutes' || (filter === 'Retenues' ? picked.includes('n' + d.id) : filter === 'Sans arrondi' ? ['01', '01b', '04', '10'].includes(d.id) : d.th === filter));
   view.innerHTML = '<div class="filters" role="group" aria-label="Filtrer">' + F.map((f) => '<button data-f="' + f + '" aria-pressed="' + (f === filter) + '">' + f + '</button>').join('') + '</div>' +
     '<div class="grid">' + (list.length ? list.map((d) => '<article class="pc' + (picked.includes('n' + d.id) ? ' is-picked' : '') + '"><div class="thumb" role="link" tabindex="0" data-open="p-' + d.id + '" aria-label="Voir ' + d.n + ' en grand">' + stageNew(d) + '</div>' +
       '<div class="pcb"><p class="pct"><span>' + d.id + '</span><b>' + d.n + '</b></p><p class="pcm">' + d.style + ' · ' + d.lay + ' · ' + d.font + '</p><p class="pcd">' + d.d + '</p>' +
@@ -188,7 +188,7 @@ function detailNew(id) {
   view.innerHTML = '<div class="dbar"><a class="ab" href="#galerie">' + svg('left') + 'Galerie</a><div class="grow"><h2>' + d.id + ' · ' + d.n + '</h2><p>' + d.style + ' · ' + d.lay + ' · police ' + d.font + ' · thème ' + d.th.toLowerCase() + '</p></div>' +
     pickBtn('n' + d.id) + cmpBtn('n' + d.id) + '<a class="ab" href="#p-' + prev.id + '">' + svg('left') + prev.id + '</a><a class="ab" href="#p-' + next.id + '">' + next.id + svg('chevr') + '</a></div>' +
     setsBar() + '<p class="kbd" style="margin:0 0 10px"><kbd>←</kbd><kbd>→</kbd>proposition précédente / suivante</p><div class="stagewrap">' + stageNew(d) + '</div>' +
-    '<p class="note"><b>' + d.d + '</b><br>Mêmes infos que le site sur chaque proposition : note TMDB colorée, disponibilité, statut, progression par épisode, Favori / Watchlist, boutons Saga et Licence sous l’affiche, diffusion, offres, résumé, saisons et épisodes (À voir / En cours / Vu, Vu jusqu’ici), prochain épisode, Mes statistiques et Reprendre. Contrôlé avec le skill UI/UX Pro Max et un script de mesure : contraste du texte mesuré sur les pixels réels du fond (4,5:1 au moins, 3:1 pour les grands titres), toutes les cibles cliquables à 44 px au moins avec 8 px d’écart, texte à 12 px au moins, statut toujours écrit avec une icône, icônes SVG, contour visible au clavier. Résultat : 0 écart sur les 16 propositions.</p>';
+    '<p class="note"><b>' + d.d + '</b><br>Mêmes infos que le site sur chaque proposition : note TMDB colorée, disponibilité, statut, progression par épisode, Favori / Watchlist, boutons Saga et Licence sous l’affiche, diffusion, offres, résumé, saisons et épisodes (À voir / En cours / Vu, Vu jusqu’ici), prochain épisode, Mes statistiques et Reprendre. Contrôlé avec le skill UI/UX Pro Max et un script de mesure : contraste du texte mesuré sur les pixels réels du fond (4,5:1 au moins, 3:1 pour les grands titres), toutes les cibles cliquables à 44 px au moins avec 8 px d’écart, texte à 12 px au moins, statut toujours écrit avec une icône, icônes SVG, contour visible au clavier. Résultat : 0 écart sur toutes les propositions.</p>';
   watch(view);
 }
 function detailOld(id) {

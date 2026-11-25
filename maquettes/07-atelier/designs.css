@@ -564,3 +564,21 @@
 .dz .er .em{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
 .dz .er{min-height:58px}
 .dz .ehd .h4 .nx{margin-right:4px;vertical-align:-1px}
+
+/* ===== 01b : menu complet (navigation, statistiques, Reprendre), fiche pleine largeur ===== */
+.L-sidebar2{display:grid;grid-template-columns:256px minmax(0,1fr)}
+.L-sidebar2 .navcol{display:flex;flex-direction:column;padding:16px 12px;border-right:1px solid var(--line);background:var(--navbg,transparent)}
+.L-sidebar2 .navtrack{display:grid;gap:16px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.L-sidebar2 .navtrack .blk{background:none;box-shadow:none;padding:0;gap:10px}
+.L-sidebar2 .navtrack .bh{font-size:13.5px}
+.L-sidebar2 .navtrack .sn div{padding:8px 10px}.L-sidebar2 .navtrack .sn strong{font-size:20px}
+.L-sidebar2 .navtrack .rr{min-height:56px}
+.L-sidebar2 .mn{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-content:start;padding:0 24px 24px;min-width:0}
+.L-sidebar2 .topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;height:68px}
+.L-sidebar2 .topbar .sinl{display:none}
+.L-sidebar2 .hero{border-radius:var(--r)}
+.L-sidebar2 .hin{grid-template-columns:190px minmax(0,1fr);gap:28px;padding:26px}
+.L-sidebar2 .g2{display:grid;grid-template-columns:1.1fr 1fr;gap:12px;align-items:start}
+.L-sidebar2 .cards{grid-template-columns:repeat(6,minmax(0,1fr))}
+.L-sidebar2 .bdh::before{background:linear-gradient(90deg,rgba(6,6,9,.93) 0,rgba(6,6,9,.88) 860px,rgba(6,6,9,.45) 100%),linear-gradient(0deg,rgba(6,6,9,.6),transparent 55%)}
+.dz .cp::after{inset:50% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.88))}

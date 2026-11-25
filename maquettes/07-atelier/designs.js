@@ -189,6 +189,11 @@ L.sidebar = (o) => '<aside class="navcol">' + brand() + nav('full') + navFoot() 
   '<section class="hero' + (o.bd ? ' bdh onimg' : '') + '">' + (o.bd ? '<img class="bd" src="' + IMG('fond') + '" alt="">' : '') + '<div class="hin">' + posterCol() + heroText(o) + '</div></section>' +
   '<div class="g2">' + diffusion() + progress(o) + '</div>' + seasons(o.grid ? 'grid' : 'rows') + similar(4) + '</main>' +
   '<aside class="side">' + stats() + resume() + '</aside>';
+/* 01b : tout le suivi dans le menu de gauche, la fiche prend le reste de la largeur */
+L.sidebar2 = (o) => '<aside class="navcol">' + brand() + nav('full') + '<div class="navtrack">' + stats() + resume() + '</div>' + navFoot() + '</aside>' +
+  '<main class="mn"><div class="topbar">' + search() + statsInline() + '</div>' +
+  '<section class="hero' + (o.bd ? ' bdh onimg' : '') + '">' + (o.bd ? '<img class="bd" src="' + IMG('fond') + '" alt="">' : '') + '<div class="hin">' + posterCol() + heroText(o) + '</div></section>' +
+  '<div class="g2">' + diffusion() + progress(o) + '</div>' + seasons(o.grid ? 'grid' : 'rows') + similar(6) + '</main>';
 L.top = (o) => '<header class="tbar">' + brand() + nav('top') + search('compact') + themeBtn() + '</header>' +
   '<section class="hero' + (o.bd ? ' bdh onimg' : '') + '">' + (o.bd ? '<img class="bd" src="' + IMG('fond') + '" alt="">' : '') + '<div class="hin">' + posterCol() + heroText(o) + '</div></section>' +
   '<div class="cols"><main class="mn">' + diffusion() + seasons('rows') + similar(5) + '</main><aside class="side">' + progress(o) + stats() + resume() + '</aside></div>';
@@ -243,6 +248,7 @@ L.table = (o) => '<aside class="navcol">' + brand() + nav('full') + navFoot() + 
 /* ---------- les 16 propositions ---------- */
 const D = [
   { id: '01', n: 'Ardoise carrée', L: 'sidebar', th: 'Sombre', style: 'Sombre sans arrondi', lay: 'Menu à gauche + panneau droit', font: 'Geist', o: { bd: 1, logo: 1, grid: 1 }, d: 'La structure de l’immersive v2, mais tout à angles droits, sans verre ni flou : des aplats sombres et des filets fins.' },
+  { id: '01b', skin: '01', n: 'Ardoise, menu complet', L: 'sidebar2', th: 'Sombre', style: 'Sombre sans arrondi', lay: 'Menu à gauche avec statistiques et Reprendre', font: 'Geist', o: { bd: 1, logo: 1, grid: 1, ring: 1 }, d: 'La 01, mais Mes statistiques et Reprendre passent dans le menu de gauche : plus de panneau à droite, la fiche gagne 276 px de large.' },
   { id: '02', n: 'Verre clair', L: 'dock', th: 'Clair', style: 'Verre clair façon visionOS', lay: 'Dock flottant en bas', font: 'Onest', o: { logo: 1, ring: 1, grid: 1 }, d: 'Panneaux de verre dépoli sur les couleurs floutées d’Arcane, menu en dock flottant en bas de l’écran.' },
   { id: '03', n: 'Néon Zaun', L: 'rail', th: 'Sombre', style: 'Néon', lay: 'Rail d’icônes', font: 'Unbounded + Manrope', o: { logo: 0, ring: 1 }, d: 'Fond violet-noir, accents rose et bleu néon, lueurs discrètes ; un rail d’icônes à gauche libère la largeur.' },
   { id: '04', n: 'Suisse moderne', L: 'top', th: 'Clair', style: 'Suisse moderne', lay: 'Barre en haut', font: 'Archivo', o: { logo: 0 }, d: 'Grille stricte, noir sur blanc, un seul rouge pour l’action, titre typographique géant à la place du logo.' },
@@ -261,5 +267,5 @@ const D = [
 ];
 window.CL_DESIGNS = D;
 window.CL_SETS = { arcane: 'Arcane · 9 épisodes par saison', frieren: 'Frieren · 28 épisodes', long: 'Très longue · 1 150 épisodes' };
-window.CL_render = (d) => '<div class="dz s' + d.id + ' L-' + d.L + '">' + L[d.L](d.o) + '</div>';
+window.CL_render = (d) => '<div class="dz s' + (d.skin || d.id) + ' L-' + d.L + '">' + L[d.L](d.o) + '</div>';
 })();

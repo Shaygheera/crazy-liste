@@ -133,7 +133,7 @@ function epBlock(setKey, si, S) {
   if (S.mode === 'list') {
     h += '<div class="elist">' + show.map((e, j) => { const i = from + j, es = epState(e.s);
       const op = S.open === i;
-      return '<div class="er er-' + e.s + (op ? ' open' : '') + '"><button class="ehd" data-exp="' + i + '" aria-expanded="' + op + '" aria-label="Épisode ' + e.no + ', ' + (op ? 'replier' : 'déplier') + '"><span class="no">' + e.no + '</span><span class="et"><span class="h4">' + e.t + '</span><span class="em">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b>' : '') + '<span>' + e.d + '</span>' + (e.r ? rate(e.r, 'sm') : '') + '</span></span>' + I(op ? 'chevu' : 'chev', 'echv') + '</button>' +
+      return '<div class="er er-' + e.s + (op ? ' open' : '') + '"><button class="ehd" data-exp="' + i + '" aria-expanded="' + op + '" aria-label="Épisode ' + e.no + ', ' + (op ? 'replier' : 'déplier') + '"><span class="no">' + e.no + '</span><span class="et"><span class="h4">' + (e.s === 'next' ? '<b class="nx">' + I('arrow') + 'Prochain</b> ' : '') + e.t + '</span><span class="em"><span>' + e.d + '</span>' + (e.r ? rate(e.r, 'sm') : '') + '</span></span>' + I(op ? 'chevu' : 'chev', 'echv') + '</button>' +
         '<button class="stb stb-' + es + '" data-menu="' + i + '" aria-haspopup="menu" aria-expanded="' + (S.menu === i) + '" aria-label="Statut de l’épisode ' + e.no + ' : ' + STL[es] + '">' + I(es === 'v' ? 'check' : STI[es]) + STL[es] + I('chev', 'chv') + '</button>' + (S.menu === i ? stMenu(i) : '') + (op ? epDetail(e, i) : '') + '</div>'; }).join('') + '</div>';
   } else {
     h += '<div class="etiles' + (eps.length > 999 ? ' wide' : '') + '" role="group" aria-label="Épisodes">' + show.map((e, j) => { const i = from + j;

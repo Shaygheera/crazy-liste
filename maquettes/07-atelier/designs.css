@@ -560,3 +560,7 @@
 .dz .er.open .h4{font-size:14px}
 .dz .edet{padding:12px 4px 4px 6px}
 .dz .edet .syn2{font-size:13.5px}
+/* toutes les lignes d'épisode ont la même hauteur quand elles sont fermées */
+.dz .er .em{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+.dz .er{min-height:58px}
+.dz .ehd .h4 .nx{margin-right:4px;vertical-align:-1px}

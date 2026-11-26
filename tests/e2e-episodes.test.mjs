@@ -140,6 +140,9 @@ describe('Menu de gauche (refonte 01c)', () => {
     assert.equal(await page.locator('.sidebar nav.nav').isVisible(), false, 'la navigation passe dans la barre du bas');
     assert.ok(await page.locator('.bottom-nav').isVisible());
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0);
+    assert.deepEqual(await page.$$eval('.card-actions .btn', (els) => els.filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent)), [], 'le texte des boutons Favori / Watchlist ne dépasse pas');
+    assert.equal(await page.locator('.card-actions .btn-fav').first().textContent(), 'Favori', 'libellé court avec le signe plus');
+    assert.equal(await page.locator('.card-actions .btn-fav svg path').first().getAttribute('d'), 'M12 5v14M5 12h14');
     await page.evaluate(() => { location.hash = '#detail/tv/201'; });
     await page.waitForSelector('#season-1 .ep');
     // la page masque le débordement horizontal : on vérifie que chaque bloc de la fiche tient dans l'écran

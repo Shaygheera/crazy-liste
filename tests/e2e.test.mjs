@@ -32,7 +32,7 @@ describe('Accueil TMDB', () => {
     assert.equal(await page.locator('#rail-trending .card').count(), 5, 'la « personne » des tendances est exclue');
     const buttons = await page.$$eval('.card', (cards) => cards.map((c) => [...c.querySelectorAll('button')].map((b) => b.textContent.trim())));
     assert.ok(buttons.length > 20);
-    for (const b of buttons) assert.deepEqual(b, ['Ajouter favori', 'Ajouter watchlist']);
+    for (const b of buttons) assert.deepEqual(b, ['Favori', 'Watchlist']);
     assert.equal(await page.locator('button, a').filter({ hasText: /^\s*Ouvrir\s*$/ }).count(), 0, 'aucun bouton « Ouvrir »');
     assert.deepEqual(await duplicateIds(page), []);
     assert.equal(await text(page, 'h1'), 'Crazy Liste');
@@ -65,7 +65,7 @@ describe('Accueil TMDB', () => {
     assert.equal(data.tracking['tv-201'].lastActivityAt, 0, 'un favori ne change pas la date d’activité');
     assert.equal(await page.locator('#resume-panel-list .resume-row').count(), 0, 'un favori ne fait pas remonter dans Reprendre');
     await favOther.click();
-    assert.equal(await favTrending.textContent(), 'Ajouter favori');
+    assert.equal(await favTrending.textContent(), 'Favori');
     await page.locator('.toast [data-action="toast-action"]').click();
     assert.equal(await favTrending.textContent(), 'En favori', 'annulation du retrait');
     assert.equal(Object.keys((await store(page)).tracking).length, 2, 'l’affichage de l’accueil n’ajoute rien à la bibliothèque');

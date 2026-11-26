@@ -77,6 +77,22 @@ describe('Disponibilité : miniatures et filtre', () => {
     await context.close();
   });
 
+  it('deux dates selon la source TMDB : le statut suit toujours la date affichée (cas Wildwood)', T, async () => {
+    const { page, errors, context } = await openApp(browser, { hash: '#search?q=deux' });
+    await page.waitForSelector('[data-item-key="movie-135"] [data-avail]');
+    assert.equal(await page.locator('[data-item-key="movie-135"] [data-avail]').getAttribute('data-avail'), 'upcoming', 'date de la liste dans 40 jours : à venir');
+    await page.evaluate(() => { location.hash = '#detail/movie/135'; });
+    await page.waitForSelector('.dcol-avail [data-avail]');
+    await page.waitForFunction(() => document.querySelector('.dcol-avail [data-avail]').dataset.avail !== 'unknown');
+    assert.equal(await page.locator('.dcol-avail [data-avail]').getAttribute('data-avail'), 'cinema', 'fiche : sortie il y a 20 jours, pas encore en vidéo');
+    assert.doesNotMatch(await page.locator('.dcol-avail').textContent(), /À venir/);
+    await page.evaluate(() => { location.hash = '#search?q=deux'; });
+    await page.waitForSelector('[data-item-key="movie-135"] [data-avail]');
+    assert.equal(await page.locator('[data-item-key="movie-135"] [data-avail]').getAttribute('data-avail'), 'upcoming', 'la liste garde sa propre date');
+    assert.deepEqual(jsErrors(errors), []);
+    await context.close();
+  });
+
   it('découverte : la case ajoute le filtre de sortie vidéo à la requête TMDB', T, async () => {
     const { page, errors, context, mock } = await openApp(browser, { hash: '#search?type=movie' });
     await page.waitForSelector('#search-results .card');

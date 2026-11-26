@@ -3610,10 +3610,14 @@ body { font-size: 15px; letter-spacing: -.003em; }
   }
 
   /* Disponibilité : les films sortis depuis moins de 9 mois sont vérifiés auprès de TMDB (dates de sortie vidéo), 4 à la fois. */
+  /* La réponse TMDB (dates de sortie) est gardée, jamais le statut calculé : le statut est toujours recalculé avec la date
+     du titre affiché. Une liste TMDB (« Films à venir », région FR) et la fiche peuvent donner des dates différentes. */
   function availability(item) {
     if (!item) return 'unknown';
-    const cached = state.cache.availability.get(item.key);
-    return cached || C.availabilityOf(item, state.today);
+    const c = state.cache.availability.get(item.key);
+    if (c && c.json) return C.availabilityOf(item, state.today, c.json);
+    const base = C.availabilityOf(item, state.today);
+    return c === 'error' && base === 'unknown' ? 'released' : base;
   }
   const onlyAvailable = () => state.data.preferences.onlyAvailable === true;
   function filterAvailable(items) { return onlyAvailable() ? items.filter((it) => C.isAvailable(availability(it))) : items; }
@@ -3630,11 +3634,10 @@ body { font-size: 15px; letter-spacing: -.003em; }
       const pk = C.parseKey(k);
       if (!pk || pk.type !== 'movie') continue;
       availRunning++;
-      state.cache.availability.set(k, 'unknown'); // évite un second envoi pendant la requête
+      state.cache.availability.set(k, 'pending'); // évite un second envoi pendant la requête
       tmdb('/movie/' + pk.id + '/release_dates', {}).then((json) => {
-        const item = state.cache.summaries.get(k) || state.data.metadata[k] || state.cache.details.get(k);
-        state.cache.availability.set(k, C.availabilityOf(item, state.today, json));
-      }).catch(() => { state.cache.availability.set(k, 'released'); }).finally(() => {
+        state.cache.availability.set(k, { json });
+      }).catch(() => { state.cache.availability.set(k, 'error'); }).finally(() => {
         availRunning--;
         availabilityChanged(k);
         checkAvailability();
@@ -3643,8 +3646,13 @@ body { font-size: 15px; letter-spacing: -.003em; }
   }
   let availRerender = 0;
   function availabilityChanged(k) {
-    const st = state.cache.availability.get(k) || 'unknown';
-    document.querySelectorAll('[data-avail-for="' + k + '"]').forEach((el) => { el.outerHTML = availHtml(st, k, el.dataset.availDate || ''); });
+    const item = state.cache.details.get(k) || state.cache.summaries.get(k) || state.data.metadata[k];
+    let st = 'unknown';
+    document.querySelectorAll('[data-avail-for="' + k + '"]').forEach((el) => {
+      const date = el.dataset.availDate || (item && item.date) || '';
+      st = availability(Object.assign({}, item || { key: k, type: 'movie' }, { key: k, date }));
+      el.outerHTML = availHtml(st, k, date);
+    });
     if (onlyAvailable() && !C.isAvailable(st)) { clearTimeout(availRerender); availRerender = setTimeout(rerenderListsForAvailability, 120); }
   }
   function rerenderListsForAvailability() {
@@ -4169,6 +4177,7 @@ body { font-size: 15px; letter-spacing: -.003em; }
   const CHEVRON_UP = '<svg class="icon chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
   const ICON_HEART = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></svg>', ICON_HEART_ON = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></svg>';
   const ICON_BOOK = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>', ICON_BOOK_ON = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>';
+  const ICON_PLUS = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_CHECK = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   const CHEVRON = '<svg class="icon chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
   function statusBadge(status, key) {
@@ -4182,7 +4191,7 @@ body { font-size: 15px; letter-spacing: -.003em; }
     return '<span class="poster-fallback">' + esc(item.title) + '</span>' + (src ? '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async">' : '');
   }
   function toggleLabel(kind, on) {
-    return kind === 'favorite' ? (on ? ICON_HEART_ON + 'En favori' : ICON_HEART + 'Ajouter favori') : (on ? ICON_BOOK_ON + 'En watchlist' : ICON_BOOK + 'Ajouter watchlist');
+    return kind === 'favorite' ? (on ? ICON_HEART_ON + 'En favori' : ICON_PLUS + 'Favori') : (on ? ICON_BOOK_ON + 'En watchlist' : ICON_PLUS + 'Watchlist');
   }
   function listButton(kind, key, size) {
     const t = getTrack(key);

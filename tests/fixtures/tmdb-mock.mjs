@@ -21,6 +21,8 @@ for (const id of range(102, 110)) MOVIES[id] = movie(id, 'Film Test ' + (id - 10
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 MOVIES[130] = movie(130, 'Film Au Cinéma', { release_date: daysAgo(20) });
 MOVIES[131] = movie(131, 'Film En Vidéo', { release_date: daysAgo(100) });
+// Deux dates selon la source (cas Wildwood) : sortie mondiale il y a 20 jours sur la fiche, date française dans 40 jours dans une liste.
+MOVIES[135] = movie(135, 'Film Deux Dates', { release_date: daysAgo(20), _hidden: true });
 const RELEASES = {
   130: [{ iso_3166_1: 'FR', release_dates: [{ type: 3, release_date: daysAgo(20) + 'T00:00:00.000Z' }] }],
   131: [{ iso_3166_1: 'FR', release_dates: [{ type: 3, release_date: daysAgo(100) + 'T00:00:00.000Z' }, { type: 4, release_date: daysAgo(-10) + 'T00:00:00.000Z' }] },
@@ -310,6 +312,7 @@ const SEARCH = {
   anime: { multi: [asShow(202), asShow(210), asShow(211), asShow(212), asMovie(104)], movie: [MOVIES[104]], tv: [SHOWS[202].base, SHOWS[210].base, SHOWS[211].base, SHOWS[212].base] },
   lent: { multi: [asMovie(102)], movie: [MOVIES[102]], tv: [], delay: 1500 },
   rapide: { multi: [asMovie(103)], movie: [MOVIES[103]], tv: [] },
+  deux: { multi: [{ ...MOVIES[135], media_type: 'movie', release_date: daysAgo(-40) }], movie: [{ ...MOVIES[135], release_date: daysAgo(-40) }], tv: [] },
   'maze runner': { multi: [150, 151, 152, 155].map(asMovie), movie: [150, 151, 152, 155].map((id) => MOVIES[id]), tv: [] },
   'labyrinthe': { multi: [153, 154, 150, 151, 152].map(asMovie), movie: [153, 154, 150, 151, 152].map((id) => MOVIES[id]), tv: [] },
   'licence test': { multi: [asShow(217), asMovie(140), asShow(216), asShow(218), asShow(219), PERSON], movie: [MOVIES[140]], tv: [216, 217, 218, 219].map((id) => SHOWS[id].base) },

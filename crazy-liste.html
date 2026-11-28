@@ -720,6 +720,7 @@ body { font-size: 15px; letter-spacing: -.003em; }
 @media (max-width: 640px) { .detail-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 14px; } }
 /* logo : une liste dont la première ligne commence par un bouton lecture */
 .brand-logo .brand-mark { width: 100%; height: 100%; }
+.btn .icon-add { width: 24px; height: 16px; }
 </style>
 </head>
 <body>
@@ -1392,7 +1393,9 @@ body { font-size: 15px; letter-spacing: -.003em; }
       activity: (a, b) => (Math.max(b.track.lastActivityAt, b.track.addedAt) - Math.max(a.track.lastActivityAt, a.track.addedAt)) || byKey(a, b),
       added: (a, b) => (b.track.addedAt - a.track.addedAt) || byKey(a, b),
       title: (a, b) => title(a).localeCompare(title(b), 'fr', { sensitivity: 'base' }) || byKey(a, b),
-      rating: (a, b) => (num(b.meta && b.meta.voteAverage) - num(a.meta && a.meta.voteAverage)) || byKey(a, b)
+      rating: (a, b) => (num(b.meta && b.meta.voteAverage) - num(a.meta && a.meta.voteAverage)) || byKey(a, b),
+      newest: (a, b) => ((b.meta && b.meta.date) || '').localeCompare((a.meta && a.meta.date) || '') || byKey(a, b),
+      oldest: (a, b) => ((a.meta && a.meta.date) || '9999').localeCompare((b.meta && b.meta.date) || '9999') || byKey(a, b)
     };
     return rows.sort(sorters[o.sort] || sorters.activity);
   }
@@ -2198,8 +2201,8 @@ body { font-size: 15px; letter-spacing: -.003em; }
     if (THEMES.includes(raw.theme)) p.theme = raw.theme;
     if (typeof raw.apiKey === 'string' && /^[\w.\-]{0,600}$/.test(raw.apiKey.trim())) p.apiKey = raw.apiKey.trim();
     if (['all', 'todo', 'progress', 'seen'].includes(raw.libraryStatus)) p.libraryStatus = raw.libraryStatus;
-    if (['all', 'movie', 'tv'].includes(raw.libraryType)) p.libraryType = raw.libraryType;
-    if (['activity', 'added', 'title', 'rating'].includes(raw.librarySort)) p.librarySort = raw.librarySort;
+    if (['all', 'movie', 'tv', 'anime'].includes(raw.libraryType)) p.libraryType = raw.libraryType;
+    if (['activity', 'added', 'title', 'rating', 'newest', 'oldest'].includes(raw.librarySort)) p.librarySort = raw.librarySort;
     if (raw.onlyAvailable === true) p.onlyAvailable = true;
     return p;
   }
@@ -3940,7 +3943,12 @@ body { font-size: 15px; letter-spacing: -.003em; }
     'lib-status'(el) {
       state.data.preferences.libraryStatus = el.dataset.status;
       persist();
-      if (state.route.params.status) navigate(C.buildHash(state.route.name, {}), true); else renderView();
+      if (state.route.params.status) navigate(listHash(state.route.name, listFilters()), true); else renderView();
+    },
+    'lib-reset'() {
+      state.data.preferences.libraryType = 'all';
+      persist();
+      navigate(C.buildHash(state.route.name, C.isStatus(state.route.params.status) ? { status: state.route.params.status } : {}), true);
     },
     'rail-scroll'(el) {
       const rail = byId('rail-' + el.dataset.rail);
@@ -4181,7 +4189,7 @@ body { font-size: 15px; letter-spacing: -.003em; }
   const ICON_HEART = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></svg>', ICON_HEART_ON = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></svg>';
   const ICON_BOOK = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>', ICON_BOOK_ON = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>';
   /* Pas encore ajouté : l'icône avec un petit plus ; ajouté : l'icône pleine. */
-  const ICON_HEART_ADD = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g transform="scale(.78)" stroke-width="2.4"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/></g><path class="plus" d="M19 15v8M15 19h8" stroke-width="2.4"/></svg>', ICON_BOOK_ADD = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g transform="scale(.78)" stroke-width="2.4"><path d="M6 3.5h12v17l-6-4-6 4z"/></g><path class="plus" d="M19 15v8M15 19h8" stroke-width="2.4"/></svg>';
+  const ICON_HEART_ADD = '<svg class="icon icon-add" viewBox="0 0 36 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.5-9.3C1.2 8 3.3 4.5 6.9 4.5c2 0 3.5 1.1 5.1 3 1.6-1.9 3.1-3 5.1-3 3.6 0 5.7 3.5 4.4 6.7-2 4.7-9.5 9.3-9.5 9.3z"/><path class="plus" d="M31 8v8M27 12h8" stroke-width="2.2"/></svg>', ICON_BOOK_ADD = '<svg class="icon icon-add" viewBox="0 0 36 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/><path class="plus" d="M31 8v8M27 12h8" stroke-width="2.2"/></svg>';
   const ICON_PLUS = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_CHECK = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   const CHEVRON = '<svg class="icon chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
@@ -4385,33 +4393,85 @@ body { font-size: 15px; letter-spacing: -.003em; }
     favorites: ['Favoris', 'Les contenus que tu as mis en favori.'],
     watchlist: ['Watchlist', 'Ce que tu veux regarder plus tard.']
   };
+  /* Filtres des listes personnelles : les mêmes que la recherche (type, statut de diffusion, années, genre, note), appliqués à ta liste.
+     Le type est retenu dans les préférences ; les autres filtres restent dans l'adresse (#watchlist?genre=16&rating=7…). */
+  function listFilters() {
+    const p = state.route.params;
+    return C.parseSearchFilters({ type: state.data.preferences.libraryType, status: p.air, from: p.from, to: p.to, genre: p.genre, rating: p.rating });
+  }
+  function listHash(name, f, extra) {
+    const o = Object.assign({}, extra || {});
+    if (f.status !== 'any') o.air = f.status;
+    for (const k of ['from', 'to', 'genre', 'rating']) if (f[k]) o[k] = f[k];
+    return C.buildHash(name, o);
+  }
+  /* Statut de diffusion d'une série de ta liste : fiche TMDB si elle est chargée, sinon ce que ta liste en garde. */
+  function airInfo(key, meta) {
+    const d = state.cache.details.get(key);
+    if (d) return { status: d.productionStatus, nextEpisode: d.nextEpisode, seasons: d.seasonSummaries };
+    return meta && meta.productionStatus ? { status: meta.productionStatus, nextEpisode: null, seasons: meta.seasonSummaries || [] } : null;
+  }
+  const listDetailsTried = new Set();
+  let listDetailsRunning = false;
+  async function loadListDetails(keys) { // statut de diffusion demandé : fiches TMDB manquantes chargées 4 à la fois, puis la liste est redessinée
+    const todo = keys.filter((k) => !state.cache.details.has(k) && !listDetailsTried.has(k));
+    if (!todo.length || listDetailsRunning || !tmdbReady()) return;
+    listDetailsRunning = true;
+    todo.forEach((k) => listDetailsTried.add(k));
+    let next = 0;
+    const worker = async () => {
+      while (next < todo.length) {
+        const pk = C.parseKey(todo[next++]);
+        try { const d = C.normalizeDetail(await tmdb('/tv/' + pk.id, DETAIL_PARAMS), 'tv'); if (d) state.cache.details.set(pk.key, d); } catch (err) { /* fiche indisponible : le titre est écarté du filtre */ }
+      }
+    };
+    try { await Promise.all([worker(), worker(), worker(), worker()]); } finally { listDetailsRunning = false; }
+    if (LIST_ROUTES.includes(state.route.name)) renderView();
+  }
   function listPageHtml(name) {
     const prefs = state.data.preferences;
     const status = C.isStatus(state.route.params.status) ? state.route.params.status : prefs.libraryStatus;
     const list = name === 'library' ? 'all' : name;
-    const base = C.computeLibrary(state.data, { list, type: prefs.libraryType });
-    const rows = C.computeLibrary(state.data, { list, status, type: prefs.libraryType, sort: prefs.librarySort });
+    const f = listFilters();
+    const keep = (e) => C.matchesFilters(Object.assign({}, e.meta, { key: e.key, type: e.type }), f, f.status !== 'any' ? airInfo(e.key, e.meta) : null, state.today);
+    const base = C.computeLibrary(state.data, { list }).filter(keep);
+    const rows = C.computeLibrary(state.data, { list, status, sort: prefs.librarySort }).filter(keep);
     const total = C.computeLibrary(state.data, { list }).length;
+    let checking = 0;
+    if (f.status !== 'any') {
+      const missing = C.computeLibrary(state.data, { list }).filter((e) => e.type === 'tv' && !state.cache.details.has(e.key) && !listDetailsTried.has(e.key)).map((e) => e.key);
+      checking = missing.length;
+      if (missing.length) setTimeout(() => loadListDetails(missing), 0);
+    }
     const count = (st) => (st === 'all' ? base.length : base.filter((e) => e.status === st).length);
     const tabs = listTabsHtml(name);
-    const filters = [['all', 'Tous'], ['seen', 'Vu'], ['progress', 'En cours'], ['todo', 'À voir']].map(([v, l]) =>
+    const chips = [['all', 'Tous'], ['seen', 'Vu'], ['progress', 'En cours'], ['todo', 'À voir']].map(([v, l]) =>
       '<button type="button" class="chip chip-btn" data-action="lib-status" data-status="' + v + '" aria-pressed="' + (status === v) + '">' + l + ' (' + count(v) + ')</button>').join('');
-    const select = (id, change, label, current, options) => '<label class="visually-hidden" for="' + id + '">' + label + '</label><select id="' + id + '" class="select" data-change="' + change + '">' +
-      options.map(([v, l]) => '<option value="' + v + '"' + (current === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>';
+    const select = (filter, label, options, current) => '<label class="filter"><span>' + label + '</span><select class="select" data-change="lib-filter" data-filter="' + filter + '">' +
+      options.map(([v, l]) => '<option value="' + v + '"' + (current === v ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select></label>';
+    const year = (filter, label, value, ph) => '<label class="filter filter-year"><span>' + label + '</span><input class="input" type="number" inputmode="numeric" min="1900" max="2100" step="1" placeholder="' + ph + '" value="' + value + '" data-change="lib-filter" data-filter="' + filter + '"></label>';
+    const series = f.type === 'tv' || f.type === 'anime';
+    const genres = C.genresFor(f.type);
+    const refined = C.hasRefinement(f);
+    const filtersBar = '<div class="filters lib-filters" role="group" aria-label="Filtres de la liste">' +
+      select('type', 'Type', [['all', 'Tout'], ['movie', 'Films'], ['tv', 'Séries'], ['anime', 'Anime']], f.type) +
+      (series ? select('air', 'Diffusion', [['any', 'Tous'], ['ended', 'Terminés'], ['airing', 'En cours de diffusion'], ['soon', 'Saison annoncée < 6 mois'], ['later', 'Saison annoncée > 6 mois ou sans date'], ['ongoing', 'Pas terminés (tous)']], f.status) : '') +
+      year('from', 'Depuis l’année', f.from, '1990') + year('to', 'Jusqu’à l’année', f.to, String(new Date().getFullYear())) +
+      (genres.length ? select('genre', 'Genre', [['', 'Tous']].concat(genres.map(([id, l]) => [String(id), l])), f.genre) : '') +
+      select('rating', 'Note TMDB', [['', 'Toutes'], ['6', '6 et plus'], ['7', '7 et plus'], ['8', '8 et plus']], f.rating) +
+      select('sort', 'Trier par', [['activity', 'Activité récente'], ['added', 'Ajout récent'], ['title', 'Titre (A → Z)'], ['rating', 'Mieux notés'], ['newest', 'Plus récents'], ['oldest', 'Plus anciens']], prefs.librarySort) +
+      (refined ? '<button type="button" class="btn btn-sm btn-ghost filter-reset" data-action="lib-reset">Effacer les filtres</button>' : '') + '</div>';
     let body;
     if (!total) {
       body = emptyHtml(name === 'favorites' ? 'Aucun favori pour l’instant.' : name === 'watchlist' ? 'Ta watchlist est vide.' : 'Ta bibliothèque est vide.',
         name === 'library' ? 'Marque un film ou un épisode, ou ajoute un contenu en favori ou à ta watchlist.' : 'Utilise les boutons des cartes ou des fiches.', { href: '#home', label: 'Explorer l’accueil' });
     } else if (!rows.length) {
-      body = emptyHtml('Aucun contenu ne correspond à ces filtres.', '');
+      body = checking ? '<p class="hint" aria-busy="true">Vérification de la diffusion de ' + checking + ' série(s) sur TMDB…</p>' : emptyHtml('Aucun contenu ne correspond à ces filtres.', 'Change ou efface les filtres pour voir plus de titres.');
     } else {
-      body = '<div class="grid">' + rows.map((e) => cardHtml(e.meta)).join('') + '</div>';
+      body = (checking ? '<p class="hint" aria-busy="true">Vérification de la diffusion de ' + checking + ' autre(s) série(s) sur TMDB…</p>' : '') + '<div class="grid">' + rows.map((e) => cardHtml(e.meta)).join('') + '</div>';
     }
-    return tabs + '<div class="page-head"><div><h1>' + LIST_TITLES[name][0] + '</h1><p>' + LIST_TITLES[name][1] + '</p></div><p class="hint">' + rows.length + ' affiché(s) sur ' + total + '</p></div>' +
-      '<div class="toolbar"><div class="row" role="group" aria-label="Filtrer par statut">' + filters + '</div><span class="spacer"></span>' +
-      select('lib-type', 'lib-type', 'Type de contenu', prefs.libraryType, [['all', 'Tous types'], ['movie', 'Films'], ['tv', 'Séries / anime']]) +
-      select('lib-sort', 'lib-sort', 'Tri', prefs.librarySort, [['activity', 'Activité récente'], ['added', 'Ajout récent'], ['title', 'Titre (A → Z)'], ['rating', 'Note TMDB']]) +
-      '</div>' + body;
+    return tabs + '<div class="page-head"><div><h1>' + LIST_TITLES[name][0] + '</h1><p>' + LIST_TITLES[name][1] + '</p></div><p class="hint" data-list-count>' + rows.length + ' affiché(s) sur ' + total + '</p></div>' +
+      '<div class="toolbar"><div class="row" role="group" aria-label="Filtrer par statut">' + chips + '</div></div>' + (total ? filtersBar : '') + body;
   }
 
   /* ----- À venir pour moi ----- */
@@ -5313,8 +5373,17 @@ body { font-size: 15px; letter-spacing: -.003em; }
       navigate(searchHash(state.ui.search.q, f), true);
       return;
     }
-    if (el.dataset.change === 'lib-type') { state.data.preferences.libraryType = el.value; persist(); renderView(); }
-    if (el.dataset.change === 'lib-sort') { state.data.preferences.librarySort = el.value; persist(); renderView(); }
+    if (el.dataset.change === 'lib-filter') {
+      const name = state.route.name, k = el.dataset.filter, v = el.value.trim();
+      if (k === 'sort') { state.data.preferences.librarySort = v; persist(); renderView(); return; }
+      const cur = listFilters();
+      const raw = { type: cur.type, status: cur.status, from: cur.from, to: cur.to, genre: cur.genre, rating: cur.rating };
+      raw[k === 'air' ? 'status' : k] = v;
+      const f = C.parseSearchFilters(raw); // un genre ou un statut qui n'existe pas pour le nouveau type est retiré
+      if (k === 'type') { state.data.preferences.libraryType = f.type; persist(); }
+      const extra = C.isStatus(state.route.params.status) ? { status: state.route.params.status } : {};
+      navigate(listHash(name, f, extra), true);
+    }
   });
   document.addEventListener('error', (e) => { if (e.target instanceof HTMLImageElement) e.target.remove(); }, true); // affiche est remplacée par le titre
   const searchInput = byId('search-input');
